@@ -2,10 +2,6 @@
 
 A clean, responsive, single-page web application designed for tracking weekly and monthly expenses with a polished sage green aesthetic, multi-language support, real-time cloud synchronization, and PDF report generation.
 
-![App Preview](https://img.shields.io/badge/status-active-success.svg)
-![Tech Stack](https://img.shields.io/badge/stack-React%20% ખૂબ%20TailwindCSS-blue)
-![License](https://img.shields.io/badge/license-MIT-green.svg)
-
 ---
 
 ## ✨ Features
@@ -28,11 +24,4 @@ A clean, responsive, single-page web application designed for tracking weekly an
 
 ---
 
-## 🚀 Getting Started Locally
 
-Follow these steps to run the project locally on your machine:
-
-### 1. Clone the repository
-```bash
-git clone [https://github.com/zeta0106/weekly-budegt.git](https://github.com/zeta0106/weekly-budegt.git)
-cd weekly-budegt
