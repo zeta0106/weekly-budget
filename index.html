@@ -1,0 +1,3323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>WeeklyBudget — Weekly Budget Tracker</title>
+<meta name="description" content="Track your weekly income and expenses. Data is saved locally in your browser." />
+
+<!-- Apply saved theme before first paint (prevents light/dark flash) -->
+<script>
+  try {
+    var t = localStorage.getItem('weeklyBudget.theme');
+    if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+    var l = localStorage.getItem('weeklyBudget.lang');
+    if (l) document.documentElement.lang = l;
+  } catch (e) { /* storage unavailable — fall back to light */ }
+</script>
+
+<!-- Fonts (gracefully falls back to system fonts offline) -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'] }
+      }
+    }
+  };
+</script>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<!-- PDF export: jsPDF + AutoTable (print fallback if unavailable) -->
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+  /* ------------------------------------------------------------------
+     Design tokens + component styles.
+     These mirror the Tailwind look (slate palette, rounded-xl, shadow-md)
+     so the layout still renders correctly even if a CDN is unreachable.
+  ------------------------------------------------------------------- */
+  :root{
+    --bg:#f1f5f9;            /* slate-100 */
+    --card:#ffffff;
+    --text:#0f172a;          /* slate-900 */
+    --muted:#64748b;         /* slate-500 */
+    --border:#e2e8f0;        /* slate-200 */
+    --field:#ffffff;
+    --field-border:#cbd5e1;  /* slate-300 */
+    --track:#e2e8f0;
+    --header:rgba(255,255,255,.85);
+    --row-hover:#f8fafc;
+    --safe-top:env(safe-area-inset-top, 0px);
+    --safe-bottom:env(safe-area-inset-bottom, 0px);
+    --nav-height:4.25rem;
+    --nav-bottom:calc(.8rem + var(--safe-bottom));
+    --content-bottom-space:calc(var(--nav-height) + var(--nav-bottom) + 2.25rem);
+  }
+  html.dark{
+    color-scheme:dark;
+    --bg:#020617;            /* slate-950 */
+    --card:#0f172a;          /* slate-900 */
+    --text:#f1f5f9;          /* slate-100 */
+    --muted:#94a3b8;         /* slate-400 */
+    --border:#1e293b;        /* slate-800 */
+    --field:#020617;
+    --field-border:#334155;  /* slate-700 */
+    --track:#1e293b;
+    --header:rgba(2,6,23,.85);
+    --row-hover:#1e293b;
+  }
+  *{ box-sizing:border-box; }
+  html{ -webkit-text-size-adjust:100%; text-size-adjust:100%; }
+  body{
+    margin:0; min-height:100dvh; background:var(--bg); color:var(--text);
+    font-family:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    transition:background-color .25s ease, color .25s ease;
+  }
+  .hidden{ display:none !important; }
+  .sr-only{ position:absolute; width:1px; height:1px; margin:-1px; padding:0; border:0; overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; }
+
+  /* Header */
+  .topbar{
+    position:sticky; top:0; z-index:40;
+    background:var(--header); backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .topbar-inner{ width:100%; max-width:1400px; margin:0 auto; padding:.85rem clamp(1rem, 2vw, 2rem); display:flex; align-items:center; justify-content:space-between; gap:1rem; }
+  .logo-mark{
+    width:42px; height:42px; border-radius:.75rem; flex:none;
+    display:flex; align-items:center; justify-content:center; color:#fff;
+    background:linear-gradient(135deg,#059669,#10b981 55%,#0ea5e9);
+    box-shadow:0 4px 10px rgba(16,185,129,.35);
+  }
+  .app-title{ margin:0; font-size:1.2rem; font-weight:800; letter-spacing:-.01em; line-height:1.1; }
+  .app-sub{ margin:2px 0 0; font-size:.78rem; color:var(--muted); }
+
+  /* Theme toggle — the single control on the right of the header */
+  .theme-switch{
+    display:inline-flex; align-items:center; gap:.5rem; cursor:pointer;
+    background:var(--card); color:var(--text);
+    border:1px solid var(--border); border-radius:9999px;
+    min-height:42px; padding:.5rem .9rem; font-size:.85rem; font-weight:600;
+    box-shadow:0 1px 3px rgba(15,23,42,.08);
+    transition:transform .15s ease, background-color .25s ease;
+  }
+  .theme-switch:hover{ transform:translateY(-1px); }
+  .theme-switch:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
+  .theme-switch svg{ width:18px; height:18px; }
+
+  /* Layout grid: 3 columns on desktop -> 2 on tablet -> 1 on mobile */
+  .wb-shell{ width:100%; max-width:1400px; margin:0 auto; padding:1.5rem clamp(1rem, 2vw, 2rem) 2.5rem; }
+  .wb-grid{ display:grid; gap:1.5rem; grid-template-columns:1fr; align-items:start; }
+  .wb-col{ display:flex; flex-direction:column; gap:1.5rem; min-width:0; }
+  @media (min-width:768px) and (max-width:1023.98px){
+    .wb-grid{ grid-template-columns:1fr 1fr; }
+    .wb-col-right{ grid-column:1 / -1; display:grid; grid-template-columns:1fr 1fr; align-items:start; }
+  }
+  @media (min-width:1024px){
+    .wb-grid{ grid-template-columns:320px minmax(0,1.4fr) 360px; }
+  }
+  @media (min-width:1400px){
+    .wb-grid{ grid-template-columns:340px minmax(0,1.5fr) 380px; }
+  }
+
+  /* Cards — Tailwind rounded-xl + shadow-md equivalents */
+  .card{
+    background:var(--card); border:1px solid var(--border);
+    border-radius:.75rem; /* rounded-xl */
+    box-shadow:0 4px 6px -1px rgba(15,23,42,.10), 0 2px 4px -2px rgba(15,23,42,.10); /* shadow-md */
+    padding:1.5rem;
+    transition:background-color .25s ease, border-color .25s ease;
+  }
+  .card-title{ margin:0; font-size:1.05rem; font-weight:700; }
+  .card-sub{ margin:.25rem 0 0; font-size:.83rem; color:var(--muted); }
+  .eyebrow{ font-size:.72rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); }
+
+  /* Remaining funds */
+  .remaining-amount{ font-size:clamp(2.4rem,4vw,3.1rem); font-weight:800; line-height:1.05; letter-spacing:-.02em; margin:.35rem 0 .25rem; color:#059669; font-variant-numeric:tabular-nums; }
+  .pill{ display:inline-flex; align-items:center; gap:.35rem; font-size:.72rem; font-weight:700; padding:.3rem .65rem; border-radius:9999px; white-space:nowrap; }
+  .progress-track{ height:10px; border-radius:9999px; background:var(--track); overflow:hidden; }
+  .progress-bar{ height:100%; width:0%; border-radius:9999px; background:#10b981; transition:width .6s ease, background-color .3s ease; }
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+  .stat-box{ border:1px solid var(--border); border-radius:.6rem; padding:.8rem .9rem; background:transparent; }
+  .stat-label{ font-size:.72rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+  .stat-value{ margin-top:.2rem; font-size:1.05rem; font-weight:700; font-variant-numeric:tabular-nums; }
+  .mini-row{ display:flex; justify-content:space-between; gap:1rem; font-size:.85rem; padding:.45rem 0; }
+  .mini-row span:first-child{ color:var(--muted); }
+  .mini-row span:last-child{ font-weight:600; font-variant-numeric:tabular-nums; }
+
+  /* Forms */
+  .label{ display:block; font-size:.82rem; font-weight:600; margin-bottom:.4rem; }
+  .field{
+    width:100%; background:var(--field); color:var(--text);
+    border:1px solid var(--field-border); border-radius:.55rem;
+    min-height:46px; padding:.65rem .8rem; font-size:.95rem; font-family:inherit;
+  }
+  .field:focus{ outline:none; border-color:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,.25); }
+  .field::placeholder{ color:var(--muted); opacity:.75; }
+  .money-wrap{ position:relative; }
+  .money-wrap .money-sign{ position:absolute; left:.8rem; top:50%; transform:translateY(-50%); color:var(--muted); font-weight:600; pointer-events:none; }
+  .money-wrap .field{ padding-left:1.7rem; }
+  .form-grid{ display:grid; grid-template-columns:1fr; gap:1rem; }
+  @media (min-width:520px){ .form-grid{ grid-template-columns:1fr 1fr; } .form-grid .span-2{ grid-column:span 2; } }
+  .btn-primary{
+    width:100%; display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+    background:#059669; color:#fff; border:none; cursor:pointer;
+    min-height:46px; border-radius:.55rem; padding:.7rem 1rem; font-size:.95rem; font-weight:700; font-family:inherit;
+    box-shadow:0 2px 6px rgba(5,150,105,.35);
+    transition:background-color .15s ease, transform .15s ease;
+  }
+  .btn-primary:hover{ background:#047857; transform:translateY(-1px); }
+  .btn-primary:active{ transform:translateY(0); }
+  .btn-primary:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
+  .btn-primary svg{ width:18px; height:18px; }
+  .btn-ghost{
+    display:inline-flex; align-items:center; justify-content:center;
+    background:transparent; color:var(--muted); border:1px solid var(--border); cursor:pointer;
+    min-height:40px; border-radius:.55rem; padding:.5rem .85rem; font-size:.82rem; font-weight:600; font-family:inherit;
+  }
+  .btn-ghost:hover{ color:#dc2626; border-color:#fca5a5; }
+  .btn-ghost.armed{ color:#fff; background:#dc2626; border-color:#dc2626; }
+  .chip{
+    display:inline-flex; align-items:center; justify-content:center;
+    background:var(--bg); color:var(--text); border:1px solid var(--border); cursor:pointer;
+    min-height:40px; border-radius:9999px; padding:.45rem .85rem; font-size:.8rem; font-weight:600; font-family:inherit;
+  }
+  .chip:hover{ border-color:#10b981; color:#059669; }
+  .form-error{ color:#dc2626; font-size:.82rem; font-weight:600; margin:.6rem 0 0; }
+  .helper{ color:var(--muted); font-size:.78rem; margin:.6rem 0 0; }
+
+  /* Expense log table */
+  .log-actions{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+  .count-badge{ background:var(--bg); border:1px solid var(--border); color:var(--muted); font-size:.72rem; font-weight:700; border-radius:9999px; padding:.2rem .6rem; }
+  .table-wrap{ overflow-x:auto; margin:0 -1.5rem; padding:0 1.5rem; }
+  table.log{ width:100%; min-width:500px; border-collapse:collapse; font-size:.9rem; }
+  table.log th{ text-align:left; font-size:.7rem; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); padding:.6rem .5rem; border-bottom:1px solid var(--border); }
+  table.log td{ padding:.7rem .5rem; border-bottom:1px solid var(--border); vertical-align:middle; }
+  table.log tbody tr:last-child td{ border-bottom:none; }
+  table.log tbody tr{ animation:fadeSlide .25s ease; }
+  table.log tbody tr:hover{ background:var(--row-hover); }
+  .amt{ text-align:right; font-weight:700; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  th.amt{ text-align:right; }
+  table.log th:last-child{ position:relative; }
+  .badge{ display:inline-flex; align-items:center; gap:.35rem; font-size:.7rem; font-weight:600; color:var(--muted); border:1px solid var(--border); border-radius:9999px; padding:.15rem .55rem; margin-top:.25rem; }
+  .dot{ width:8px; height:8px; border-radius:9999px; flex:none; display:inline-block; }
+  .icon-btn{
+    display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+    width:40px; height:40px; border-radius:.5rem; border:1px solid transparent;
+    background:transparent; color:var(--muted);
+  }
+  .icon-btn:hover{ color:#dc2626; background:rgba(220,38,38,.08); border-color:rgba(220,38,38,.25); }
+  .icon-btn svg{ width:16px; height:16px; }
+  .icon-btn.wide{ width:auto; padding:0 .6rem; gap:.4rem; font-size:.8rem; font-weight:600; border-color:var(--border); color:var(--muted); font-family:inherit; }
+  .icon-btn.wide:hover{ color:#059669; background:rgba(16,185,129,.08); border-color:rgba(16,185,129,.35); }
+  .empty-state{ text-align:center; padding:2rem 1rem; color:var(--muted); }
+  .empty-state svg{ width:40px; height:40px; margin:0 auto .6rem; opacity:.55; display:block; }
+  @keyframes fadeSlide{ from{ opacity:0; transform:translateY(4px);} to{ opacity:1; transform:none;} }
+
+  /* Chart + legend */
+  .chart-wrap{ position:relative; height:260px; }
+  .legend{ list-style:none; margin:1rem 0 0; padding:0; display:flex; flex-direction:column; gap:.85rem; }
+  .legend-top{ display:flex; align-items:center; gap:.55rem; font-size:.87rem; }
+  .legend-name{ font-weight:600; }
+  .legend-pct{ color:var(--muted); font-size:.78rem; }
+  .legend-amt{ margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums; }
+  .legend-bar-track{ height:6px; border-radius:9999px; background:var(--track); overflow:hidden; margin-top:.35rem; }
+  .legend-bar{ height:100%; border-radius:9999px; transition:width .6s ease; }
+
+  .insight-row{ display:flex; justify-content:space-between; align-items:baseline; gap:1rem; padding:.65rem 0; border-bottom:1px solid var(--border); font-size:.88rem; }
+  .insight-row:last-child{ border-bottom:none; }
+  .insight-row .k{ color:var(--muted); }
+  .insight-row .v{ font-weight:700; text-align:right; font-variant-numeric:tabular-nums; }
+  .insight-row .v small{ display:block; font-weight:500; color:var(--muted); font-size:.74rem; }
+
+  .divider{ border:none; border-top:1px solid var(--border); margin:1rem 0; }
+  .row{ display:flex; align-items:center; }
+  .between{ justify-content:space-between; }
+  .wrap-flex{ flex-wrap:wrap; }
+
+  /* Toast: fixed below the sticky header, never over the bottom nav */
+  .toast{
+    position:fixed; left:50%; right:auto; bottom:auto;
+    top:calc(var(--safe-top) + 5rem);
+    transform:translate(-50%, -1rem) scale(.98);
+    z-index:120; background:#0f172a; color:#f8fafc; border:1px solid #1e293b;
+    width:fit-content; max-width:min(calc(100vw - 2rem), 34rem);
+    padding:.7rem 1.1rem; border-radius:.65rem; font-size:.87rem; font-weight:600;
+    line-height:1.45; text-align:center; overflow-wrap:anywhere;
+    box-shadow:0 12px 28px rgba(2,6,23,.35);
+    opacity:0; visibility:hidden; pointer-events:none;
+    transition:transform .28s ease, opacity .22s ease, visibility 0s linear .28s;
+  }
+  .toast.show{
+    transform:translate(-50%, 0) scale(1);
+    opacity:1; visibility:visible; pointer-events:none;
+    transition-delay:0s, 0s, 0s;
+  }
+
+  /* ===== v2: view switching, calendar, floating bottom nav ===== */
+  .wb-shell{ padding-bottom:var(--content-bottom-space); } /* dynamic room for the floating nav */
+  .view-head{ margin:0 0 1.25rem; }
+  .view-head h2{ margin:0; font-size:1.5rem; font-weight:800; letter-spacing:-.01em; }
+  .view-head p{ margin:.25rem 0 0; color:var(--muted); font-size:.88rem; }
+  .subhead{ margin:0 0 .7rem; font-size:.95rem; font-weight:700; }
+
+  /* Cards are shown only in their assigned view */
+  .view-card{ display:none; }
+  [data-active-view="dashboard"] .view-card[data-view~="dashboard"]{ display:block; }
+  [data-active-view="charts"]    .view-card[data-view~="charts"]{ display:block; }
+  [data-active-view="settings"]  .view-card[data-view~="settings"]{ display:block; }
+  [data-active-view="dashboard"] #rightCol{ display:none; }
+  [data-active-view="charts"] #leftCol, [data-active-view="charts"] #middleCol{ display:none; }
+  [data-active-view="settings"] #middleCol, [data-active-view="settings"] #rightCol{ display:none; }
+  [data-active-view="calendar"] #mainGrid{ display:none; }
+  .calendar-layout{ display:none; }
+  [data-active-view="calendar"] .calendar-layout{ display:grid; gap:1.5rem; grid-template-columns:1fr; align-items:start; }
+
+  @media (min-width:768px){
+    [data-active-view="charts"] .wb-grid{ grid-template-columns:1fr; }
+    [data-active-view="settings"] .wb-grid{ grid-template-columns:1fr; }
+    [data-active-view="settings"] #leftCol{ display:grid; grid-template-columns:1fr 1fr; align-items:start; }
+  }
+  @media (min-width:1024px){
+    [data-active-view="dashboard"] .wb-grid{ grid-template-columns:340px minmax(0,1fr); }
+    [data-active-view="charts"] #rightCol{ display:grid; grid-template-columns:minmax(0,1.4fr) 360px; align-items:start; }
+    [data-active-view="charts"] .chart-wrap{ height:320px; }
+    [data-active-view="settings"] .wb-grid{ grid-template-columns:minmax(0,1060px); justify-content:center; }
+    [data-active-view="calendar"] .calendar-layout{ grid-template-columns:minmax(0,1.65fr) 380px; }
+    .day-card{ position:sticky; top:5.5rem; }
+  }
+
+  .btn-secondary{
+    width:100%; display:inline-flex; align-items:center; justify-content:center; gap:.5rem;
+    background:var(--bg); color:var(--text); border:1px solid var(--border); cursor:pointer;
+    min-height:46px; border-radius:.55rem; padding:.65rem 1rem; font-size:.9rem; font-weight:700; font-family:inherit;
+  }
+  .btn-secondary:hover{ border-color:#10b981; color:#059669; }
+
+  .setting-row{ display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.8rem 0; border-bottom:1px solid var(--border); font-size:.9rem; }
+  .setting-row:last-of-type{ border-bottom:none; }
+  .setting-row .s-label{ font-weight:600; }
+  .setting-row .s-hint{ display:block; color:var(--muted); font-size:.76rem; font-weight:500; margin-top:.15rem; }
+
+  /* Calendar */
+  .cal-summary{ display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; margin-top:1rem; }
+  .cal-nav{ display:flex; align-items:center; gap:.45rem; }
+  .cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:.5rem; margin:1.1rem 0 .5rem; }
+  .cal-weekdays span{ text-align:center; font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:.5rem; }
+  .cal-cell{
+    appearance:none; font-family:inherit; text-align:left; cursor:pointer;
+    background:var(--field); color:var(--text);
+    border:1px solid var(--border); border-radius:.65rem;
+    min-height:102px; padding:.55rem;
+    display:flex; flex-direction:column; gap:.32rem; align-items:flex-start;
+    transition:border-color .15s ease, transform .15s ease, background-color .15s ease;
+  }
+  .cal-cell:hover{ border-color:#10b981; transform:translateY(-1px); }
+  .cal-cell:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
+  .cal-cell.is-other{ opacity:.42; }
+  .cal-cell.is-today{ border-color:#0ea5e9; box-shadow:inset 0 0 0 1px #0ea5e9; }
+  .cal-cell.is-selected{ border-color:#059669; box-shadow:0 0 0 2px rgba(16,185,129,.35); background:rgba(16,185,129,.06); }
+  .cal-daynum{ font-weight:800; font-size:.9rem; line-height:1; display:inline-flex; align-items:center; gap:.35rem; }
+  .cal-today-dot{ width:7px; height:7px; border-radius:9999px; background:#0ea5e9; display:inline-block; }
+  .cal-pill{ font-size:.68rem; font-weight:800; border-radius:9999px; padding:.14rem .45rem; max-width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-variant-numeric:tabular-nums; }
+  .cal-pill.income{ background:rgba(16,185,129,.15); color:#059669; }
+  .cal-pill.expense{ background:rgba(239,68,68,.12); color:#dc2626; }
+  .cal-count{ font-size:.65rem; color:var(--muted); font-weight:600; }
+  .cal-legend{ display:flex; gap:1rem; flex-wrap:wrap; margin-top:1rem; font-size:.76rem; color:var(--muted); font-weight:600; }
+
+  /* Selected-day transaction list */
+  .tx-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+  .tx-row{ display:flex; align-items:center; gap:.6rem; padding:.6rem 0; border-bottom:1px solid var(--border); font-size:.88rem; }
+  .tx-row:last-child{ border-bottom:none; }
+  .tx-main{ flex:1; min-width:0; }
+  .tx-name{ font-weight:600; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .tx-cat{ color:var(--muted); font-size:.74rem; }
+  .tx-amt{ font-weight:800; font-variant-numeric:tabular-nums; white-space:nowrap; }
+
+  /* Floating bottom navigation */
+  .bottom-nav{
+    position:fixed; left:50%; transform:translateX(-50%);
+    bottom:var(--nav-bottom);
+    z-index:50; width:min(calc(100vw - 2rem), 580px);
+    display:grid; grid-template-columns:repeat(4,1fr); gap:.35rem;
+    background:var(--header); backdrop-filter:blur(12px);
+    border:1px solid var(--border); border-radius:9999px;
+    padding:.45rem; box-shadow:0 18px 40px rgba(2,6,23,.28), 0 4px 10px rgba(2,6,23,.12);
+  }
+  .nav-btn{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:.18rem;
+    background:transparent; border:1px solid transparent; border-radius:9999px; cursor:pointer;
+    min-height:52px; padding:.55rem .25rem; color:var(--muted);
+    font-size:.68rem; font-weight:700; font-family:inherit;
+    transition:background-color .15s ease, color .15s ease, transform .15s ease;
+  }
+  .nav-btn svg{ width:21px; height:21px; }
+  .nav-btn:hover{ color:var(--text); background:var(--row-hover); }
+  .nav-btn:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
+  .nav-btn.active{ background:#059669; color:#fff; box-shadow:0 4px 12px rgba(5,150,105,.4); }
+
+  @media (max-width:640px){
+    .calendar-card{ padding:1rem; }
+    .cal-grid, .cal-weekdays{ gap:.3rem; }
+    .cal-cell{ min-height:74px; padding:.35rem; border-radius:.5rem; }
+    .cal-daynum{ font-size:.78rem; }
+    .cal-pill{ font-size:.56rem; padding:.1rem .3rem; }
+    .cal-count{ display:none; }
+    .cal-summary{ gap:.45rem; }
+    .nav-btn{ font-size:.6rem; }
+  }
+
+  /* ===== v3: language selector ===== */
+  .header-actions{ display:flex; align-items:center; gap:.55rem; flex:none; }
+  .lang-wrap{ position:relative; }
+  .lang-btn svg{ flex:none; }
+  .lang-chevron{ width:14px !important; height:14px !important; transition:transform .15s ease; }
+  .lang-btn[aria-expanded="true"] .lang-chevron{ transform:rotate(180deg); }
+  .lang-menu{
+    position:absolute; right:0; top:calc(100% + .5rem); z-index:60;
+    min-width:215px; background:var(--card); border:1px solid var(--border);
+    border-radius:.75rem; box-shadow:0 18px 40px rgba(2,6,23,.25), 0 4px 10px rgba(2,6,23,.12);
+    padding:.35rem;
+  }
+  .lang-option{
+    display:flex; align-items:center; gap:.55rem; width:100%; text-align:left; cursor:pointer;
+    background:transparent; border:none; border-radius:.5rem; padding:.6rem .65rem;
+    color:var(--text); font-family:inherit; font-size:.9rem; font-weight:600;
+  }
+  .lang-option:hover{ background:var(--row-hover); }
+  .lang-option:focus-visible{ outline:2px solid #10b981; outline-offset:-2px; }
+  .lang-option .lang-check{ width:17px; height:17px; flex:none; color:#059669; visibility:hidden; }
+  .lang-option[aria-checked="true"] .lang-check{ visibility:visible; }
+  .lang-option[aria-checked="true"]{ color:#059669; }
+  @media (max-width:560px){
+    #themeLabel{ display:none; }
+    .topbar-inner{ padding:.7rem .85rem; }
+    .app-title{ font-size:1.05rem; }
+    .app-sub{ font-size:.68rem; }
+    .logo-mark{ width:36px; height:36px; }
+    .theme-switch{ padding:.5rem .65rem; }
+  }
+
+  /* ===== v4: currency selector, sync indicator, auth ===== */
+  .auth-btn{ max-width:190px; }
+  .auth-btn #authLabel{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px; }
+  .auth-avatar{ width:22px; height:22px; border-radius:9999px; object-fit:cover; flex:none; }
+  .auth-initial{
+    width:22px; height:22px; border-radius:9999px; flex:none;
+    display:inline-flex; align-items:center; justify-content:center;
+    background:#059669; color:#fff; font-size:.72rem; font-weight:800;
+  }
+  .modal-overlay{
+    position:fixed; inset:0; z-index:80;
+    background:rgba(2,6,23,.55); backdrop-filter:blur(3px);
+    display:flex; align-items:center; justify-content:center; padding:1rem;
+  }
+  .modal-card{ width:min(94vw, 430px); max-height:92vh; max-height:calc(100dvh - 2rem); overflow-y:auto; }
+  .google-g{
+    width:20px; height:20px; border-radius:9999px; flex:none;
+    display:inline-flex; align-items:center; justify-content:center;
+    background:#fff; border:1px solid var(--border);
+    color:#4285f4; font-weight:800; font-size:.8rem;
+  }
+  .or-row{ display:flex; align-items:center; gap:.8rem; color:var(--muted); font-size:.78rem; font-weight:700; margin:1rem 0; }
+  .or-row::before, .or-row::after{ content:""; flex:1; border-top:1px solid var(--border); }
+  .auth-actions{ display:grid; grid-template-columns:1fr 1fr; gap:.6rem; margin-top:1rem; }
+  .auth-domain-hint{ margin:.65rem 0 0; text-align:center; overflow-wrap:anywhere; }
+  #authSignedOut button:disabled, #authSignedOut input:disabled{ opacity:.55; cursor:wait; transform:none !important; }
+  @media (max-width:640px){
+    .auth-btn #authLabel{ display:none; }
+    .auth-btn{ padding:.5rem .6rem; }
+  }
+
+  /* ===== v6: PDF report export + print layout ===== */
+  .export-actions{ display:flex; gap:.45rem; flex-wrap:wrap; justify-content:flex-end; }
+  .pdf-report{ display:none; }
+  .pdf-report .report-header{
+    background:#315c46; color:#fff; border-radius:10px;
+    padding:22px 24px; display:flex; justify-content:space-between; gap:20px; align-items:flex-start;
+  }
+  .pdf-report .report-kicker{ margin:0 0 5px; font-size:11px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#b9d8c2; }
+  .pdf-report h1{ margin:0; font-size:28px; line-height:1.1; letter-spacing:-.02em; }
+  .pdf-report .report-subtitle{ margin:7px 0 0; color:#dcebe0; font-size:13px; }
+  .pdf-report .report-currency{
+    flex:none; background:#fff; color:#315c46; border-radius:999px;
+    padding:7px 11px; font-size:12px; font-weight:800;
+  }
+  .pdf-report .report-meta{
+    display:grid; grid-template-columns:1fr 1.25fr 1fr; gap:14px;
+    padding:16px 2px 14px; border-bottom:1px solid #d7e2da;
+  }
+  .pdf-report .report-meta-label{ font-size:10px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#6b7b70; }
+  .pdf-report .report-meta-value{ margin-top:4px; font-size:13px; font-weight:700; color:#17251d; }
+  .pdf-report h2{ margin:22px 0 10px; font-size:16px; color:#315c46; }
+  .pdf-report .report-overview{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+  .pdf-report .report-stat{ background:#edf4ee; border:1px solid #cbdccf; border-radius:9px; padding:14px 16px; }
+  .pdf-report .report-stat-label{ font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; color:#66766b; }
+  .pdf-report .report-stat-value{ margin-top:6px; font-size:20px; font-weight:800; color:#17251d; font-variant-numeric:tabular-nums; }
+  .pdf-report .report-stat-value.positive{ color:#059669; }
+  .pdf-report .report-stat-value.negative{ color:#dc2626; }
+  .pdf-report .report-note{ margin:10px 2px 0; color:#66766b; font-size:12px; }
+  .pdf-report table{ width:100%; border-collapse:collapse; font-size:12px; }
+  .pdf-report th{ background:#486e58; color:#fff; text-align:left; padding:9px 10px; font-size:11px; letter-spacing:.03em; }
+  .pdf-report td{ padding:8px 10px; border-bottom:1px solid #dfe7e1; vertical-align:top; }
+  .pdf-report tbody tr:nth-child(even) td{ background:#f7faf8; }
+  .pdf-report .report-amount{ text-align:right; font-weight:800; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .pdf-report th.report-amount{ text-align:right; }
+  .pdf-report tfoot td{ background:#e8f2eb !important; font-weight:800; border-top:2px solid #486e58; }
+  .pdf-report .report-empty{ text-align:center; color:#66766b; padding:18px 10px !important; }
+  .pdf-report .report-footer{ margin-top:18px; padding-top:10px; border-top:1px solid #d7e2da; color:#7a8a7f; font-size:10px; display:flex; justify-content:space-between; gap:16px; }
+
+  /* ===== v8: responsive polish (top toast, mobile sizing, touch targets) ===== */
+  button{ touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
+  .topbar-inner > .row,
+  .topbar-inner > .row > div:last-child{ min-width:0; }
+  .setting-row > span,
+  .stat-box,
+  .mini-row > span,
+  .insight-row > span{ min-width:0; }
+
+  @media (min-width:768px) and (max-width:1023.98px){
+    .wb-grid, .wb-col{ gap:1.25rem; }
+    .card{ padding:1.25rem; }
+    .table-wrap{ margin:0 -1.25rem; padding:0 1.25rem; }
+  }
+
+  /* Let the Expense Log fit narrow cards instead of forcing sideways scrolling. */
+  @media (max-width:1023.98px){
+    table.log{ min-width:0; table-layout:fixed; }
+    table.log th:nth-child(1){ width:23% !important; }
+    table.log th:nth-child(3){ width:24%; }
+    table.log th:nth-child(4){ width:52px !important; }
+    table.log td:first-child{
+      white-space:normal !important;
+      font-size:.78rem !important;
+      line-height:1.35;
+    }
+    table.log td:nth-child(2){ overflow-wrap:anywhere; }
+    table.log td:nth-child(2) .badge{
+      max-width:100%; white-space:normal; line-height:1.25;
+    }
+    table.log td:last-child{ text-align:center !important; padding-inline:.25rem; }
+  }
+
+  @media (max-width:767.98px){
+    :root{
+      --nav-height:4rem;
+      --nav-bottom:calc(.55rem + var(--safe-bottom));
+      --content-bottom-space:calc(var(--nav-height) + var(--nav-bottom) + 1.75rem);
+    }
+    .toast{
+      top:calc(var(--safe-top) + 4.55rem);
+      max-width:calc(100vw - 1.5rem);
+      padding:.68rem .95rem;
+      font-size:.84rem;
+    }
+    .topbar-inner{ padding:.6rem .75rem; gap:.65rem; }
+    .header-actions{ gap:.4rem; }
+    .logo-mark{ width:38px; height:38px; border-radius:.65rem; }
+    .app-title{ font-size:1.02rem; }
+    .app-sub{
+      font-size:.66rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .theme-switch{ min-height:44px; padding:.55rem .62rem; }
+
+    .wb-shell{ padding:1rem .85rem var(--content-bottom-space); }
+    #mainGrid, .wb-col,
+    [data-active-view="calendar"] .calendar-layout{ gap:1rem; }
+    .view-head{ margin-bottom:.9rem; }
+    .view-head h2{ font-size:1.28rem; line-height:1.2; }
+    .view-head p{ font-size:.82rem; line-height:1.45; }
+
+    .card{ padding:1.05rem; border-radius:1rem; }
+    .card-title{ font-size:1rem; line-height:1.3; }
+    .card-sub{ font-size:.8rem; line-height:1.45; }
+    .remaining-amount{ font-size:clamp(2.05rem, 11vw, 2.7rem); }
+    .stat-grid{ gap:.6rem; }
+    .stat-box{ padding:.72rem .75rem; }
+    .stat-value{ font-size:.98rem; overflow-wrap:anywhere; }
+    .mini-row, .insight-row{ font-size:.82rem; }
+    .chart-wrap{ height:235px; }
+
+    /* 16px inputs prevent focus zoom on iOS while keeping controls easy to tap. */
+    .form-grid{ gap:.85rem; }
+    .field{ min-height:48px; padding:.72rem .85rem; font-size:16px; }
+    .btn-primary, .btn-secondary{ min-height:48px; }
+    .btn-ghost, .chip{ min-height:42px; }
+    .icon-btn{ width:42px; height:42px; }
+    .icon-btn.wide{ width:auto; min-height:42px; padding:0 .7rem; }
+    .lang-option{ min-height:44px; }
+
+    .table-wrap{ margin:0 -1.05rem; padding:0 1.05rem; }
+    table.log{ min-width:0; font-size:.84rem; }
+    table.log th, table.log td{ padding:.6rem .4rem; }
+    .log-actions{ gap:.4rem; margin-left:auto; }
+
+    .setting-row{ gap:.8rem; padding:.75rem 0; }
+    .setting-row > span{ flex:1 1 auto; }
+    .export-actions{ flex:0 1 10rem; }
+    .calendar-card{ padding:1.05rem; }
+    .cal-summary{ gap:.45rem; }
+    .cal-cell{ min-height:68px; }
+
+    .bottom-nav{
+      width:calc(100vw - 1rem);
+      gap:.22rem;
+      padding:.32rem;
+    }
+    .nav-btn{
+      min-height:50px;
+      padding:.42rem .12rem;
+      font-size:.61rem;
+      line-height:1.15;
+    }
+    .nav-btn svg{ width:20px; height:20px; }
+
+    .modal-overlay{ padding:.75rem; }
+    .modal-card{
+      width:min(calc(100vw - 1.5rem), 430px);
+      max-height:calc(100dvh - 1.5rem);
+      padding:1.1rem;
+    }
+  }
+
+  @media (max-width:400px){
+    .toast{ top:calc(var(--safe-top) + 4.25rem); }
+    .topbar-inner{ padding-inline:.65rem; }
+    .topbar-inner > .row{ gap:.55rem !important; }
+    .header-actions{ gap:.3rem; }
+    .logo-mark{ width:36px; height:36px; }
+    .app-title{ font-size:.95rem; }
+    .app-sub{ display:none; }
+    .theme-switch{ padding-inline:.55rem; }
+    #langCurrent{ font-size:.78rem; }
+    .lang-menu{ min-width:min(215px, calc(100vw - 1.5rem)); }
+    .wb-shell{ padding-inline:.7rem; }
+    .card{ padding:.95rem; }
+    .table-wrap{ margin:0 -.95rem; padding:0 .95rem; }
+    .stat-box{ padding:.65rem; }
+    .stat-label{ font-size:.64rem; }
+    .stat-value{ font-size:.92rem; }
+    .cal-cell{ min-height:62px; }
+    .auth-actions{ grid-template-columns:1fr; }
+  }
+
+  @media (max-width:340px){
+    #langCurrent, .lang-chevron{ display:none; }
+    .lang-btn{ width:44px; justify-content:center; padding-inline:0; }
+    .setting-row{ flex-direction:column; align-items:stretch; }
+    .setting-row > button{ align-self:flex-start; }
+    .export-actions{
+      display:grid; grid-template-columns:1fr 1fr;
+      width:100%; flex:none;
+    }
+    .export-actions .chip{ width:100%; }
+    .stat-grid{ grid-template-columns:1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .toast, .nav-btn, .theme-switch,
+    .btn-primary, .btn-secondary, .cal-cell{ transition:none; }
+  }
+
+  @media print{
+    @page{ size:A4; margin:12mm; }
+    html, body{ background:#fff !important; }
+    body.report-printing > *:not(#pdfReport){ display:none !important; }
+    body.report-printing #pdfReport{
+      display:block !important; color:#17251d; background:#fff;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      -webkit-print-color-adjust:exact; print-color-adjust:exact;
+    }
+    .pdf-report thead{ display:table-header-group; }
+    .pdf-report tr{ break-inside:avoid; page-break-inside:avoid; }
+    .pdf-report .report-overview, .pdf-report .report-header{ break-inside:avoid; }
+  }
+</style>
+</head>
+
+<body class="bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
+
+<!-- ================= HEADER ================= -->
+<header class="topbar">
+  <div class="topbar-inner">
+    <!-- Left: logo + title -->
+    <div class="row" style="gap:.8rem;">
+      <div class="logo-mark" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+      </div>
+      <div>
+        <h1 class="app-title">WeeklyBudget</h1>
+        <p class="app-sub" id="weekLabel">This week</p>
+      </div>
+    </div>
+
+    <!-- Right: language selector, theme toggle, login/profile -->
+    <div class="header-actions">
+    <div class="lang-wrap">
+      <button id="langBtn" type="button" class="theme-switch lang-btn" aria-haspopup="true" aria-expanded="false" aria-label="Select language" data-i18n-aria="lang.aria">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+        <span id="langCurrent">EN</span>
+        <svg class="lang-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <div id="langMenu" class="lang-menu hidden" role="menu" aria-label="Select language" data-i18n-aria="lang.aria">
+        <button type="button" class="lang-option" role="menuitemradio" aria-checked="true" data-lang="en">
+          <svg class="lang-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <span>English</span>
+        </button>
+        <button type="button" class="lang-option" role="menuitemradio" aria-checked="false" data-lang="zh-Hant">
+          <svg class="lang-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <span>繁體中文</span>
+        </button>
+        <button type="button" class="lang-option" role="menuitemradio" aria-checked="false" data-lang="zh-Hans">
+          <svg class="lang-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <span>简体中文</span>
+        </button>
+      </div>
+    </div>
+    <button id="themeToggle" type="button" class="theme-switch" aria-label="Toggle colour theme" aria-pressed="false">
+      <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+      <svg id="iconSun" class="hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      <span id="themeLabel">Dark</span>
+    </button>
+    <button id="authBtn" type="button" class="theme-switch auth-btn" aria-label="Account and sync" data-i18n-aria="auth.profileAria">
+      <img id="authAvatar" class="auth-avatar hidden" alt="" />
+      <span id="authInitial" class="auth-initial hidden" aria-hidden="true">U</span>
+      <svg id="authIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <span id="authLabel">Log in</span>
+    </button>
+    </div>
+  </div>
+</header>
+
+<main class="wb-shell" id="appMain" data-active-view="dashboard">
+  <div class="view-head">
+    <h2 id="viewTitle">Dashboard</h2>
+    <p id="viewSubtitle">Add expenses, track remaining funds, and review your log.</p>
+  </div>
+  <div class="wb-grid lg:grid-cols-[320px_minmax(0,1.4fr)_360px] gap-6" id="mainGrid">
+
+    <!-- ============ LEFT COLUMN ============ -->
+    <div class="wb-col" id="leftCol">
+
+      <!-- Card 1: Remaining Funds -->
+      <section class="card view-card" data-view="dashboard" aria-labelledby="remainingTitle">
+        <div class="row between wrap-flex" style="gap:.5rem;">
+          <span class="eyebrow" id="remainingTitle" data-i18n="rem.title">Remaining Funds</span>
+          <span class="pill" id="statusPill">On track</span>
+        </div>
+
+        <p class="remaining-amount" id="remainingAmount">$0.00</p>
+        <p class="card-sub" id="remainingHint" style="margin-top:0;">Set your weekly income to get started.</p>
+
+        <div style="margin-top:1.1rem;">
+          <div class="progress-track" role="progressbar" aria-label="Percent of income spent" data-i18n-aria="rem.progressAria" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="spentProgressTrack">
+            <div class="progress-bar" id="spentProgress"></div>
+          </div>
+          <div class="row between" style="margin-top:.45rem; font-size:.78rem; color:var(--muted);">
+            <span id="progressSpentLabel">Spent $0.00</span>
+            <span id="progressPct">0%</span>
+          </div>
+        </div>
+
+        <div class="stat-grid" style="margin-top:1rem;">
+          <div class="stat-box">
+            <div class="stat-label" data-i18n="rem.income">Total Weekly Income</div>
+            <div class="stat-value" id="statIncome">$0.00</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label" data-i18n="rem.spent">Total Spent</div>
+            <div class="stat-value" id="statSpent">$0.00</div>
+          </div>
+        </div>
+
+        <hr class="divider" />
+        <div class="mini-row"><span data-i18n="rem.safePerDay">Safe to spend / day</span><span id="safePerDay">$0.00</span></div>
+        <div class="mini-row"><span data-i18n="rem.daysLeft">Days left this week</span><span id="daysLeft">—</span></div>
+        <div style="margin-top:.8rem;">
+          <button type="button" class="btn-secondary" data-goto-view="settings" data-i18n="rem.adjust">Adjust income in Budget Settings</button>
+        </div>
+      </section>
+
+      <!-- Card 2: Add Weekly Income -->
+      <section class="card view-card" data-view="settings" aria-labelledby="incomeTitle">
+        <h2 class="card-title" id="incomeTitle" data-i18n="inc.title">Add Weekly Income</h2>
+        <p class="card-sub" data-i18n="inc.sub">Your starting budget for this week.</p>
+
+        <form id="incomeForm" novalidate style="margin-top:1rem;">
+          <label class="label" for="incomeInput" data-i18n="inc.label">Weekly income</label>
+          <div class="money-wrap">
+            <span class="money-sign">$</span>
+            <input class="field" id="incomeInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="1,250.00" autocomplete="off" />
+          </div>
+          <div style="margin-top:1rem;">
+            <label class="label" for="incomeDateInput"><span data-i18n="inc.dateLabel">Income date</span> <span style="color:var(--muted); font-weight:500;" data-i18n="inc.dateHint">(shown on the calendar)</span></label>
+            <input class="field" id="incomeDateInput" type="date" />
+          </div>
+          <p class="form-error hidden" id="incomeError" role="alert"></p>
+          <div style="margin-top:.9rem;">
+            <button class="btn-primary" type="submit" data-i18n="inc.update">Update Income</button>
+          </div>
+        </form>
+
+        <div class="row wrap-flex" style="gap:.45rem; margin-top:.9rem;" aria-label="Quick income amounts">
+          <button type="button" class="chip" data-income="500">$500</button>
+          <button type="button" class="chip" data-income="1000">$1,000</button>
+          <button type="button" class="chip" data-income="1250">$1,250</button>
+          <button type="button" class="chip" data-income="2500">$2,500</button>
+        </div>
+
+        <hr class="divider" />
+        <button type="button" class="btn-ghost" id="resetBtn" style="width:100%;" data-i18n="inc.reset">Reset week (clear income &amp; expenses)</button>
+        <p class="helper" data-i18n="inc.helper">Saved automatically in your browser — your data is still here after a refresh.</p>
+      </section>
+      <!-- Budget Settings: data & preferences -->
+      <section class="card view-card" data-view="settings" aria-labelledby="settingsTitle">
+        <h2 class="card-title" id="settingsTitle" data-i18n="set.title">Data &amp; Preferences</h2>
+        <p class="card-sub" data-i18n="set.sub">Everything is saved automatically in this browser.</p>
+        <div style="margin-top:.6rem;">
+          <div class="setting-row">
+            <span><span class="s-label" data-i18n="set.appearance">Appearance</span><span class="s-hint" id="settingsThemeLabel">Light mode is on</span></span>
+            <button type="button" class="chip" id="settingsThemeBtn" data-i18n="set.themeBtn">Toggle theme</button>
+          </div>
+          <div class="setting-row">
+            <span><span class="s-label" data-i18n="set.export">Exports &amp; reports</span><span class="s-hint" data-i18n="set.exportHint">Download a CSV file or a formatted PDF summary</span></span>
+            <div class="export-actions">
+              <button type="button" class="chip" id="settingsExportBtn" data-i18n="set.exportBtn">Download CSV</button>
+              <button type="button" class="chip" id="settingsPdfBtn" data-i18n="report.downloadBtn">Download PDF Report</button>
+            </div>
+          </div>
+          <div class="setting-row">
+            <span><span class="s-label" data-i18n="set.sample">Sample data</span><span class="s-hint" data-i18n="set.sampleHint">Replace the log with demo transactions</span></span>
+            <button type="button" class="chip" id="settingsSampleBtn" data-i18n="set.sampleBtn">Load sample</button>
+          </div>
+          <div class="setting-row">
+            <span><span class="s-label" data-i18n="set.clear">Clear expenses</span><span class="s-hint" data-i18n="set.clearHint">Remove every expense (income is kept)</span></span>
+            <button type="button" class="btn-ghost" id="settingsClearBtn" data-i18n="common.clearAll">Clear all</button>
+          </div>
+        </div>
+        <hr class="divider" />
+        <p class="helper" style="margin:0;" data-i18n="set.note" data-i18n-full="1">Stored under the same localStorage key as before (<span style="font-weight:700;">weeklyBudget.v1</span>), so existing budgets carry over unchanged. Use “Reset week” in the income card to clear income and expenses together.</p>
+      </section>
+    </div>
+
+    <!-- ============ MIDDLE COLUMN ============ -->
+    <div class="wb-col" id="middleCol">
+
+      <!-- Card 3: Add New Expense -->
+      <section class="card view-card" data-view="dashboard" aria-labelledby="expenseTitle">
+        <h2 class="card-title" id="expenseTitle" data-i18n="exp.title">Add New Expense</h2>
+        <p class="card-sub" data-i18n="exp.sub">Amount is required — description is optional.</p>
+
+        <form id="expenseForm" novalidate style="margin-top:1rem;">
+          <div class="form-grid">
+            <div>
+              <label class="label" for="expAmount" data-i18n="common.amountReq">Amount *</label>
+              <div class="money-wrap">
+                <span class="money-sign">$</span>
+                <input class="field" id="expAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" autocomplete="off" />
+              </div>
+            </div>
+            <div>
+              <label class="label" for="expDate" data-i18n="common.date">Date</label>
+              <input class="field" id="expDate" type="date" />
+            </div>
+            <div class="span-2">
+              <label class="label" for="expDesc"><span data-i18n="common.description">Description</span> <span style="color:var(--muted); font-weight:500;" data-i18n="common.optional">(optional)</span></label>
+              <input class="field" id="expDesc" type="text" maxlength="80" placeholder="e.g. Grocery run at the market" data-i18n-ph="exp.descPh" autocomplete="off" />
+            </div>
+            <div class="span-2">
+              <label class="label" for="expCategory" data-i18n="common.category">Category</label>
+              <select class="field" id="expCategory">
+                <option value="Food &amp; Dining">Food &amp; Dining</option>
+                <option value="Groceries">Groceries</option>
+                <option value="Transport">Transport</option>
+                <option value="Bills &amp; Utilities">Bills &amp; Utilities</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Entertainment">Entertainment</option>
+                <option value="Health">Health</option>
+                <option value="Other" selected>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <p class="form-error hidden" id="expenseError" role="alert"></p>
+
+          <div style="margin-top:1rem;">
+            <button class="btn-primary" type="submit" data-i18n="common.addExpense">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+              Add Expense
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Card 4: Expense Log -->
+      <section class="card view-card" data-view="dashboard" aria-labelledby="logTitle">
+        <div class="row between wrap-flex" style="gap:.6rem;">
+          <div class="row" style="gap:.55rem;">
+            <h2 class="card-title" id="logTitle" data-i18n="log.title">Expense Log</h2>
+            <span class="count-badge" id="logCount">0 items</span>
+          </div>
+          <div class="log-actions">
+            <button type="button" class="icon-btn wide" id="exportBtn" title="Download expenses as CSV" data-i18n-title="log.csvTitle">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              CSV
+            </button>
+            <button type="button" class="icon-btn wide" id="pdfExportBtn" title="Download PDF report" data-i18n-title="report.downloadTitle" aria-label="Download PDF report" data-i18n-aria="report.downloadTitle">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="m14 2 6 5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+              PDF
+            </button>
+            <button type="button" class="btn-ghost" id="clearBtn" data-i18n="common.clearAll">Clear all</button>
+          </div>
+        </div>
+
+        <div class="table-wrap" style="margin-top:.6rem;">
+          <table class="log" aria-label="Expenses" data-i18n-aria="log.tableAria">
+            <thead>
+              <tr>
+                <th scope="col" style="width:110px;" data-i18n="common.date">Date</th>
+                <th scope="col" data-i18n="common.description">Description</th>
+                <th scope="col" class="amt" data-i18n="common.amount">Amount</th>
+                <th scope="col" style="width:48px;"><span class="sr-only" data-i18n="log.actions">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody id="expenseTbody"></tbody>
+          </table>
+        </div>
+
+        <div class="empty-state hidden" id="emptyState">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
+          <p style="margin:0 0 .8rem; font-weight:600;" data-i18n="log.emptyTitle">No expenses yet</p>
+          <p style="margin:0 0 1rem; font-size:.85rem;" data-i18n="log.emptyText">Add your first expense above, or load sample data to see how it works.</p>
+          <button type="button" class="chip" id="sampleBtn" data-i18n="log.sampleBtn">Load sample data</button>
+        </div>
+
+        <hr class="divider" />
+        <div class="row between" style="font-size:.92rem;">
+          <span style="color:var(--muted); font-weight:600;" data-i18n="log.total">Total spent</span>
+          <span style="font-weight:800; font-variant-numeric:tabular-nums;" id="logTotal">$0.00</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- ============ RIGHT COLUMN ============ -->
+    <aside class="wb-col wb-col-right" id="rightCol">
+
+      <!-- Card 5: Weekly Spending Breakdown -->
+      <section class="card view-card" data-view="charts" aria-labelledby="chartTitle">
+        <div class="row between wrap-flex" style="gap:.5rem;">
+          <div>
+            <h2 class="card-title" id="chartTitle" data-i18n="chart.title">Weekly Spending Breakdown</h2>
+            <p class="card-sub" data-i18n="chart.sub">By category</p>
+          </div>
+          <span class="pill" id="chartTotal" style="background:var(--bg); border:1px solid var(--border); color:var(--text);">$0.00</span>
+        </div>
+
+        <div class="chart-wrap" style="margin-top:1rem;">
+          <canvas id="spendingChart" aria-label="Doughnut chart of spending by category" data-i18n-aria="chart.aria" role="img"></canvas>
+        </div>
+        <p class="helper hidden" id="chartEmpty" style="text-align:center;" data-i18n="chart.empty">Nothing to chart yet — add an expense and your breakdown will appear here.</p>
+
+        <ul class="legend" id="chartLegend"></ul>
+      </section>
+
+      <!-- Bonus: quick insights (balances the right column) -->
+      <section class="card view-card" data-view="charts" aria-labelledby="insightsTitle">
+        <h2 class="card-title" id="insightsTitle" data-i18n="ins.title">Weekly Insights</h2>
+        <div style="margin-top:.4rem;">
+          <div class="insight-row"><span class="k" data-i18n="ins.top">Top category</span><span class="v" id="insTopCat">—</span></div>
+          <div class="insight-row"><span class="k" data-i18n="ins.largest">Largest expense</span><span class="v" id="insLargest">—</span></div>
+          <div class="insight-row"><span class="k" data-i18n="ins.avg">Avg. expense</span><span class="v" id="insAvg">—</span></div>
+          <div class="insight-row"><span class="k" data-i18n="ins.count">Transactions</span><span class="v" id="insCount">0</span></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+
+  <!-- ============ EXPENSE CALENDAR VIEW ============ -->
+  <div class="calendar-layout" id="calendarView">
+    <section class="card calendar-card" aria-labelledby="calTitle">
+      <div class="row between wrap-flex" style="gap:.6rem;">
+        <div>
+          <h2 class="card-title" id="calTitle">Calendar</h2>
+          <p class="card-sub" data-i18n="cal.sub">Daily income and expense totals — select any date.</p>
+        </div>
+        <div class="cal-nav">
+          <button type="button" class="icon-btn wide" id="calPrev" aria-label="Previous month" data-i18n-aria="cal.prev">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <button type="button" class="chip" id="calToday" data-i18n="date.today">Today</button>
+          <button type="button" class="icon-btn wide" id="calNext" aria-label="Next month" data-i18n-aria="cal.next">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="cal-summary">
+        <div class="stat-box"><div class="stat-label" data-i18n="cal.monthIncome">Month income</div><div class="stat-value" id="calMonthIncome" style="color:#059669;">$0.00</div></div>
+        <div class="stat-box"><div class="stat-label" data-i18n="cal.monthExpenses">Month expenses</div><div class="stat-value" id="calMonthExpenses" style="color:#dc2626;">$0.00</div></div>
+        <div class="stat-box"><div class="stat-label" data-i18n="cal.monthNet">Month net</div><div class="stat-value" id="calMonthNet">$0.00</div></div>
+      </div>
+
+      <div class="cal-weekdays" aria-hidden="true">
+        <span data-i18n="wd.sun">Sun</span><span data-i18n="wd.mon">Mon</span><span data-i18n="wd.tue">Tue</span><span data-i18n="wd.wed">Wed</span><span data-i18n="wd.thu">Thu</span><span data-i18n="wd.fri">Fri</span><span data-i18n="wd.sat">Sat</span>
+      </div>
+      <div class="cal-grid" id="calGrid" role="group" aria-label="Calendar days" data-i18n-aria="cal.daysAria"></div>
+
+      <div class="cal-legend">
+        <span data-i18n="cal.legendIncome"><span class="cal-pill income">+$1,500</span> income that day</span>
+        <span data-i18n="cal.legendExpense"><span class="cal-pill expense">-$420</span> expenses that day</span>
+        <span data-i18n="cal.legendHint">Select a date to view or add transactions.</span>
+      </div>
+    </section>
+
+    <section class="card day-card" aria-labelledby="dayTitle">
+      <span class="eyebrow" data-i18n="day.eyebrow">Selected day</span>
+      <h2 class="card-title" id="dayTitle" style="margin-top:.3rem;">Today</h2>
+      <p class="card-sub" id="daySub">Transactions for this date</p>
+
+      <div class="stat-grid" style="margin-top:1rem;">
+        <div class="stat-box"><div class="stat-label" data-i18n="day.income">Income</div><div class="stat-value" id="dayIncome" style="color:#059669;">$0.00</div></div>
+        <div class="stat-box"><div class="stat-label" data-i18n="day.expenses">Expenses</div><div class="stat-value" id="dayExpenses" style="color:#dc2626;">$0.00</div></div>
+      </div>
+      <div class="mini-row" style="margin-top:.4rem;"><span data-i18n="day.net">Net for the day</span><span id="dayNet">$0.00</span></div>
+
+      <hr class="divider" />
+      <h3 class="subhead" data-i18n="day.tx">Transactions</h3>
+      <ul class="tx-list" id="dayTxList"></ul>
+      <p class="helper hidden" id="dayEmpty" style="margin:0;" data-i18n="day.empty">No transactions on this date yet.</p>
+
+      <hr class="divider" />
+      <h3 class="subhead" data-i18n="day.addTitle">Add expense for this day</h3>
+      <form id="calExpenseForm" novalidate>
+        <label class="label" for="calExpAmount" data-i18n="common.amountReq">Amount *</label>
+        <div class="money-wrap">
+          <span class="money-sign">$</span>
+          <input class="field" id="calExpAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" autocomplete="off" />
+        </div>
+        <div style="margin-top:.8rem;">
+          <label class="label" for="calExpDesc"><span data-i18n="common.description">Description</span> <span style="color:var(--muted); font-weight:500;" data-i18n="common.optional">(optional)</span></label>
+          <input class="field" id="calExpDesc" type="text" maxlength="80" placeholder="e.g. Coffee" data-i18n-ph="day.descPh" autocomplete="off" />
+        </div>
+        <div style="margin-top:.8rem;">
+          <label class="label" for="calExpCategory" data-i18n="common.category">Category</label>
+          <select class="field" id="calExpCategory">
+            <option value="Food &amp; Dining">Food &amp; Dining</option>
+            <option value="Groceries">Groceries</option>
+            <option value="Transport">Transport</option>
+            <option value="Bills &amp; Utilities">Bills &amp; Utilities</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Health">Health</option>
+            <option value="Other" selected>Other</option>
+          </select>
+        </div>
+        <p class="form-error hidden" id="calExpenseError" role="alert"></p>
+        <div style="margin-top:.9rem;">
+          <button class="btn-primary" type="submit" data-i18n="common.addExpense">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Add Expense
+          </button>
+        </div>
+      </form>
+
+      <hr class="divider" />
+      <h3 class="subhead" data-i18n="day.incTitle">Weekly income for this day</h3>
+      <form id="calIncomeForm" novalidate>
+        <label class="label" for="calIncomeInput" data-i18n="day.incLabel">Income amount</label>
+        <div class="money-wrap">
+          <span class="money-sign">$</span>
+          <input class="field" id="calIncomeInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="1,250.00" autocomplete="off" />
+        </div>
+        <p class="form-error hidden" id="calIncomeError" role="alert"></p>
+        <div style="margin-top:.9rem;">
+          <button class="btn-secondary" type="submit" data-i18n="day.incBtn">Save income on this date</button>
+        </div>
+        <p class="helper" data-i18n="day.incHelper">Sets your weekly income total and places it on the selected date (same as Budget Settings).</p>
+      </form>
+    </section>
+  </div>
+
+  <footer style="text-align:center; color:var(--muted); font-size:.78rem; margin-top:2rem;" data-i18n="footer.text">
+    WeeklyBudget · Your data never leaves this browser (stored in localStorage).
+  </footer>
+</main>
+
+<!-- Print-only PDF report (populated on demand; hidden on screen) -->
+<section id="pdfReport" class="pdf-report" aria-hidden="true"></section>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Floating bottom navigation: switches the main view -->
+<nav class="bottom-nav" aria-label="Main views" data-i18n-aria="nav.aria">
+  <button type="button" class="nav-btn active" data-view-target="dashboard" aria-label="Dashboard and add expense" data-i18n-aria="nav.dashboardAria" aria-current="page">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+    <span data-i18n="nav.dashboard">Dashboard</span>
+  </button>
+  <button type="button" class="nav-btn" data-view-target="charts" aria-label="Charts and analytics" data-i18n-aria="nav.chartsAria">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
+    <span data-i18n="nav.charts">Charts</span>
+  </button>
+  <button type="button" class="nav-btn" data-view-target="calendar" aria-label="Expense calendar" data-i18n-aria="nav.calendarAria">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>
+    <span data-i18n="nav.calendar">Calendar</span>
+  </button>
+  <button type="button" class="nav-btn" data-view-target="settings" aria-label="Budget settings" data-i18n-aria="nav.settingsAria">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></svg>
+    <span data-i18n="nav.settings">Settings</span>
+  </button>
+</nav>
+
+<!-- Auth modal: Google / email sign-in for cloud sync -->
+<div id="authModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+  <div class="card modal-card">
+    <div class="row between" style="align-items:flex-start; gap:1rem;">
+      <div>
+        <h2 class="card-title" id="authTitle" data-i18n="auth.title">Sync your budget</h2>
+        <p class="card-sub" data-i18n="auth.sub">Log in to back up and sync your budget across devices. Without an account everything stays in this browser.</p>
+      </div>
+      <button type="button" class="icon-btn" id="authClose" aria-label="Close" data-i18n-aria="auth.close" style="border-color:var(--border);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+
+    <div id="authSignedOut" style="margin-top:1.1rem;">
+      <button type="button" class="btn-secondary" id="googleBtn" data-i18n="auth.google"><span class="google-g" aria-hidden="true">G</span>Continue with Google</button>
+      <p class="helper auth-domain-hint" id="authDomainHint"></p>
+      <div class="or-row"><span data-i18n="auth.or">or</span></div>
+      <form id="emailAuthForm" novalidate>
+        <label class="label" for="authEmail" data-i18n="auth.email">Email</label>
+        <input class="field" id="authEmail" type="email" placeholder="you@example.com" autocomplete="email" />
+        <div style="margin-top:.85rem;">
+          <label class="label" for="authPassword" data-i18n="auth.password">Password</label>
+          <input class="field" id="authPassword" type="password" placeholder="Password" data-i18n-ph="auth.passPh" autocomplete="current-password" />
+        </div>
+        <p class="form-error hidden" id="authError" role="alert"></p>
+        <div class="auth-actions">
+          <button type="submit" class="btn-primary" id="signInBtn" data-i18n="auth.signin">Log in</button>
+          <button type="button" class="btn-secondary" id="signUpBtn" data-i18n="auth.signup">Create account</button>
+        </div>
+      </form>
+    </div>
+
+    <div id="authSignedIn" class="hidden" style="margin-top:1.1rem;">
+      <p class="helper" style="margin:0;" data-i18n="auth.signedInAs">Signed in as</p>
+      <p id="profileName" style="margin:.35rem 0 0; font-weight:800; font-size:1.05rem;">—</p>
+      <p id="profileEmail" style="margin:.15rem 0 0; color:var(--muted); font-size:.86rem;">—</p>
+      <div class="auth-actions">
+        <button type="button" class="btn-primary" id="syncNowBtn" data-i18n="auth.syncNow">Sync now</button>
+        <button type="button" class="btn-ghost" id="signOutBtn" data-i18n="auth.logout" style="width:100%;">Log out</button>
+      </div>
+    </div>
+  </div>
+</div>
+<noscript><p style="text-align:center; padding:1rem;">WeeklyBudget needs JavaScript enabled to run.</p></noscript>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     1. CONSTANTS, HELPERS, SAFE STORAGE
+  ============================================================ */
+  var STORAGE_KEY = 'weeklyBudget.v1';
+  var THEME_KEY = 'weeklyBudget.theme';
+  var VIEW_KEY = 'weeklyBudget.view';
+  var LANG_KEY = 'weeklyBudget.lang';
+
+  // Currency is locked to HKD, always displayed with a clean "$"
+  // (e.g. $1,250.00) — no currency codes or doubled labels anywhere.
+  function fmt(n) {
+    var v = Number(n) || 0;
+    var locale = 'en-HK';
+    try { locale = LOCALE(); } catch (e) { /* i18n not ready yet */ }
+    return (v < 0 ? '-$' : '$') + Math.abs(v).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function round2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
+
+  // localStorage can throw in some sandboxed/private contexts — wrap it
+  // with an in-memory fallback so the app never crashes.
+  var memoryStore = {};
+  var storage = {
+    get: function (k) { try { return window.localStorage.getItem(k); } catch (e) { return memoryStore.hasOwnProperty(k) ? memoryStore[k] : null; } },
+    set: function (k, v) { try { window.localStorage.setItem(k, v); } catch (e) { memoryStore[k] = v; } },
+    remove: function (k) { try { window.localStorage.removeItem(k); } catch (e) { delete memoryStore[k]; } }
+  };
+
+
+
+  // Currency is fixed to HKD ("$" in fmt above). Drop any obsolete
+  // currency preference saved by the earlier selector.
+  storage.remove('weeklyBudget.currency');
+
+  /* ---------- i18n: language state + dictionary ----------
+     UI language only — stored data (category keys, descriptions) is
+     never translated, so budgets stay identical across languages. */
+  var LOCALES = { 'en': 'en-US', 'zh-Hant': 'zh-Hant-HK', 'zh-Hans': 'zh-Hans-CN' };
+  var LANG_SHORT = { 'en': 'EN', 'zh-Hant': '繁體', 'zh-Hans': '简体' };
+  var TRANSLATIONS = {
+    en: {
+      'doc.title': 'WeeklyBudget — Weekly Budget Tracker',
+      'week.range': 'Week of {start} – {end}, {year}',
+      'date.today': 'Today',
+      'date.yesterday': 'Yesterday',
+      'theme.dark': 'Dark',
+      'theme.light': 'Light',
+      'theme.toLight': 'Switch to light mode',
+      'theme.toDark': 'Switch to dark mode',
+      'theme.hintDark': 'Dark mode is on',
+      'theme.hintLight': 'Light mode is on',
+      'lang.aria': 'Select language',
+      'nav.aria': 'Main views',
+      'nav.dashboard': 'Dashboard',
+      'nav.charts': 'Charts',
+      'nav.calendar': 'Calendar',
+      'nav.settings': 'Settings',
+      'nav.dashboardAria': 'Dashboard and add expense',
+      'nav.chartsAria': 'Charts and analytics',
+      'nav.calendarAria': 'Expense calendar',
+      'nav.settingsAria': 'Budget settings',
+      'view.dashboard.title': 'Dashboard',
+      'view.dashboard.sub': 'Add expenses, track remaining funds, and review your log.',
+      'view.charts.title': 'Charts & Analytics',
+      'view.charts.sub': "See where this week's money is going.",
+      'view.calendar.title': 'Expense Calendar',
+      'view.calendar.sub': 'Browse income and expenses day by day. Select a date to view or add transactions.',
+      'view.settings.title': 'Budget Settings',
+      'view.settings.sub': 'Set your weekly income and manage your data.',
+      'rem.title': 'Remaining Funds',
+      'rem.progressAria': 'Percent of income spent',
+      'rem.spentLabel': 'Spent {amount}',
+      'rem.pctOfIncome': '{pct}% of income',
+      'rem.income': 'Total Weekly Income',
+      'rem.spent': 'Total Spent',
+      'rem.safePerDay': 'Safe to spend / day',
+      'rem.daysLeft': 'Days left this week',
+      'rem.adjust': 'Adjust income in Budget Settings',
+      'status.getStarted': 'Get started',
+      'status.onTrack': 'On track',
+      'status.careful': 'Careful',
+      'status.overspent': 'Overspent',
+      'hint.setIncome': 'Set your weekly income to get started.',
+      'hint.over': 'You are {amount} over budget this week.',
+      'hint.left': '{pct}% of your income is still available.',
+      'days.one': '{n} day',
+      'days.many': '{n} days',
+      'inc.title': 'Add Weekly Income',
+      'inc.sub': 'Your starting budget for this week.',
+      'inc.label': 'Weekly income',
+      'inc.dateLabel': 'Income date',
+      'inc.dateHint': '(shown on the calendar)',
+      'inc.update': 'Update Income',
+      'inc.reset': 'Reset week (clear income & expenses)',
+      'inc.helper': 'Saved automatically in your browser — your data is still here after a refresh.',
+      'inc.error': 'Please enter a valid income of 0 or more.',
+      'inc.toastSet': 'Weekly income set to {amount} on {date}.',
+      'inc.toastCleared': 'Weekly income cleared.',
+      'inc.resetToast': 'Week reset. Start fresh by adding your income.',
+      'inc.confirmReset': 'Click again to reset everything',
+      'set.title': 'Data & Preferences',
+      'set.sub': 'Everything is saved automatically in this browser.',
+      'set.appearance': 'Appearance',
+      'set.themeBtn': 'Toggle theme',
+      'set.export': 'Exports & reports',
+      'set.exportHint': 'Download a CSV file or a formatted PDF summary',
+      'set.exportBtn': 'Download CSV',
+      'set.sample': 'Sample data',
+      'set.sampleHint': 'Replace the log with demo transactions',
+      'set.sampleBtn': 'Load sample',
+      'set.clear': 'Clear expenses',
+      'set.clearHint': 'Remove every expense (income is kept)',
+      'set.note': 'Stored under the same localStorage key as before (weeklyBudget.v1), so existing budgets carry over unchanged. Use “Reset week” in the income card to clear income and expenses together.',
+      'common.clearAll': 'Clear all',
+      'common.amountReq': 'Amount *',
+      'common.date': 'Date',
+      'common.description': 'Description',
+      'common.optional': '(optional)',
+      'common.category': 'Category',
+      'common.addExpense': 'Add Expense',
+      'common.delete': 'Delete',
+      'common.amount': 'Amount',
+      'common.confirm': 'Click again to confirm',
+      'exp.title': 'Add New Expense',
+      'exp.sub': 'Amount is required — description is optional.',
+      'exp.descPh': 'e.g. Grocery run at the market',
+      'exp.error': 'Please enter an amount greater than 0.',
+      'exp.toastAdded': 'Added {amount} — remaining {remaining}.',
+      'exp.toastAddedOn': 'Added {amount} on {date} — remaining {remaining}.',
+      'log.title': 'Expense Log',
+      'log.itemsOne': '{n} item',
+      'log.itemsMany': '{n} items',
+      'log.csvTitle': 'Download expenses as CSV',
+      'log.tableAria': 'Expenses',
+      'log.actions': 'Actions',
+      'log.emptyTitle': 'No expenses yet',
+      'log.emptyText': 'Add your first expense above, or load sample data to see how it works.',
+      'log.sampleBtn': 'Load sample data',
+      'log.total': 'Total spent',
+      'log.deleteAria': 'Delete {name}',
+      'log.toastDeleted': 'Deleted {amount} expense.',
+      'log.noClear': 'There are no expenses to clear.',
+      'log.cleared': 'All expenses cleared.',
+      'log.sampleToast': 'Sample data loaded.',
+      'log.noExport': 'No expenses to export yet.',
+      'log.exported': 'Expenses exported as CSV.',
+      'chart.title': 'Weekly Spending Breakdown',
+      'chart.sub': 'By category',
+      'chart.aria': 'Doughnut chart of spending by category',
+      'chart.empty': 'Nothing to chart yet — add an expense and your breakdown will appear here.',
+      'chart.noSpending': 'No spending yet',
+      'chart.center': 'TOTAL SPENT',
+      'ins.title': 'Weekly Insights',
+      'ins.top': 'Top category',
+      'ins.largest': 'Largest expense',
+      'ins.avg': 'Avg. expense',
+      'ins.count': 'Transactions',
+      'cal.sub': 'Daily income and expense totals — select any date.',
+      'cal.prev': 'Previous month',
+      'cal.next': 'Next month',
+      'cal.monthIncome': 'Month income',
+      'cal.monthExpenses': 'Month expenses',
+      'cal.monthNet': 'Month net',
+      'cal.daysAria': 'Calendar days',
+      'cal.wordIncome': 'income',
+      'cal.wordExpenses': 'expenses',
+      'cal.legendIncome': 'income that day',
+      'cal.legendExpense': 'expenses that day',
+      'cal.legendHint': 'Select a date to view or add transactions.',
+      'cal.itemsMany': '{n} items',
+      'wd.sun': 'Sun',
+      'wd.mon': 'Mon',
+      'wd.tue': 'Tue',
+      'wd.wed': 'Wed',
+      'wd.thu': 'Thu',
+      'wd.fri': 'Fri',
+      'wd.sat': 'Sat',
+      'day.eyebrow': 'Selected day',
+      'day.income': 'Income',
+      'day.expenses': 'Expenses',
+      'day.net': 'Net for the day',
+      'day.tx': 'Transactions',
+      'day.empty': 'No transactions on this date yet.',
+      'day.incomeName': 'Weekly income',
+      'day.incomeCat': 'Income · set in Budget Settings',
+      'day.addTitle': 'Add expense for this day',
+      'day.descPh': 'e.g. Coffee',
+      'day.incTitle': 'Weekly income for this day',
+      'day.incLabel': 'Income amount',
+      'day.incBtn': 'Save income on this date',
+      'day.incHelper': 'Sets your weekly income total and places it on the selected date (same as Budget Settings).',
+      'footer.text': 'WeeklyBudget · Your data never leaves this browser (stored in localStorage).',
+      'welcome.toast': 'Welcome — sample data is loaded so you can explore. Use "Reset week" to start clean.',
+      'sync.pulled': 'Budget loaded from the cloud.',
+      'sync.nowToast': 'Synced to the cloud.',
+      'auth.login': 'Log in',
+      'auth.logout': 'Log out',
+      'auth.title': 'Sync your budget',
+      'auth.sub': 'Log in to back up and sync your budget across devices. Without an account everything stays in this browser.',
+      'auth.google': 'Continue with Google',
+      'auth.or': 'or',
+      'auth.email': 'Email',
+      'auth.password': 'Password',
+      'auth.passPh': 'Password',
+      'auth.signin': 'Log in',
+      'auth.signup': 'Create account',
+      'auth.signedInAs': 'Signed in as',
+      'auth.syncNow': 'Sync now',
+      'auth.close': 'Close',
+      'auth.welcome': 'Welcome back, {name}. Your budget is syncing.',
+      'auth.signedOut': 'Signed out. Your data stays in this browser.',
+      'auth.unavailable': 'Cloud sign-in is unavailable right now (check your connection). Your data is still saved locally.',
+      'auth.errInvalid': 'Email or password is incorrect.',
+      'auth.errInUse': 'An account with this email already exists. Try logging in.',
+      'auth.errWeak': 'Password should be at least 6 characters.',
+      'auth.errEmail': 'Please enter a valid email address.',
+      'auth.errPopup': 'Sign-in popup was closed before finishing.',
+      'auth.errDomain': 'This address is not authorized for Firebase sign-in: {domain}. Add the hostname (without https:// or a port) in Firebase Console > Authentication > Settings > Authorized domains.',
+      'auth.errGeneric': 'Sign-in failed. Please try again.',
+      'auth.domainHint': 'Google sign-in requires this address to be authorized in Firebase Authentication: {domain}',
+      'auth.noDomain': 'downloaded file or embedded preview (no web hostname)',
+      'auth.errProviderDisabled': 'This sign-in method is not enabled in Firebase. Go to Firebase Console > Authentication > Sign-in method and enable Google (or Email/Password).',
+      'auth.errPopupBlocked': 'Your browser blocked the Google sign-in popup. Allow popups for this site, or wait for redirect sign-in to open.',
+      'auth.errEnvironment': 'Cloud sign-in cannot run from a downloaded file or embedded preview. Open WeeklyBudget directly from localhost or an HTTPS address in your browser.',
+      'auth.errConfig': 'Firebase rejected this app configuration. Re-copy the Web app config from Firebase Console and check that the API key is valid for Identity Toolkit and this website.',
+      'auth.errNetwork': 'Network error during sign-in. Check your internet connection and try again.',
+      'auth.errInternal': 'Firebase returned an internal sign-in error. Check that Google is enabled, this domain is authorized, and the Web app config is copied exactly.',
+      'auth.errCredentialConflict': 'This email is already associated with another sign-in method. Log in with the original method first.',
+      'auth.errTooMany': 'Too many sign-in attempts. Please wait a moment and try again.',
+      'auth.errUserDisabled': 'This account has been disabled.',
+      'auth.profileAria': 'Account and sync',
+      'auth.accountFallback': 'Account',
+      'report.downloadBtn': 'Download PDF Report',
+      'report.downloadTitle': 'Download PDF report',
+      'report.title': 'WeeklyBudget Summary',
+      'report.subtitle': 'Weekly budget report',
+      'report.generated': 'Generated',
+      'report.week': 'Week',
+      'report.currency': 'Currency',
+      'report.currencyValue': 'HK$ (Hong Kong dollar)',
+      'report.overview': 'Budget Overview',
+      'report.totalIncome': 'Total Income',
+      'report.totalSpent': 'Total Spent',
+      'report.remaining': 'Remaining Balance',
+      'report.transactions': '{n} transactions',
+      'report.amountHkd': 'Amount (HK$)',
+      'report.total': 'Total',
+      'report.noExpenses': 'No expenses recorded for this week.',
+      'report.percentSpent': '{pct}% of income spent',
+      'report.footer': 'Generated by WeeklyBudget',
+      'report.page': 'Page {page} of {pages}',
+      'report.downloaded': 'PDF report downloaded.',
+      'report.printReady': 'Choose “Save as PDF” in the print dialog to download the report.',
+      'report.failed': 'Could not generate the PDF report. Please try again.',
+      'cat.food': 'Food & Dining',
+      'cat.groceries': 'Groceries',
+      'cat.transport': 'Transport',
+      'cat.bills': 'Bills & Utilities',
+      'cat.shopping': 'Shopping',
+      'cat.entertainment': 'Entertainment',
+      'cat.health': 'Health',
+      'cat.other': 'Other'
+    },
+    'zh-Hant': {
+      'doc.title': 'WeeklyBudget — 每週預算追蹤',
+      'week.range': '{year} 年 {start} – {end}',
+      'date.today': '今天',
+      'date.yesterday': '昨天',
+      'theme.dark': '深色',
+      'theme.light': '淺色',
+      'theme.toLight': '切換至淺色模式',
+      'theme.toDark': '切換至深色模式',
+      'theme.hintDark': '深色模式已開啟',
+      'theme.hintLight': '淺色模式已開啟',
+      'lang.aria': '選擇語言',
+      'nav.aria': '主要頁面',
+      'nav.dashboard': '主頁',
+      'nav.charts': '圖表',
+      'nav.calendar': '日曆',
+      'nav.settings': '設定',
+      'nav.dashboardAria': '主頁及新增支出',
+      'nav.chartsAria': '圖表與分析',
+      'nav.calendarAria': '支出日曆',
+      'nav.settingsAria': '預算設定',
+      'view.dashboard.title': '主頁',
+      'view.dashboard.sub': '新增支出、追蹤剩餘資金，並查看你的紀錄。',
+      'view.charts.title': '圖表與分析',
+      'view.charts.sub': '查看你本週的金錢流向。',
+      'view.calendar.title': '支出日曆',
+      'view.calendar.sub': '按日瀏覽收入與支出。選擇日期以查看或新增交易。',
+      'view.settings.title': '預算設定',
+      'view.settings.sub': '設定你的每週收入並管理資料。',
+      'rem.title': '剩餘資金',
+      'rem.progressAria': '已支出收入百分比',
+      'rem.spentLabel': '已支出 {amount}',
+      'rem.pctOfIncome': '佔收入 {pct}%',
+      'rem.income': '每週總收入',
+      'rem.spent': '總支出',
+      'rem.safePerDay': '每日可用金額',
+      'rem.daysLeft': '本週剩餘天數',
+      'rem.adjust': '在預算設定中調整收入',
+      'status.getStarted': '開始設定',
+      'status.onTrack': '進度良好',
+      'status.careful': '請注意',
+      'status.overspent': '已超支',
+      'hint.setIncome': '設定你的每週收入以開始使用。',
+      'hint.over': '你本週已超支 {amount}。',
+      'hint.left': '你仍有 {pct}% 的收入可用。',
+      'days.one': '{n} 天',
+      'days.many': '{n} 天',
+      'inc.title': '新增每週收入',
+      'inc.sub': '你本週的起始預算。',
+      'inc.label': '每週收入',
+      'inc.dateLabel': '收入日期',
+      'inc.dateHint': '（會顯示在日曆上）',
+      'inc.update': '更新收入',
+      'inc.reset': '重置本週（清除收入與支出）',
+      'inc.helper': '已自動儲存在你的瀏覽器 — 重新整理後資料仍會保留。',
+      'inc.error': '請輸入有效的收入（0 或以上）。',
+      'inc.toastSet': '每週收入已設定為 {amount}（日期：{date}）。',
+      'inc.toastCleared': '已清除每週收入。',
+      'inc.resetToast': '本週已重置。請新增收入重新開始。',
+      'inc.confirmReset': '再按一次以重置全部',
+      'set.title': '資料與偏好設定',
+      'set.sub': '所有資料都會自動儲存在此瀏覽器。',
+      'set.appearance': '外觀',
+      'set.themeBtn': '切換主題',
+      'set.export': '匯出與報告',
+      'set.exportHint': '下載 CSV 檔案或格式化的 PDF 摘要',
+      'set.exportBtn': '下載 CSV',
+      'set.sample': '範例資料',
+      'set.sampleHint': '以示範交易取代目前紀錄',
+      'set.sampleBtn': '載入範例',
+      'set.clear': '清除支出',
+      'set.clearHint': '移除所有支出（保留收入）',
+      'set.note': '與先前版本使用相同的 localStorage 鍵（weeklyBudget.v1）儲存，因此現有預算會原封不動保留。使用收入卡片中的「重置本週」可同時清除收入與支出。',
+      'common.clearAll': '全部清除',
+      'common.amountReq': '金額 *',
+      'common.date': '日期',
+      'common.description': '說明',
+      'common.optional': '（選填）',
+      'common.category': '類別',
+      'common.addExpense': '新增支出',
+      'common.delete': '刪除',
+      'common.amount': '金額',
+      'common.confirm': '再按一次以確認',
+      'exp.title': '新增支出',
+      'exp.sub': '金額為必填 — 說明可選填。',
+      'exp.descPh': '例如：在市場買菜',
+      'exp.error': '請輸入大於 0 的金額。',
+      'exp.toastAdded': '已新增 {amount} — 剩餘 {remaining}。',
+      'exp.toastAddedOn': '已在 {date} 新增 {amount} — 剩餘 {remaining}。',
+      'log.title': '支出紀錄',
+      'log.itemsOne': '{n} 筆',
+      'log.itemsMany': '{n} 筆',
+      'log.csvTitle': '將支出下載為 CSV',
+      'log.tableAria': '支出',
+      'log.actions': '操作',
+      'log.emptyTitle': '尚無支出',
+      'log.emptyText': '在上方新增你的第一筆支出，或載入範例資料查看運作方式。',
+      'log.sampleBtn': '載入範例資料',
+      'log.total': '支出總額',
+      'log.deleteAria': '刪除{name}',
+      'log.toastDeleted': '已刪除 {amount} 的支出。',
+      'log.noClear': '沒有可清除的支出。',
+      'log.cleared': '已清除所有支出。',
+      'log.sampleToast': '已載入範例資料。',
+      'log.noExport': '尚無支出可匯出。',
+      'log.exported': '支出已匯出為 CSV。',
+      'chart.title': '每週支出分佈',
+      'chart.sub': '按類別',
+      'chart.aria': '按類別顯示支出的圓環圖',
+      'chart.empty': '尚無資料可顯示 — 新增支出後，分佈圖會顯示在這裡。',
+      'chart.noSpending': '尚無支出',
+      'chart.center': '總支出',
+      'ins.title': '每週概覽',
+      'ins.top': '最高支出類別',
+      'ins.largest': '最大筆支出',
+      'ins.avg': '平均支出',
+      'ins.count': '交易筆數',
+      'cal.sub': '每日收入與支出總額 — 選擇任何日期。',
+      'cal.prev': '上一個月',
+      'cal.next': '下一個月',
+      'cal.monthIncome': '本月收入',
+      'cal.monthExpenses': '本月支出',
+      'cal.monthNet': '本月結餘',
+      'cal.daysAria': '日曆日期',
+      'cal.wordIncome': '收入',
+      'cal.wordExpenses': '支出',
+      'cal.legendIncome': '當日收入',
+      'cal.legendExpense': '當日支出',
+      'cal.legendHint': '選擇日期以查看或新增交易。',
+      'cal.itemsMany': '{n} 筆',
+      'wd.sun': '週日',
+      'wd.mon': '週一',
+      'wd.tue': '週二',
+      'wd.wed': '週三',
+      'wd.thu': '週四',
+      'wd.fri': '週五',
+      'wd.sat': '週六',
+      'day.eyebrow': '已選日期',
+      'day.income': '收入',
+      'day.expenses': '支出',
+      'day.net': '當日結餘',
+      'day.tx': '交易紀錄',
+      'day.empty': '此日期尚無交易。',
+      'day.incomeName': '每週收入',
+      'day.incomeCat': '收入 · 於預算設定中設定',
+      'day.addTitle': '為此日新增支出',
+      'day.descPh': '例如：咖啡',
+      'day.incTitle': '此日的每週收入',
+      'day.incLabel': '收入金額',
+      'day.incBtn': '將收入儲存於此日期',
+      'day.incHelper': '設定你的每週收入總額，並將其放在所選日期（與預算設定相同）。',
+      'footer.text': 'WeeklyBudget · 你的資料只會保留在此瀏覽器（儲存在 localStorage）。',
+      'welcome.toast': '歡迎 — 已載入範例資料供你探索。使用「重置本週」即可重新開始。',
+      'sync.pulled': '已從雲端載入預算。',
+      'sync.nowToast': '已同步至雲端。',
+      'auth.login': '登入',
+      'auth.logout': '登出',
+      'auth.title': '同步你的預算',
+      'auth.sub': '登入以備份並在不同裝置同步你的預算。未登入時，所有資料只保留在此瀏覽器。',
+      'auth.google': '使用 Google 繼續',
+      'auth.or': '或',
+      'auth.email': '電郵地址',
+      'auth.password': '密碼',
+      'auth.passPh': '密碼',
+      'auth.signin': '登入',
+      'auth.signup': '建立帳戶',
+      'auth.signedInAs': '已登入帳戶',
+      'auth.syncNow': '立即同步',
+      'auth.close': '關閉',
+      'auth.welcome': '歡迎回來，{name}。你的預算正在同步。',
+      'auth.signedOut': '已登出。你的資料會保留在此瀏覽器。',
+      'auth.unavailable': '目前無法使用雲端登入（請檢查網絡連線）。你的資料仍儲存在本機。',
+      'auth.errInvalid': '電郵或密碼不正確。',
+      'auth.errInUse': '此電郵已註冊帳戶，請嘗試登入。',
+      'auth.errWeak': '密碼須至少 6 個字元。',
+      'auth.errEmail': '請輸入有效的電郵地址。',
+      'auth.errPopup': '登入彈出視窗在完成前已關閉。',
+      'auth.errDomain': '此網址尚未獲 Firebase 登入授權：{domain}。請在 Firebase Console > Authentication > Settings > Authorized domains 新增主機名稱（不要加 https:// 或連接埠）。',
+      'auth.errGeneric': '登入失敗，請再試一次。',
+      'auth.domainHint': 'Google 登入需要先在 Firebase Authentication 授權此網址：{domain}',
+      'auth.noDomain': '下載的檔案或嵌入式預覽（沒有網站主機名稱）',
+      'auth.errProviderDisabled': '此登入方式尚未在 Firebase 啟用。請到 Firebase Console > Authentication > Sign-in method 啟用 Google（或 Email/Password）。',
+      'auth.errPopupBlocked': '瀏覽器封鎖了 Google 登入彈出視窗。請允許此網站的彈出視窗，或等待重新導向登入開啟。',
+      'auth.errEnvironment': '雲端登入無法在下載的檔案或嵌入式預覽中執行。請直接在瀏覽器以 localhost 或 HTTPS 網址開啟 WeeklyBudget。',
+      'auth.errConfig': 'Firebase 拒絕了此應用程式設定。請從 Firebase Console 重新複製 Web app config，並確認 API 金鑰可用於 Identity Toolkit 和此網站。',
+      'auth.errNetwork': '登入時發生網絡錯誤。請檢查互聯網連線後再試一次。',
+      'auth.errInternal': 'Firebase 登入發生內部錯誤。請確認已啟用 Google、此網域已獲授權，且 Web app config 完全正確。',
+      'auth.errCredentialConflict': '此電郵已綁定另一種登入方式。請先使用原登入方式。',
+      'auth.errTooMany': '登入嘗試次數過多。請稍候再試。',
+      'auth.errUserDisabled': '此帳戶已被停用。',
+      'auth.profileAria': '帳戶與同步',
+      'auth.accountFallback': '帳戶',
+      'report.downloadBtn': '下載 PDF 報告',
+      'report.downloadTitle': '下載 PDF 報告',
+      'report.title': 'WeeklyBudget Summary',
+      'report.subtitle': '每週預算報告',
+      'report.generated': '產生日期',
+      'report.week': '星期',
+      'report.currency': '貨幣',
+      'report.currencyValue': '港元 (HK$)',
+      'report.overview': '預算概覽',
+      'report.totalIncome': '總收入',
+      'report.totalSpent': '總支出',
+      'report.remaining': '剩餘結餘',
+      'report.transactions': '{n} 筆交易',
+      'report.amountHkd': '金額 (HK$)',
+      'report.total': '總計',
+      'report.noExpenses': '本週尚無支出紀錄。',
+      'report.percentSpent': '已支出收入的 {pct}%',
+      'report.footer': '由 WeeklyBudget 產生',
+      'report.page': '第 {page} 頁，共 {pages} 頁',
+      'report.downloaded': 'PDF 報告已下載。',
+      'report.printReady': '請在列印對話框中選擇「另存為 PDF」以下載報告。',
+      'report.failed': '無法產生 PDF 報告，請再試一次。',
+      'cat.food': '餐飲',
+      'cat.groceries': '食品雜貨',
+      'cat.transport': '交通',
+      'cat.bills': '帳單與公用事業',
+      'cat.shopping': '購物',
+      'cat.entertainment': '娛樂',
+      'cat.health': '健康',
+      'cat.other': '其他'
+    },
+    'zh-Hans': {
+      'doc.title': 'WeeklyBudget — 每周预算追踪',
+      'week.range': '{year} 年 {start} – {end}',
+      'date.today': '今天',
+      'date.yesterday': '昨天',
+      'theme.dark': '深色',
+      'theme.light': '浅色',
+      'theme.toLight': '切换至浅色模式',
+      'theme.toDark': '切换至深色模式',
+      'theme.hintDark': '深色模式已开启',
+      'theme.hintLight': '浅色模式已开启',
+      'lang.aria': '选择语言',
+      'nav.aria': '主要页面',
+      'nav.dashboard': '主页',
+      'nav.charts': '图表',
+      'nav.calendar': '日历',
+      'nav.settings': '设置',
+      'nav.dashboardAria': '主页及新增支出',
+      'nav.chartsAria': '图表与分析',
+      'nav.calendarAria': '支出日历',
+      'nav.settingsAria': '预算设置',
+      'view.dashboard.title': '主页',
+      'view.dashboard.sub': '新增支出、追踪剩余资金，并查看你的记录。',
+      'view.charts.title': '图表与分析',
+      'view.charts.sub': '查看你本周的金钱流向。',
+      'view.calendar.title': '支出日历',
+      'view.calendar.sub': '按日浏览收入与支出。选择日期以查看或新增交易。',
+      'view.settings.title': '预算设置',
+      'view.settings.sub': '设置你的每周收入并管理数据。',
+      'rem.title': '剩余资金',
+      'rem.progressAria': '已支出收入百分比',
+      'rem.spentLabel': '已支出 {amount}',
+      'rem.pctOfIncome': '占收入 {pct}%',
+      'rem.income': '每周总收入',
+      'rem.spent': '总支出',
+      'rem.safePerDay': '每日可用金额',
+      'rem.daysLeft': '本周剩余天数',
+      'rem.adjust': '在预算设置中调整收入',
+      'status.getStarted': '开始设置',
+      'status.onTrack': '进度良好',
+      'status.careful': '请注意',
+      'status.overspent': '已超支',
+      'hint.setIncome': '设置你的每周收入以开始使用。',
+      'hint.over': '你本周已超支 {amount}。',
+      'hint.left': '你仍有 {pct}% 的收入可用。',
+      'days.one': '{n} 天',
+      'days.many': '{n} 天',
+      'inc.title': '新增每周收入',
+      'inc.sub': '你本周的起始预算。',
+      'inc.label': '每周收入',
+      'inc.dateLabel': '收入日期',
+      'inc.dateHint': '（会显示在日历上）',
+      'inc.update': '更新收入',
+      'inc.reset': '重置本周（清除收入与支出）',
+      'inc.helper': '已自动保存在你的浏览器 — 刷新后数据仍会保留。',
+      'inc.error': '请输入有效的收入（0 或以上）。',
+      'inc.toastSet': '每周收入已设置为 {amount}（日期：{date}）。',
+      'inc.toastCleared': '已清除每周收入。',
+      'inc.resetToast': '本周已重置。请新增收入重新开始。',
+      'inc.confirmReset': '再按一次以重置全部',
+      'set.title': '数据与偏好设置',
+      'set.sub': '所有数据都会自动保存在此浏览器。',
+      'set.appearance': '外观',
+      'set.themeBtn': '切换主题',
+      'set.export': '导出与报告',
+      'set.exportHint': '下载 CSV 文件或格式化的 PDF 摘要',
+      'set.exportBtn': '下载 CSV',
+      'set.sample': '示例数据',
+      'set.sampleHint': '以演示交易替换当前记录',
+      'set.sampleBtn': '加载示例',
+      'set.clear': '清除支出',
+      'set.clearHint': '移除所有支出（保留收入）',
+      'set.note': '与先前版本使用相同的 localStorage 键（weeklyBudget.v1）存储，因此现有预算会原封不动保留。使用收入卡片中的“重置本周”可同时清除收入与支出。',
+      'common.clearAll': '全部清除',
+      'common.amountReq': '金额 *',
+      'common.date': '日期',
+      'common.description': '说明',
+      'common.optional': '（选填）',
+      'common.category': '类别',
+      'common.addExpense': '新增支出',
+      'common.delete': '删除',
+      'common.amount': '金额',
+      'common.confirm': '再按一次以确认',
+      'exp.title': '新增支出',
+      'exp.sub': '金额为必填 — 说明可选填。',
+      'exp.descPh': '例如：在市场买菜',
+      'exp.error': '请输入大于 0 的金额。',
+      'exp.toastAdded': '已新增 {amount} — 剩余 {remaining}。',
+      'exp.toastAddedOn': '已在 {date} 新增 {amount} — 剩余 {remaining}。',
+      'log.title': '支出记录',
+      'log.itemsOne': '{n} 笔',
+      'log.itemsMany': '{n} 笔',
+      'log.csvTitle': '将支出下载为 CSV',
+      'log.tableAria': '支出',
+      'log.actions': '操作',
+      'log.emptyTitle': '尚无支出',
+      'log.emptyText': '在上方新增你的第一笔支出，或加载示例数据查看运作方式。',
+      'log.sampleBtn': '加载示例数据',
+      'log.total': '支出总额',
+      'log.deleteAria': '删除{name}',
+      'log.toastDeleted': '已删除 {amount} 的支出。',
+      'log.noClear': '没有可清除的支出。',
+      'log.cleared': '已清除所有支出。',
+      'log.sampleToast': '已加载示例数据。',
+      'log.noExport': '尚无支出可导出。',
+      'log.exported': '支出已导出为 CSV。',
+      'chart.title': '每周支出分布',
+      'chart.sub': '按类别',
+      'chart.aria': '按类别显示支出的圆环图',
+      'chart.empty': '尚无数据可显示 — 新增支出后，分布图会显示在这里。',
+      'chart.noSpending': '尚无支出',
+      'chart.center': '总支出',
+      'ins.title': '每周概览',
+      'ins.top': '最高支出类别',
+      'ins.largest': '最大笔支出',
+      'ins.avg': '平均支出',
+      'ins.count': '交易笔数',
+      'cal.sub': '每日收入与支出总额 — 选择任何日期。',
+      'cal.prev': '上一个月',
+      'cal.next': '下一个月',
+      'cal.monthIncome': '本月收入',
+      'cal.monthExpenses': '本月支出',
+      'cal.monthNet': '本月结余',
+      'cal.daysAria': '日历日期',
+      'cal.wordIncome': '收入',
+      'cal.wordExpenses': '支出',
+      'cal.legendIncome': '当日收入',
+      'cal.legendExpense': '当日支出',
+      'cal.legendHint': '选择日期以查看或新增交易。',
+      'cal.itemsMany': '{n} 笔',
+      'wd.sun': '周日',
+      'wd.mon': '周一',
+      'wd.tue': '周二',
+      'wd.wed': '周三',
+      'wd.thu': '周四',
+      'wd.fri': '周五',
+      'wd.sat': '周六',
+      'day.eyebrow': '已选日期',
+      'day.income': '收入',
+      'day.expenses': '支出',
+      'day.net': '当日结余',
+      'day.tx': '交易记录',
+      'day.empty': '此日期尚无交易。',
+      'day.incomeName': '每周收入',
+      'day.incomeCat': '收入 · 于预算设置中设置',
+      'day.addTitle': '为此日新增支出',
+      'day.descPh': '例如：咖啡',
+      'day.incTitle': '此日的每周收入',
+      'day.incLabel': '收入金额',
+      'day.incBtn': '将收入保存于此日期',
+      'day.incHelper': '设置你的每周收入总额，并将其放在所选日期（与预算设置相同）。',
+      'footer.text': 'WeeklyBudget · 你的数据只会保留在此浏览器（保存在 localStorage）。',
+      'welcome.toast': '欢迎 — 已加载示例数据供你探索。使用“重置本周”即可重新开始。',
+      'sync.pulled': '已从云端加载预算。',
+      'sync.nowToast': '已同步至云端。',
+      'auth.login': '登录',
+      'auth.logout': '退出登录',
+      'auth.title': '同步你的预算',
+      'auth.sub': '登录以备份并在不同设备同步你的预算。未登录时，所有数据只保留在此浏览器。',
+      'auth.google': '使用 Google 继续',
+      'auth.or': '或',
+      'auth.email': '电子邮箱',
+      'auth.password': '密码',
+      'auth.passPh': '密码',
+      'auth.signin': '登录',
+      'auth.signup': '创建账户',
+      'auth.signedInAs': '已登录账户',
+      'auth.syncNow': '立即同步',
+      'auth.close': '关闭',
+      'auth.welcome': '欢迎回来，{name}。你的预算正在同步。',
+      'auth.signedOut': '已退出登录。你的数据会保留在此浏览器。',
+      'auth.unavailable': '目前无法使用云端登录（请检查网络连接）。你的数据仍保存在本地。',
+      'auth.errInvalid': '邮箱或密码不正确。',
+      'auth.errInUse': '此邮箱已注册账户，请尝试登录。',
+      'auth.errWeak': '密码须至少 6 个字符。',
+      'auth.errEmail': '请输入有效的电子邮箱。',
+      'auth.errPopup': '登录弹窗在完成前已关闭。',
+      'auth.errDomain': '此地址尚未获得 Firebase 登录授权：{domain}。请在 Firebase Console > Authentication > Settings > Authorized domains 中新增主机名（不要加 https:// 或端口）。',
+      'auth.errGeneric': '登录失败，请再试一次。',
+      'auth.domainHint': 'Google 登录需要先在 Firebase Authentication 中授权此地址：{domain}',
+      'auth.noDomain': '下载的文件或嵌入式预览（没有网站主机名）',
+      'auth.errProviderDisabled': '此登录方式尚未在 Firebase 中启用。请到 Firebase Console > Authentication > Sign-in method 启用 Google（或 Email/Password）。',
+      'auth.errPopupBlocked': '浏览器阻止了 Google 登录弹窗。请允许此网站的弹窗，或等待重定向登录开启。',
+      'auth.errEnvironment': '云端登录无法在下载的文件或嵌入式预览中运行。请直接在浏览器以 localhost 或 HTTPS 地址打开 WeeklyBudget。',
+      'auth.errConfig': 'Firebase 拒绝了此应用配置。请从 Firebase Console 重新复制 Web app config，并确认 API 密钥可用于 Identity Toolkit 和此网站。',
+      'auth.errNetwork': '登录时发生网络错误。请检查互联网连接后再试一次。',
+      'auth.errInternal': 'Firebase 登录发生内部错误。请确认已启用 Google、此域名已获得授权，且 Web app config 完全正确。',
+      'auth.errCredentialConflict': '此邮箱已绑定另一种登录方式。请先使用原登录方式。',
+      'auth.errTooMany': '登录尝试次数过多。请稍候再试。',
+      'auth.errUserDisabled': '此账户已被停用。',
+      'auth.profileAria': '账户与同步',
+      'auth.accountFallback': '账户',
+      'report.downloadBtn': '下载 PDF 报告',
+      'report.downloadTitle': '下载 PDF 报告',
+      'report.title': 'WeeklyBudget Summary',
+      'report.subtitle': '每周预算报告',
+      'report.generated': '生成日期',
+      'report.week': '星期',
+      'report.currency': '货币',
+      'report.currencyValue': '港元 (HK$)',
+      'report.overview': '预算概览',
+      'report.totalIncome': '总收入',
+      'report.totalSpent': '总支出',
+      'report.remaining': '剩余结余',
+      'report.transactions': '{n} 笔交易',
+      'report.amountHkd': '金额 (HK$)',
+      'report.total': '总计',
+      'report.noExpenses': '本周尚无支出记录。',
+      'report.percentSpent': '已支出收入的 {pct}%',
+      'report.footer': '由 WeeklyBudget 生成',
+      'report.page': '第 {page} 页，共 {pages} 页',
+      'report.downloaded': 'PDF 报告已下载。',
+      'report.printReady': '请在打印对话框中选择“另存为 PDF”以下载报告。',
+      'report.failed': '无法生成 PDF 报告，请再试一次。',
+      'cat.food': '餐饮',
+      'cat.groceries': '食品杂货',
+      'cat.transport': '交通',
+      'cat.bills': '账单与公用事业',
+      'cat.shopping': '购物',
+      'cat.entertainment': '娱乐',
+      'cat.health': '健康',
+      'cat.other': '其他'
+    }
+  };
+  var currentLang = storage.get(LANG_KEY);
+  if (!TRANSLATIONS[currentLang]) currentLang = 'en';
+  function LOCALE() { return LOCALES[currentLang] || 'en-US'; }
+  function t(key, params) {
+    var dict = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+    var s = (dict && dict[key]) != null ? dict[key] : (TRANSLATIONS.en[key] != null ? TRANSLATIONS.en[key] : key);
+    if (params) s = s.replace(/\{(\w+)\}/g, function (m, k) { return params[k] != null ? params[k] : m; });
+    return s;
+  }
+  var CAT_I18N = {
+    'Food & Dining': 'cat.food', 'Groceries': 'cat.groceries', 'Transport': 'cat.transport',
+    'Bills & Utilities': 'cat.bills', 'Shopping': 'cat.shopping', 'Entertainment': 'cat.entertainment',
+    'Health': 'cat.health', 'Other': 'cat.other'
+  };
+  function catLabel(name) { return CAT_I18N[name] ? t(CAT_I18N[name]) : name; }
+
+  var CATEGORIES = [
+    { name: 'Food & Dining',     color: '#f59e0b' },
+    { name: 'Groceries',         color: '#22c55e' },
+    { name: 'Transport',         color: '#3b82f6' },
+    { name: 'Bills & Utilities', color: '#a855f7' },
+    { name: 'Shopping',          color: '#ec4899' },
+    { name: 'Entertainment',     color: '#06b6d4' },
+    { name: 'Health',            color: '#ef4444' },
+    { name: 'Other',             color: '#64748b' }
+  ];
+  function catColor(name) {
+    for (var i = 0; i < CATEGORIES.length; i++) if (CATEGORIES[i].name === name) return CATEGORIES[i].color;
+    return '#64748b';
+  }
+
+  function uid() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  /* ---------- Date helpers (local timezone, no UTC shifting) ---------- */
+  function toLocalISO(d) {
+    var m = String(d.getMonth() + 1).padStart(2, '0');
+    var day = String(d.getDate()).padStart(2, '0');
+    return d.getFullYear() + '-' + m + '-' + day;
+  }
+  function parseISO(iso) {
+    var p = String(iso || '').split('-');
+    if (p.length !== 3) return new Date();
+    return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  }
+  function displayDate(iso) {
+    var d = parseISO(iso), today = new Date();
+    var yest = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1);
+    if (toLocalISO(d) === toLocalISO(today)) return t('date.today');
+    if (toLocalISO(d) === toLocalISO(yest)) return t('date.yesterday');
+    return d.toLocaleDateString(LOCALE(), { weekday: 'short', month: 'short', day: 'numeric' });
+  }
+  function daysLeftThisWeek() {
+    // Week runs Monday -> Sunday; count includes today.
+    var day = new Date().getDay(); // Sun=0 ... Sat=6
+    return ((7 - day) % 7) + 1;
+  }
+  function weekRangeLabel() {
+    var now = new Date();
+    var monday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7));
+    var sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6);
+    var f = { month: 'short', day: 'numeric' };
+    return t('week.range', { start: monday.toLocaleDateString(LOCALE(), f), end: sunday.toLocaleDateString(LOCALE(), f), year: sunday.getFullYear() });
+  }
+  function mondayOfWeek(d) {
+    var x = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    return new Date(x.getFullYear(), x.getMonth(), x.getDate() - ((x.getDay() + 6) % 7));
+  }
+  function mondayISO() { return toLocalISO(mondayOfWeek(new Date())); }
+  function isValidISODate(s) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(s || ''))) return false;
+    var d = parseISO(s);
+    return toLocalISO(d) === s;
+  }
+  function fmtShort(n) {
+    var v = Math.abs(round2(n));
+    return '$' + v.toLocaleString(LOCALE(), { minimumFractionDigits: (v % 1 ? 2 : 0), maximumFractionDigits: 2 });
+  }
+
+  /* ============================================================
+     2. STATE  (Income - Sum of Expenses = Remaining)
+  ============================================================ */
+  function sampleExpenses() {
+    var rows = [
+      { description: 'Supermarket groceries', amount: 92.35,  category: 'Groceries',         daysAgo: 0 },
+      { description: 'Lunch with team',       amount: 24.50,  category: 'Food & Dining',     daysAgo: 0 },
+      { description: 'Transit card top-up',   amount: 40.00,  category: 'Transport',         daysAgo: 1 },
+      { description: 'Electricity bill',      amount: 118.20, category: 'Bills & Utilities', daysAgo: 2 },
+      { description: 'Movie tickets',         amount: 32.00,  category: 'Entertainment',     daysAgo: 3 },
+      { description: 'Running shoes',         amount: 74.99,  category: 'Shopping',          daysAgo: 4 }
+    ];
+    var now = Date.now();
+    return rows.map(function (r, i) {
+      var d = new Date(); d.setDate(d.getDate() - r.daysAgo);
+      return { id: uid(), amount: r.amount, description: r.description, category: r.category, date: toLocalISO(d), createdAt: now - i * 1000 };
+    });
+  }
+
+  var seededFresh = false;
+  function loadState() {
+    var raw = storage.get(STORAGE_KEY);
+    if (raw) {
+      try {
+        var parsed = JSON.parse(raw);
+        return {
+          income: round2(parsed.income),
+          incomeDate: isValidISODate(parsed.incomeDate) ? parsed.incomeDate : (round2(parsed.income) > 0 ? mondayISO() : null),
+          expenses: Array.isArray(parsed.expenses) ? parsed.expenses.filter(function (e) { return e && isFinite(e.amount); }) : []
+        };
+      } catch (e) { /* corrupted data — fall through to seed */ }
+    }
+    // First visit: seed with realistic demo data so every card is alive.
+    // Delete it or use "Reset week" to start from a blank slate.
+    seededFresh = true;
+    return { income: 1250, incomeDate: mondayISO(), expenses: sampleExpenses() };
+  }
+
+  var state = loadState();
+  function save() {
+    storage.set(STORAGE_KEY, JSON.stringify({ income: state.income, incomeDate: state.incomeDate, expenses: state.expenses }));
+    scheduleCloudSave(); // no-op unless signed in (localStorage stays the fallback)
+  }
+
+  function totalSpent() { return round2(state.expenses.reduce(function (sum, e) { return sum + Number(e.amount); }, 0)); }
+  function remaining()  { return round2(state.income - totalSpent()); }
+
+  /* ============================================================
+     3. DOM REFERENCES
+  ============================================================ */
+  function $(id) { return document.getElementById(id); }
+  var els = {
+    weekLabel: $('weekLabel'), themeToggle: $('themeToggle'), themeLabel: $('themeLabel'),
+    langBtn: $('langBtn'), langMenu: $('langMenu'), langCurrent: $('langCurrent'),
+    authBtn: $('authBtn'), authLabel: $('authLabel'), authAvatar: $('authAvatar'), authInitial: $('authInitial'), authIcon: $('authIcon'),
+    authModal: $('authModal'), authClose: $('authClose'), authSignedOut: $('authSignedOut'), authSignedIn: $('authSignedIn'),
+    googleBtn: $('googleBtn'), authDomainHint: $('authDomainHint'), signInBtn: $('signInBtn'), emailAuthForm: $('emailAuthForm'), authEmail: $('authEmail'), authPassword: $('authPassword'),
+    authError: $('authError'), signUpBtn: $('signUpBtn'), profileName: $('profileName'), profileEmail: $('profileEmail'),
+    syncNowBtn: $('syncNowBtn'), signOutBtn: $('signOutBtn'),
+    iconSun: $('iconSun'), iconMoon: $('iconMoon'),
+    remainingAmount: $('remainingAmount'), remainingHint: $('remainingHint'), statusPill: $('statusPill'),
+    spentProgress: $('spentProgress'), spentProgressTrack: $('spentProgressTrack'),
+    progressSpentLabel: $('progressSpentLabel'), progressPct: $('progressPct'),
+    statIncome: $('statIncome'), statSpent: $('statSpent'),
+    safePerDay: $('safePerDay'), daysLeft: $('daysLeft'),
+    incomeForm: $('incomeForm'), incomeInput: $('incomeInput'), incomeError: $('incomeError'),
+    resetBtn: $('resetBtn'),
+    expenseForm: $('expenseForm'), expAmount: $('expAmount'), expDate: $('expDate'),
+    expDesc: $('expDesc'), expCategory: $('expCategory'), expenseError: $('expenseError'),
+    expenseTbody: $('expenseTbody'), emptyState: $('emptyState'), sampleBtn: $('sampleBtn'),
+    logCount: $('logCount'), logTotal: $('logTotal'), clearBtn: $('clearBtn'), exportBtn: $('exportBtn'), pdfExportBtn: $('pdfExportBtn'),
+    chartCanvas: $('spendingChart'), chartLegend: $('chartLegend'), chartTotal: $('chartTotal'), chartEmpty: $('chartEmpty'),
+    insTopCat: $('insTopCat'), insLargest: $('insLargest'), insAvg: $('insAvg'), insCount: $('insCount'),
+    pdfReport: $('pdfReport'),
+    toast: $('toast'),
+    appMain: $('appMain'), viewTitle: $('viewTitle'), viewSubtitle: $('viewSubtitle'),
+    incomeDateInput: $('incomeDateInput'),
+    settingsThemeBtn: $('settingsThemeBtn'), settingsThemeLabel: $('settingsThemeLabel'),
+    settingsExportBtn: $('settingsExportBtn'), settingsPdfBtn: $('settingsPdfBtn'), settingsSampleBtn: $('settingsSampleBtn'),
+    settingsClearBtn: $('settingsClearBtn'),
+    calTitle: $('calTitle'), calGrid: $('calGrid'), calPrev: $('calPrev'), calNext: $('calNext'), calToday: $('calToday'),
+    calMonthIncome: $('calMonthIncome'), calMonthExpenses: $('calMonthExpenses'), calMonthNet: $('calMonthNet'),
+    dayTitle: $('dayTitle'), daySub: $('daySub'), dayIncome: $('dayIncome'), dayExpenses: $('dayExpenses'), dayNet: $('dayNet'),
+    dayTxList: $('dayTxList'), dayEmpty: $('dayEmpty'),
+    calExpenseForm: $('calExpenseForm'), calExpAmount: $('calExpAmount'), calExpDesc: $('calExpDesc'),
+    calExpCategory: $('calExpCategory'), calExpenseError: $('calExpenseError'),
+    calIncomeForm: $('calIncomeForm'), calIncomeInput: $('calIncomeInput'), calIncomeError: $('calIncomeError')
+  };
+
+  /* ============================================================
+     4. THEME (Light / Dark)
+  ============================================================ */
+  function isDark() { return document.documentElement.classList.contains('dark'); }
+  function syncThemeButton() {
+    var dark = isDark();
+    els.iconSun.classList.toggle('hidden', !dark);
+    els.iconMoon.classList.toggle('hidden', dark);
+    els.themeLabel.textContent = dark ? t('theme.light') : t('theme.dark');
+    if (els.settingsThemeLabel) els.settingsThemeLabel.textContent = dark ? t('theme.hintDark') : t('theme.hintLight');
+    els.themeToggle.setAttribute('aria-pressed', String(dark));
+    els.themeToggle.setAttribute('aria-label', dark ? t('theme.toLight') : t('theme.toDark'));
+  }
+  els.themeToggle.addEventListener('click', function () {
+    var dark = !isDark();
+    document.documentElement.classList.toggle('dark', dark);
+    storage.set(THEME_KEY, dark ? 'dark' : 'light');
+    syncThemeButton();
+    renderChart(totalSpent()); // refresh chart colours / centre text
+    scheduleCloudSave(); // theme is a synced preference
+  });
+
+
+
+  /* ============================================================
+     4A. LANGUAGE (selector dropdown + apply)
+  ============================================================ */
+  function setLocalizedText(el, txt) {
+    if (el.children.length && !el.hasAttribute('data-i18n-full')) {
+      var node = null;
+      el.childNodes.forEach(function (n) { if (n.nodeType === 3 && n.textContent.trim()) node = n; });
+      if (node) { node.textContent = txt; return; }
+      el.appendChild(document.createTextNode(txt)); return;
+    }
+    el.textContent = txt;
+  }
+
+  function applyLanguage(lang) {
+    if (!TRANSLATIONS[lang]) lang = 'en';
+    currentLang = lang;
+    storage.set(LANG_KEY, lang);
+    document.documentElement.lang = lang;
+    document.title = t('doc.title');
+    // Cancel any half-armed "click again to confirm" buttons so their label localizes cleanly
+    document.querySelectorAll('.btn-ghost.armed').forEach(function (b) { b.classList.remove('armed'); b.dataset.armed = ''; });
+
+    document.querySelectorAll('[data-i18n]').forEach(function (el) { setLocalizedText(el, t(el.getAttribute('data-i18n'))); });
+    document.querySelectorAll('[data-i18n-ph]').forEach(function (el) { el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph'))); });
+    document.querySelectorAll('[data-i18n-aria]').forEach(function (el) { el.setAttribute('aria-label', t(el.getAttribute('data-i18n-aria'))); });
+    document.querySelectorAll('[data-i18n-title]').forEach(function (el) { el.setAttribute('title', t(el.getAttribute('data-i18n-title'))); });
+
+    // Category dropdowns: translate visible text only; option values stay canonical
+    document.querySelectorAll('#expCategory option, #calExpCategory option').forEach(function (opt) { opt.textContent = catLabel(opt.value); });
+
+    if (els.langCurrent) els.langCurrent.textContent = LANG_SHORT[lang] || 'EN';
+    document.querySelectorAll('[data-lang]').forEach(function (opt) {
+      opt.setAttribute('aria-checked', String(opt.getAttribute('data-lang') === lang));
+    });
+
+    syncThemeButton();
+    els.weekLabel.textContent = weekRangeLabel();
+    var currentView = els.appMain.dataset.activeView || 'dashboard';
+    if (typeof VIEW_META !== 'undefined' && VIEW_META[currentView]) {
+      els.viewTitle.textContent = t(VIEW_META[currentView].titleKey);
+      els.viewSubtitle.textContent = t(VIEW_META[currentView].subKey);
+    }
+    render(); // re-render all dynamic text (log, chart, calendar, hints...) in the new language
+  }
+
+  function closeLangMenu() {
+    if (!els.langMenu) return;
+    els.langMenu.classList.add('hidden');
+    els.langBtn.setAttribute('aria-expanded', 'false');
+  }
+  if (els.langBtn) {
+    els.langBtn.addEventListener('click', function () {
+      var open = els.langMenu.classList.toggle('hidden') === false;
+      els.langBtn.setAttribute('aria-expanded', String(open));
+    });
+    els.langMenu.addEventListener('click', function (ev) {
+      var opt = ev.target.closest('[data-lang]');
+      if (!opt) return;
+      applyLanguage(opt.getAttribute('data-lang'));
+      scheduleCloudSave(); // language is a synced preference
+      closeLangMenu();
+      els.langBtn.focus();
+    });
+    document.addEventListener('click', function (ev) {
+      if (!ev.target.closest('.lang-wrap')) closeLangMenu();
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && !els.langMenu.classList.contains('hidden')) { closeLangMenu(); els.langBtn.focus(); }
+    });
+  }
+
+  /* ============================================================
+     4B. VIEWS (bottom nav) + CALENDAR STATE
+  ============================================================ */
+  var calendarCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  var selectedDateISO = toLocalISO(new Date());
+
+  var VIEW_META = {
+    dashboard: { titleKey: 'view.dashboard.title', subKey: 'view.dashboard.sub' },
+    charts:    { titleKey: 'view.charts.title',    subKey: 'view.charts.sub' },
+    calendar:  { titleKey: 'view.calendar.title',  subKey: 'view.calendar.sub' },
+    settings:  { titleKey: 'view.settings.title',  subKey: 'view.settings.sub' }
+  };
+
+  function switchView(name, initial) {
+    if (!VIEW_META[name]) name = 'dashboard';
+    els.appMain.dataset.activeView = name;
+    els.viewTitle.textContent = t(VIEW_META[name].titleKey);
+    els.viewSubtitle.textContent = t(VIEW_META[name].subKey);
+    document.querySelectorAll('[data-view-target]').forEach(function (btn) {
+      var active = btn.getAttribute('data-view-target') === name;
+      btn.classList.toggle('active', active);
+      if (active) btn.setAttribute('aria-current', 'page'); else btn.removeAttribute('aria-current');
+    });
+    storage.set(VIEW_KEY, name);
+    if (!initial) window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Canvas-based content must be (re)drawn once its view is visible.
+    if (name === 'charts') requestAnimationFrame(function () { renderChart(totalSpent()); });
+    if (name === 'calendar') requestAnimationFrame(function () { renderCalendar(); renderDayDetail(); });
+  }
+
+  document.querySelectorAll('[data-view-target]').forEach(function (btn) {
+    btn.addEventListener('click', function () { switchView(btn.getAttribute('data-view-target')); });
+  });
+  document.querySelectorAll('[data-goto-view]').forEach(function (btn) {
+    btn.addEventListener('click', function () { switchView(btn.getAttribute('data-goto-view')); });
+  });
+
+
+  /* ============================================================
+     4C. CLOUD SYNC (Firebase) + AUTH UI
+     The Firebase SDK lives in a separate <script type="module">
+     at the end of the file and talks to this section through
+     window.WeeklyBudgetCloud + CustomEvents (wb:auth / wb:remote).
+     If Firebase never loads, the app quietly keeps using localStorage.
+  ============================================================ */
+  /* ---------- Cloud state ---------- */
+  var cloudUser = null;          // {uid, email, displayName, photoURL} when signed in
+  var cloudReady = false;        // Firebase module loaded
+  var cloudInitialized = false;  // first remote snapshot for this user handled
+  var suppressCloud = false;     // true while applying remote data (prevents echo)
+  var syncState = 'local';       // local | syncing | synced | error
+  var cloudSaveTimer = null;
+  var authBusy = false;
+
+  function cloudApi() {
+    return (window.WeeklyBudgetCloud && window.WeeklyBudgetCloud.ready) ? window.WeeklyBudgetCloud : null;
+  }
+  function snapshotData() {
+    return {
+      income: state.income,
+      incomeDate: state.incomeDate,
+      expenses: state.expenses,
+      lang: currentLang,
+      theme: isDark() ? 'dark' : 'light'
+    };
+  }
+  function sanitizeExpense(e) {
+    return {
+      id: String((e && e.id) || uid()),
+      amount: round2(e && e.amount),
+      description: String((e && e.description) || ''),
+      category: CAT_I18N[e && e.category] ? e.category : 'Other',
+      date: isValidISODate(e && e.date) ? e.date : toLocalISO(new Date()),
+      createdAt: Number(e && e.createdAt) || 0
+    };
+  }
+  function normalizeSnapshot(data) {
+    if (!data || typeof data !== 'object') return null;
+    return {
+      income: round2(data.income),
+      incomeDate: isValidISODate(data.incomeDate) ? data.incomeDate : null,
+      expenses: Array.isArray(data.expenses) ? data.expenses.filter(function (e) { return e && isFinite(e.amount); }).map(sanitizeExpense) : [],
+      lang: TRANSLATIONS[data.lang] ? data.lang : currentLang,
+      theme: (data.theme === 'dark' || data.theme === 'light') ? data.theme : (isDark() ? 'dark' : 'light')
+    };
+  }
+  function fingerprint(data) {
+    var n = normalizeSnapshot(data);
+    if (!n) return '';
+    return JSON.stringify({
+      i: n.income, d: n.incomeDate, l: n.lang, th: n.theme,
+      e: n.expenses.map(function (e) { return [e.id, e.amount, e.description, e.category, e.date, e.createdAt]; })
+    });
+  }
+  function isMeaningfulRemote(data) {
+    return !!data && (round2(data.income) > 0 || (Array.isArray(data.expenses) && data.expenses.length > 0) || isValidISODate(data.incomeDate));
+  }
+
+  function scheduleCloudSave() {
+    if (!cloudUser || suppressCloud) return;
+    setSyncState('syncing');
+    if (cloudSaveTimer) clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = setTimeout(pushCloudNow, 350); // debounce rapid edits
+  }
+  function pushCloudNow() {
+    if (!cloudUser) return Promise.resolve(false);
+    var api = cloudApi();
+    if (!api) { setSyncState('error'); return Promise.resolve(false); }
+    setSyncState('syncing');
+    return api.save(snapshotData()).then(function () {
+      setSyncState('synced'); return true;
+    }).catch(function (err) {
+      console.warn('Cloud save failed:', err);
+      setSyncState('error'); return false;
+    });
+  }
+
+  function applyRemoteData(data) {
+    var remote = normalizeSnapshot(data);
+    if (!remote) return;
+    if (fingerprint(remote) === fingerprint(snapshotData())) {
+      setSyncState('synced'); cloudInitialized = true; return; // our own echo
+    }
+    suppressCloud = true;
+    state = { income: remote.income, incomeDate: remote.incomeDate, expenses: remote.expenses };
+    document.documentElement.classList.toggle('dark', remote.theme === 'dark');
+    storage.set(THEME_KEY, remote.theme);
+    syncThemeButton();
+    syncIncomeInputs();
+    save(); // writes the local cache; suppressCloud stops the echo push
+    if (remote.lang !== currentLang) applyLanguage(remote.lang); else render();
+    suppressCloud = false;
+    setSyncState('synced');
+    if (cloudInitialized) showToast(t('sync.pulled'));
+    cloudInitialized = true;
+  }
+
+  /* ---------- Profile UI (sync runs silently in the background) ---------- */
+  function setSyncState(s) { syncState = s; }
+  function updateCloudUI() {
+    var logged = !!cloudUser;
+    updateAuthDomainHint();
+
+    if (logged) {
+      var name = cloudUser.displayName || cloudUser.email || t('auth.accountFallback');
+      els.authLabel.textContent = name;
+      els.authIcon.classList.add('hidden');
+      if (cloudUser.photoURL) {
+        els.authAvatar.src = cloudUser.photoURL;
+        els.authAvatar.classList.remove('hidden');
+        els.authInitial.classList.add('hidden');
+      } else {
+        els.authAvatar.classList.add('hidden');
+        els.authInitial.textContent = String(name).trim().charAt(0).toUpperCase() || 'U';
+        els.authInitial.classList.remove('hidden');
+      }
+      els.profileName.textContent = cloudUser.displayName || t('auth.accountFallback');
+      els.profileEmail.textContent = cloudUser.email || '';
+    } else {
+      els.authLabel.textContent = t('auth.login');
+      els.authIcon.classList.remove('hidden');
+      els.authAvatar.classList.add('hidden');
+      els.authInitial.classList.add('hidden');
+    }
+    els.authSignedOut.classList.toggle('hidden', logged);
+    els.authSignedIn.classList.toggle('hidden', !logged);
+  }
+
+  function openAuthModal() {
+    clearError(els.authError);
+    els.authModal.classList.remove('hidden');
+    updateCloudUI();
+    if (!cloudUser) setTimeout(function () { try { els.authEmail.focus(); } catch (e) {} }, 30);
+  }
+  function closeAuthModal() { els.authModal.classList.add('hidden'); }
+  function showAuthError(msg) { showError(els.authError, msg); }
+  function currentAuthDomainLabel() {
+    return window.location.hostname || t('auth.noDomain');
+  }
+  function updateAuthDomainHint() {
+    if (els.authDomainHint) {
+      els.authDomainHint.textContent = t('auth.domainHint', { domain: currentAuthDomainLabel() });
+    }
+  }
+  function hasSupportedAuthOrigin() {
+    var host = window.location.hostname;
+    return window.location.protocol === 'https:' ||
+      (window.location.protocol === 'http:' && (host === 'localhost' || host === '127.0.0.1' || host === '[::1]'));
+  }
+  function setAuthBusy(busy) {
+    authBusy = busy;
+    [els.googleBtn, els.signInBtn, els.signUpBtn, els.authEmail, els.authPassword].forEach(function (el) {
+      if (el) el.disabled = busy;
+    });
+  }
+  function withAuthCode(message, code) {
+    return code ? message + ' (' + code + ')' : message;
+  }
+  function mapAuthError(err) {
+    var code = (err && err.code) || '';
+    var message;
+    if (code.indexOf('invalid-credential') >= 0 || code.indexOf('wrong-password') >= 0 || code.indexOf('user-not-found') >= 0) message = t('auth.errInvalid');
+    else if (code.indexOf('email-already-in-use') >= 0) message = t('auth.errInUse');
+    else if (code.indexOf('weak-password') >= 0) message = t('auth.errWeak');
+    else if (code.indexOf('invalid-email') >= 0 || code.indexOf('missing-email') >= 0) message = t('auth.errEmail');
+    else if (code.indexOf('operation-not-supported-in-this-environment') >= 0) message = t('auth.errEnvironment');
+    else if (code.indexOf('operation-not-allowed') >= 0) message = t('auth.errProviderDisabled');
+    else if (code.indexOf('popup-blocked') >= 0) message = t('auth.errPopupBlocked');
+    else if (code.indexOf('popup-closed') >= 0 || code.indexOf('cancelled-popup') >= 0) message = t('auth.errPopup');
+    else if (code.indexOf('unauthorized-domain') >= 0) message = t('auth.errDomain', { domain: currentAuthDomainLabel() });
+    else if (code.indexOf('api-key-not-valid') >= 0 || code.indexOf('invalid-api-key') >= 0 || code.indexOf('app-not-authorized') >= 0 || code.indexOf('invalid-app-id') >= 0) message = t('auth.errConfig');
+    else if (code.indexOf('network-request-failed') >= 0) message = t('auth.errNetwork');
+    else if (code.indexOf('account-exists-with-different-credential') >= 0 || code.indexOf('credential-already-in-use') >= 0) message = t('auth.errCredentialConflict');
+    else if (code.indexOf('too-many-requests') >= 0) message = t('auth.errTooMany');
+    else if (code.indexOf('user-disabled') >= 0) message = t('auth.errUserDisabled');
+    else if (code.indexOf('internal-error') >= 0) message = t('auth.errInternal');
+    else message = t('auth.errGeneric');
+    // Include Firebase's code: it is the fastest way to identify a console/setup problem.
+    return withAuthCode(message, code);
+  }
+  function runAuth(fn) {
+    if (!hasSupportedAuthOrigin()) { showAuthError(t('auth.errEnvironment')); return; }
+    var api = cloudApi();
+    if (!api) { showAuthError(t('auth.unavailable')); return; }
+    if (authBusy) return;
+    clearError(els.authError);
+    setAuthBusy(true);
+    var promise;
+    try { promise = fn(api); }
+    catch (err) {
+      setAuthBusy(false);
+      console.warn('Auth failed:', err);
+      showAuthError(mapAuthError(err));
+      return;
+    }
+    Promise.resolve(promise).then(function () {
+      setAuthBusy(false);
+    }, function (err) {
+      setAuthBusy(false);
+      console.warn('Auth failed:', err);
+      showAuthError(mapAuthError(err));
+    });
+    // Success is handled by the wb:auth event (closes modal, starts sync).
+  }
+  function runGoogleAuth() {
+    if (!hasSupportedAuthOrigin()) { showAuthError(t('auth.errEnvironment')); return; }
+    var api = cloudApi();
+    if (!api) { showAuthError(t('auth.unavailable')); return; }
+    if (authBusy) return;
+    clearError(els.authError);
+    setAuthBusy(true);
+    api.signInWithGoogle().then(function () {
+      setAuthBusy(false);
+    }).catch(function (err) {
+      var code = (err && err.code) || '';
+      var useRedirect = api.signInWithGoogleRedirect &&
+        (code.indexOf('popup-blocked') >= 0 || code.indexOf('cancelled-popup-request') >= 0);
+      if (useRedirect) {
+        try { window.sessionStorage.setItem('weeklyBudget.googleRedirectPending', '1'); } catch (e) {}
+        api.signInWithGoogleRedirect().catch(function (redirectErr) {
+          try { window.sessionStorage.removeItem('weeklyBudget.googleRedirectPending'); } catch (e) {}
+          setAuthBusy(false);
+          console.warn('Google redirect sign-in failed:', redirectErr);
+          showAuthError(mapAuthError(redirectErr));
+        });
+        return; // Browser is navigating to Google; keep controls disabled.
+      }
+      setAuthBusy(false);
+      console.warn('Google sign-in failed:', err);
+      showAuthError(mapAuthError(err));
+    });
+  }
+
+  els.authBtn.addEventListener('click', openAuthModal);
+  els.authClose.addEventListener('click', closeAuthModal);
+  els.authModal.addEventListener('click', function (ev) { if (ev.target === els.authModal) closeAuthModal(); });
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key === 'Escape' && !els.authModal.classList.contains('hidden')) closeAuthModal();
+  });
+  els.googleBtn.addEventListener('click', runGoogleAuth);
+  els.emailAuthForm.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    runAuth(function (api) { return api.signIn(els.authEmail.value.trim(), els.authPassword.value); });
+  });
+  els.signUpBtn.addEventListener('click', function () {
+    runAuth(function (api) { return api.signUp(els.authEmail.value.trim(), els.authPassword.value); });
+  });
+  els.syncNowBtn.addEventListener('click', function () {
+    pushCloudNow().then(function (ok) { if (ok) showToast(t('sync.nowToast')); });
+  });
+  els.signOutBtn.addEventListener('click', function () {
+    var api = cloudApi();
+    closeAuthModal();
+    if (api) api.signOut().catch(function () {});
+  });
+
+  /* ---------- Firebase bridge events ---------- */
+  window.addEventListener('wb:cloud-ready', function () { cloudReady = true; updateCloudUI(); });
+  window.addEventListener('wb:auth-error', function (ev) {
+    var pending = false;
+    try {
+      pending = window.sessionStorage.getItem('weeklyBudget.googleRedirectPending') === '1';
+      window.sessionStorage.removeItem('weeklyBudget.googleRedirectPending');
+    } catch (e) {}
+    setAuthBusy(false);
+    if (!pending) return; // Ignore unrelated startup noise; only surface our redirect result.
+    openAuthModal();
+    showAuthError(mapAuthError(ev.detail || {}));
+  });
+  window.addEventListener('wb:auth', function (ev) {
+    setAuthBusy(false);
+    try { window.sessionStorage.removeItem('weeklyBudget.googleRedirectPending'); } catch (e) {}
+    var was = cloudUser;
+    cloudUser = (ev.detail && ev.detail.user) || null;
+    if (cloudUser) {
+      cloudInitialized = false;
+      setSyncState('syncing');
+      closeAuthModal();
+      showToast(t('auth.welcome', { name: cloudUser.displayName || cloudUser.email || t('auth.accountFallback') }));
+    } else {
+      setSyncState('local');
+      if (was) showToast(t('auth.signedOut'));
+    }
+    updateCloudUI();
+  });
+  window.addEventListener('wb:remote', function (ev) {
+    if (!cloudUser) return;
+    var detail = ev.detail || {};
+    if (!detail.exists || !isMeaningfulRemote(detail.data)) {
+      // First login for this account: seed the cloud with the local budget.
+      if (!cloudInitialized) { cloudInitialized = true; pushCloudNow(); }
+      return;
+    }
+    applyRemoteData(detail.data);
+  });
+  window.addEventListener('wb:cloud-error', function () { if (cloudUser) setSyncState('error'); });
+
+  /* ============================================================
+     5. RENDERING
+  ============================================================ */
+  var chartInstance = null;
+
+  // Chart.js plugin: draws "Total spent" in the doughnut centre.
+  var centerTextPlugin = {
+    id: 'wbCenterText',
+    afterDraw: function (chart, args, opts) {
+      if (!opts || !opts.display) return;
+      var area = chart.chartArea, ctx = chart.ctx;
+      var x = (area.left + area.right) / 2, y = (area.top + area.bottom) / 2;
+      ctx.save();
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = isDark() ? '#94a3b8' : '#64748b';
+      ctx.font = '600 11px Inter, system-ui, sans-serif';
+      ctx.fillText(opts.labelText || '', x, y - 13);
+      ctx.fillStyle = isDark() ? '#f1f5f9' : '#0f172a';
+      ctx.font = '800 20px Inter, system-ui, sans-serif';
+      ctx.fillText(opts.amountText || '', x, y + 11);
+      ctx.restore();
+    }
+  };
+
+  function aggregateByCategory() {
+    var map = {};
+    state.expenses.forEach(function (e) { map[e.category] = (map[e.category] || 0) + Number(e.amount); });
+    return Object.keys(map).map(function (name) {
+      return { name: name, total: round2(map[name]), color: catColor(name) };
+    }).sort(function (a, b) { return b.total - a.total; });
+  }
+
+  function setPill(text, bg, fg) {
+    els.statusPill.textContent = text;
+    els.statusPill.style.background = bg;
+    els.statusPill.style.color = fg;
+  }
+
+  function renderSummary(spent, rem) {
+    els.statIncome.textContent = fmt(state.income);
+    els.statSpent.textContent = fmt(spent);
+    els.logTotal.textContent = fmt(spent);
+    els.chartTotal.textContent = fmt(spent);
+
+    els.remainingAmount.textContent = fmt(rem);
+    els.remainingAmount.style.color = rem < 0 ? '#ef4444' : '#059669'; // green positive / red negative
+
+    var pct = state.income > 0 ? (spent / state.income) * 100 : (spent > 0 ? 100 : 0);
+    var pctShown = Math.min(100, Math.round(pct));
+    els.spentProgress.style.width = pctShown + '%';
+    els.spentProgress.style.background = rem < 0 || pct >= 90 ? '#ef4444' : (pct >= 70 ? '#f59e0b' : '#10b981');
+    els.spentProgressTrack.setAttribute('aria-valuenow', String(pctShown));
+    els.progressSpentLabel.textContent = t('rem.spentLabel', { amount: fmt(spent) });
+    els.progressPct.textContent = t('rem.pctOfIncome', { pct: pctShown });
+
+    if (state.income <= 0 && spent === 0) {
+      setPill(t('status.getStarted'), 'rgba(100,116,139,.15)', isDark() ? '#cbd5e1' : '#475569');
+      els.remainingHint.textContent = t('hint.setIncome');
+    } else if (rem < 0) {
+      setPill(t('status.overspent'), 'rgba(239,68,68,.14)', '#dc2626');
+      els.remainingHint.textContent = t('hint.over', { amount: fmt(Math.abs(rem)) });
+    } else if (pct >= 80) {
+      setPill(t('status.careful'), 'rgba(245,158,11,.16)', '#d97706');
+      els.remainingHint.textContent = t('hint.left', { pct: Math.round(100 - pct) });
+    } else {
+      setPill(t('status.onTrack'), 'rgba(16,185,129,.14)', '#059669');
+      els.remainingHint.textContent = t('hint.left', { pct: Math.round(100 - pct) });
+    }
+
+    var left = daysLeftThisWeek();
+    els.daysLeft.textContent = t(left === 1 ? 'days.one' : 'days.many', { n: left });
+    els.safePerDay.textContent = rem > 0 ? fmt(rem / left) : fmt(0);
+  }
+
+  var trashSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+
+  function renderLog() {
+    var sorted = state.expenses.slice().sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    });
+
+    els.logCount.textContent = t(sorted.length === 1 ? 'log.itemsOne' : 'log.itemsMany', { n: sorted.length });
+    els.emptyState.classList.toggle('hidden', sorted.length > 0);
+
+    els.expenseTbody.innerHTML = sorted.map(function (e) {
+      var label = e.description && e.description.trim() ? e.description : catLabel(e.category);
+      return '<tr>' +
+        '<td style="white-space:nowrap; color:var(--muted); font-size:.83rem;">' + escapeHtml(displayDate(e.date)) + '</td>' +
+        '<td><div style="font-weight:600;">' + escapeHtml(label) + '</div>' +
+          '<span class="badge"><span class="dot" style="background:' + catColor(e.category) + '"></span>' + escapeHtml(catLabel(e.category)) + '</span></td>' +
+        '<td class="amt">-' + fmt(e.amount) + '</td>' +
+        '<td style="text-align:right;"><button type="button" class="icon-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + '</button></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  function renderLegend(data, spent) {
+    if (!data.length || spent <= 0) { els.chartLegend.innerHTML = ''; return; }
+    els.chartLegend.innerHTML = data.map(function (d) {
+      var pct = Math.round((d.total / spent) * 100);
+      return '<li>' +
+        '<div class="legend-top"><span class="dot" style="background:' + d.color + '"></span>' +
+          '<span class="legend-name">' + escapeHtml(catLabel(d.name)) + '</span>' +
+          '<span class="legend-pct">' + pct + '%</span>' +
+          '<span class="legend-amt">' + fmt(d.total) + '</span></div>' +
+        '<div class="legend-bar-track"><div class="legend-bar" style="width:' + pct + '%; background:' + d.color + '"></div></div>' +
+      '</li>';
+    }).join('');
+  }
+
+  // Fallback doughnut (only used if the Chart.js CDN is unreachable)
+  function drawFallbackChart(data, spent) {
+    var canvas = els.chartCanvas, wrap = canvas.parentElement;
+    var W = wrap.clientWidth || 300, H = wrap.clientHeight || 260, dpr = window.devicePixelRatio || 1;
+    canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    var ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var cx = W / 2, cy = H / 2, r = Math.min(W, H) / 2 - 22;
+    ctx.lineWidth = 34; ctx.lineCap = 'butt';
+    if (!data.length || spent <= 0) {
+      ctx.strokeStyle = isDark() ? '#1e293b' : '#e2e8f0';
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.stroke();
+    } else {
+      var start = -Math.PI / 2;
+      data.forEach(function (d) {
+        var sweep = (d.total / spent) * Math.PI * 2;
+        ctx.strokeStyle = d.color;
+        ctx.beginPath(); ctx.arc(cx, cy, r, start + 0.02, start + sweep - 0.02); ctx.stroke();
+        start += sweep;
+      });
+    }
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = isDark() ? '#94a3b8' : '#64748b'; ctx.font = '600 11px Inter, system-ui, sans-serif';
+    ctx.fillText(t('chart.center'), cx, cy - 13);
+    ctx.fillStyle = isDark() ? '#f1f5f9' : '#0f172a'; ctx.font = '800 20px Inter, system-ui, sans-serif';
+    ctx.fillText(fmt(spent), cx, cy + 11);
+  }
+
+  function renderChart(spent) {
+    var data = aggregateByCategory();
+    els.chartEmpty.classList.toggle('hidden', spent > 0);
+    renderLegend(data, spent);
+
+    if (typeof window.Chart === 'undefined') { drawFallbackChart(data, spent); return; }
+
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    var empty = !data.length || spent <= 0;
+    chartInstance = new Chart(els.chartCanvas.getContext('2d'), {
+      type: 'doughnut',
+      data: {
+        labels: empty ? [t('chart.noSpending')] : data.map(function (d) { return catLabel(d.name); }),
+        datasets: [{
+          data: empty ? [1] : data.map(function (d) { return d.total; }),
+          backgroundColor: empty ? [isDark() ? '#1e293b' : '#e2e8f0'] : data.map(function (d) { return d.color; }),
+          borderColor: isDark() ? '#0f172a' : '#ffffff',
+          borderWidth: 3, hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            enabled: !empty,
+            callbacks: {
+              label: function (ctx) {
+                var v = ctx.parsed || 0;
+                var pct = spent > 0 ? Math.round((v / spent) * 100) : 0;
+                return ' ' + ctx.label + ': ' + fmt(v) + ' (' + pct + '%)';
+              }
+            }
+          },
+          wbCenterText: { display: true, amountText: fmt(spent), labelText: t('chart.center') }
+        }
+      },
+      plugins: [centerTextPlugin]
+    });
+  }
+
+
+  /* ---------- Calendar (Sunday -> Saturday month grid) ---------- */
+  function incomeOn(iso) { return (state.income > 0 && state.incomeDate === iso) ? round2(state.income) : 0; }
+  function expensesOn(iso) { return state.expenses.filter(function (e) { return e.date === iso; }); }
+
+  function renderCalendar() {
+    if (!els.calGrid) return;
+    var y = calendarCursor.getFullYear(), m = calendarCursor.getMonth();
+    els.calTitle.textContent = calendarCursor.toLocaleDateString(LOCALE(), { month: 'long', year: 'numeric' });
+
+    var monthKey = y + '-' + String(m + 1).padStart(2, '0');
+    var byDate = {};
+    state.expenses.forEach(function (e) {
+      if (!byDate[e.date]) byDate[e.date] = { total: 0, count: 0 };
+      byDate[e.date].total += Number(e.amount); byDate[e.date].count += 1;
+    });
+    var monthExpenses = round2(state.expenses.reduce(function (s, e) { return e.date.slice(0, 7) === monthKey ? s + Number(e.amount) : s; }, 0));
+    var monthIncome = (state.income > 0 && state.incomeDate && state.incomeDate.slice(0, 7) === monthKey) ? round2(state.income) : 0;
+    els.calMonthIncome.textContent = fmt(monthIncome);
+    els.calMonthExpenses.textContent = fmt(monthExpenses);
+    var net = round2(monthIncome - monthExpenses);
+    els.calMonthNet.textContent = fmt(net);
+    els.calMonthNet.style.color = net < 0 ? '#dc2626' : '#059669';
+
+    var first = new Date(y, m, 1);
+    var start = new Date(y, m, 1 - first.getDay()); // back up to Sunday
+    var todayISO = toLocalISO(new Date());
+    var cells = [];
+    for (var i = 0; i < 42; i++) {
+      var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+      var iso = toLocalISO(d);
+      var inc = incomeOn(iso);
+      var day = byDate[iso] || { total: 0, count: 0 };
+      var cls = 'cal-cell' + (d.getMonth() !== m ? ' is-other' : '') + (iso === todayISO ? ' is-today' : '') + (iso === selectedDateISO ? ' is-selected' : '');
+      var label = d.toLocaleDateString(LOCALE(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) +
+        (inc ? ', ' + t('cal.wordIncome') + ' ' + fmt(inc) : '') + (day.total ? ', ' + t('cal.wordExpenses') + ' ' + fmt(day.total) : '');
+      cells.push(
+        '<button type="button" class="' + cls + '" data-cal-date="' + iso + '" aria-label="' + escapeHtml(label) + '" aria-pressed="' + (iso === selectedDateISO) + '">' +
+          '<span class="cal-daynum">' + d.getDate() + (iso === todayISO ? '<span class="cal-today-dot" title="' + escapeHtml(t('date.today')) + '"></span>' : '') + '</span>' +
+          (inc ? '<span class="cal-pill income">+' + fmtShort(inc) + '</span>' : '') +
+          (day.total ? '<span class="cal-pill expense">-' + fmtShort(day.total) + '</span>' : '') +
+          (day.count > 1 ? '<span class="cal-count">' + t('cal.itemsMany', { n: day.count }) + '</span>' : '') +
+        '</button>'
+      );
+    }
+    els.calGrid.innerHTML = cells.join('');
+  }
+
+  function renderDayDetail() {
+    if (!els.dayTxList) return;
+    var d = parseISO(selectedDateISO);
+    var rows = expensesOn(selectedDateISO).slice().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
+    var inc = incomeOn(selectedDateISO);
+    var spent = round2(rows.reduce(function (s, e) { return s + Number(e.amount); }, 0));
+    var net = round2(inc - spent);
+
+    els.dayTitle.textContent = d.toLocaleDateString(LOCALE(), { weekday: 'long', month: 'long', day: 'numeric' });
+    els.daySub.textContent = displayDate(selectedDateISO) + ' · ' + selectedDateISO;
+    els.dayIncome.textContent = inc ? '+' + fmt(inc) : fmt(0);
+    els.dayExpenses.textContent = spent ? '-' + fmt(spent) : fmt(0);
+    els.dayNet.textContent = fmt(net);
+    els.dayNet.style.color = net < 0 ? '#dc2626' : '#059669';
+    els.dayEmpty.classList.toggle('hidden', rows.length > 0 || inc > 0);
+
+    var items = [];
+    if (inc) {
+      items.push('<li class="tx-row"><span class="dot" style="background:#10b981"></span>' +
+        '<span class="tx-main"><span class="tx-name">' + escapeHtml(t('day.incomeName')) + '</span><span class="tx-cat">' + escapeHtml(t('day.incomeCat')) + '</span></span>' +
+        '<span class="tx-amt" style="color:#059669;">+' + fmt(inc) + '</span></li>');
+    }
+    rows.forEach(function (e) {
+      var label = e.description && e.description.trim() ? e.description : catLabel(e.category);
+      items.push('<li class="tx-row"><span class="dot" style="background:' + catColor(e.category) + '"></span>' +
+        '<span class="tx-main"><span class="tx-name">' + escapeHtml(label) + '</span><span class="tx-cat">' + escapeHtml(catLabel(e.category)) + '</span></span>' +
+        '<span class="tx-amt" style="color:#dc2626;">-' + fmt(e.amount) + '</span>' +
+        '<button type="button" class="icon-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + '</button></li>');
+    });
+    els.dayTxList.innerHTML = items.join('');
+
+    if (els.calIncomeInput && document.activeElement !== els.calIncomeInput) {
+      els.calIncomeInput.value = inc ? String(inc) : '';
+    }
+  }
+
+  function selectDate(iso) {
+    if (!isValidISODate(iso)) return;
+    selectedDateISO = iso;
+    var d = parseISO(iso);
+    calendarCursor = new Date(d.getFullYear(), d.getMonth(), 1);
+    if (els.expDate) els.expDate.value = iso; // keep the Dashboard form in sync
+    renderCalendar();
+    renderDayDetail();
+  }
+
+  function renderInsights(spent) {
+    var data = aggregateByCategory();
+    var count = state.expenses.length;
+    els.insCount.textContent = String(count);
+    if (!count) {
+      els.insTopCat.textContent = '—'; els.insLargest.textContent = '—'; els.insAvg.textContent = '—';
+      return;
+    }
+    els.insTopCat.innerHTML = escapeHtml(catLabel(data[0].name)) + '<small>' + fmt(data[0].total) + '</small>';
+    var largest = state.expenses.reduce(function (a, b) { return Number(b.amount) > Number(a.amount) ? b : a; });
+    var largestLabel = largest.description && largest.description.trim() ? largest.description : catLabel(largest.category);
+    els.insLargest.innerHTML = fmt(largest.amount) + '<small>' + escapeHtml(largestLabel) + '</small>';
+    els.insAvg.textContent = fmt(spent / count);
+  }
+
+  function render() {
+    var spent = totalSpent();
+    renderSummary(spent, remaining());
+    renderLog();
+    renderChart(spent);
+    renderInsights(spent);
+    renderCalendar();
+    renderDayDetail();
+    updateCloudUI();
+  }
+
+  /* ============================================================
+     6. UI FEEDBACK (toast + errors + two-step confirm)
+  ============================================================ */
+  var toastTimer = null;
+  function showToast(msg) {
+    els.toast.textContent = msg;
+    els.toast.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { els.toast.classList.remove('show'); }, 2600);
+  }
+  function showError(el, msg) { el.textContent = msg; el.classList.remove('hidden'); }
+  function clearError(el) { el.textContent = ''; el.classList.add('hidden'); }
+
+  function armConfirm(btn, confirmText, action) {
+    if (btn.dataset.armed === '1') {
+      btn.dataset.armed = ''; btn.classList.remove('armed'); btn.textContent = btn.dataset.original;
+      action();
+      return;
+    }
+    btn.dataset.original = btn.textContent;
+    btn.dataset.armed = '1'; btn.classList.add('armed'); btn.textContent = confirmText;
+    setTimeout(function () {
+      if (btn.dataset.armed === '1') { btn.dataset.armed = ''; btn.classList.remove('armed'); btn.textContent = btn.dataset.original; }
+    }, 3200);
+  }
+
+  /* ============================================================
+     7. EVENTS — Income
+  ============================================================ */
+  function syncIncomeInputs() {
+    els.incomeInput.value = state.income ? String(state.income) : '';
+    if (els.incomeDateInput) els.incomeDateInput.value = state.incomeDate || mondayISO();
+  }
+  function setIncome(value, announce, dateISO) {
+    state.income = round2(value);
+    if (isValidISODate(dateISO)) state.incomeDate = dateISO;
+    if (state.income > 0 && !state.incomeDate) state.incomeDate = mondayISO();
+    syncIncomeInputs();
+    save(); render();
+    if (announce) showToast(state.income > 0
+      ? t('inc.toastSet', { amount: fmt(state.income), date: displayDate(state.incomeDate) })
+      : t('inc.toastCleared'));
+  }
+
+  els.incomeForm.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var v = parseFloat(els.incomeInput.value);
+    if (isNaN(v) || v < 0) { showError(els.incomeError, t('inc.error')); els.incomeInput.focus(); return; }
+    clearError(els.incomeError);
+    setIncome(v, true, els.incomeDateInput.value);
+  });
+  els.incomeInput.addEventListener('input', function () { clearError(els.incomeError); });
+
+  document.querySelectorAll('[data-income]').forEach(function (chip) {
+    chip.addEventListener('click', function () { clearError(els.incomeError); setIncome(parseFloat(chip.dataset.income), true, els.incomeDateInput.value); });
+  });
+
+  els.resetBtn.addEventListener('click', function () {
+    armConfirm(els.resetBtn, t('inc.confirmReset'), function () {
+      state = { income: 0, incomeDate: null, expenses: [] };
+      syncIncomeInputs();
+      save(); render();
+      showToast(t('inc.resetToast'));
+    });
+  });
+
+  /* ============================================================
+     8. EVENTS — Expenses
+  ============================================================ */
+  function addExpense(amount, description, category, date) {
+    var entry = {
+      id: uid(), amount: round2(amount), description: (description || '').trim(),
+      category: category || 'Other', date: isValidISODate(date) ? date : toLocalISO(new Date()),
+      createdAt: Date.now()
+    };
+    state.expenses.push(entry);
+    selectedDateISO = entry.date;
+    var d = parseISO(entry.date);
+    calendarCursor = new Date(d.getFullYear(), d.getMonth(), 1);
+    save(); render();
+    return entry;
+  }
+
+  els.expenseForm.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var amount = parseFloat(els.expAmount.value);
+    if (isNaN(amount) || amount <= 0) { showError(els.expenseError, t('exp.error')); els.expAmount.focus(); return; }
+    var date = els.expDate.value || toLocalISO(new Date());
+    clearError(els.expenseError);
+
+    var entry = addExpense(amount, els.expDesc.value, els.expCategory.value, date);
+    showToast(t('exp.toastAdded', { amount: fmt(entry.amount), remaining: fmt(remaining()) }));
+
+    els.expAmount.value = ''; els.expDesc.value = '';
+    els.expDate.value = entry.date; // stay on that day so you can add more
+    els.expAmount.focus();
+  });
+  els.expAmount.addEventListener('input', function () { clearError(els.expenseError); });
+
+  // Delete (event delegation on the table body)
+  document.addEventListener('click', function (ev) { // delete works in both the log and the calendar day list
+    var btn = ev.target.closest('[data-delete-id]');
+    if (!btn) return;
+    var id = btn.getAttribute('data-delete-id');
+    var removed = state.expenses.filter(function (e) { return String(e.id) === id; })[0];
+    state.expenses = state.expenses.filter(function (e) { return String(e.id) !== id; });
+    save(); render();
+    if (removed) showToast(t('log.toastDeleted', { amount: fmt(removed.amount) }));
+  });
+
+  els.clearBtn.addEventListener('click', function () {
+    if (!state.expenses.length) { showToast(t('log.noClear')); return; }
+    armConfirm(els.clearBtn, t('common.confirm'), function () {
+      state.expenses = [];
+      save(); render();
+      showToast(t('log.cleared'));
+    });
+  });
+
+  els.sampleBtn.addEventListener('click', function () {
+    state.expenses = sampleExpenses();
+    if (state.income <= 0) { state.income = 1250; state.incomeDate = mondayISO(); }
+    if (!state.incomeDate) state.incomeDate = mondayISO();
+    syncIncomeInputs();
+    save(); render();
+    showToast(t('log.sampleToast'));
+  });
+
+
+  /* ---------- PDF report export (jsPDF + AutoTable, print fallback) ----------
+     jsPDF's built-in Helvetica cannot render CJK glyphs, so reports
+     containing Chinese (UI language or user descriptions) use the
+     print-ready layout, where the browser renders every script and
+     "Save as PDF" produces the same branded report. */
+  function fmtHKD(n) {
+    var v = Number(n) || 0;
+    return (v < 0 ? '-HK$' : 'HK$') + Math.abs(v).toLocaleString(LOCALE(), { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function formatReportDate(iso) {
+    return parseISO(iso).toLocaleDateString(LOCALE(), { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  function getPdfReportData() {
+    var now = new Date();
+    var expenses = state.expenses.slice().sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+      return (a.createdAt || 0) - (b.createdAt || 0);
+    });
+    var spent = totalSpent();
+    var income = round2(state.income);
+    var rows = expenses.map(function (e) {
+      var amount = round2(e.amount);
+      return {
+        date: formatReportDate(e.date),
+        category: catLabel(e.category),
+        description: (e.description && e.description.trim()) ? e.description.trim() : catLabel(e.category),
+        color: catColor(e.category),
+        amount: amount,
+        amountLabel: fmtHKD(-amount)
+      };
+    });
+    return {
+      filename: 'WeeklyBudget-Report-' + toLocalISO(now) + '.pdf',
+      generatedLabel: now.toLocaleString(LOCALE(), { dateStyle: 'medium', timeStyle: 'short' }),
+      weekLabel: weekRangeLabel(),
+      income: income,
+      spent: spent,
+      remaining: remaining(),
+      incomeLabel: fmtHKD(income),
+      spentLabel: fmtHKD(spent),
+      remainingLabel: fmtHKD(remaining()),
+      totalRowsLabel: fmtHKD(-spent),
+      percentSpent: income > 0 ? Math.round((spent / income) * 100) : null,
+      rows: rows,
+      labels: {
+        title: t('report.title'), subtitle: t('report.subtitle'),
+        generated: t('report.generated'), week: t('report.week'),
+        currency: t('report.currency'), currencyValue: t('report.currencyValue'),
+        overview: t('report.overview'), totalIncome: t('report.totalIncome'),
+        totalSpent: t('report.totalSpent'), remaining: t('report.remaining'),
+        expenseLog: t('log.title'), date: t('common.date'), category: t('common.category'),
+        description: t('common.description'), amount: t('report.amountHkd'),
+        total: t('report.total'), noExpenses: t('report.noExpenses'),
+        footer: t('report.footer')
+      }
+    };
+  }
+  function makePdfSafeText(value) {
+    return String(value == null ? '' : value)
+      .replace(/[–—]/g, '-').replace(/[‘’]/g, "'").replace(/[“”]/g, '"')
+      .replace(/•/g, '|').replace(/…/g, '...').replace(/[\u00a0\u202f]/g, ' ');
+  }
+  function canUseBuiltInPdfFonts(data) {
+    if (currentLang !== 'en') return false;
+    var all = [data.generatedLabel, data.weekLabel].concat(data.rows.map(function (r) {
+      return r.date + ' ' + r.category + ' ' + r.description;
+    })).join(' ');
+    return !/[^\u0000-\u00ff]/.test(makePdfSafeText(all));
+  }
+  function getJsPdfCtor() {
+    if (window.jspdf && window.jspdf.jsPDF) return window.jspdf.jsPDF;
+    if (window.jsPDF) return window.jsPDF;
+    return null;
+  }
+
+  function generateJsPdfReport(data) {
+    var Ctor = getJsPdfCtor();
+    if (!Ctor) throw new Error('jsPDF unavailable');
+    var doc = new Ctor({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
+    if (typeof doc.autoTable !== 'function') throw new Error('AutoTable unavailable');
+
+    var L = data.labels;
+    function S(v) { return makePdfSafeText(v); }
+    var pageWidth = doc.internal.pageSize.getWidth();
+    var pageHeight = doc.internal.pageSize.getHeight();
+    var margin = 14;
+    var contentWidth = pageWidth - margin * 2;
+    var sage = [73, 109, 87], sageDark = [49, 92, 70], sageLight = [237, 244, 238];
+    var ink = [23, 37, 29], muted = [100, 116, 107], line = [203, 220, 207];
+    var green = [5, 150, 105], red = [220, 38, 38];
+
+    // Header band
+    doc.setFillColor(sageDark[0], sageDark[1], sageDark[2]);
+    doc.rect(0, 0, pageWidth, 36, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.roundedRect(margin, 10, 12, 12, 2, 2, 'F');
+    doc.setTextColor(sageDark[0], sageDark[1], sageDark[2]);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+    doc.text('W', margin + 6, 18.2, { align: 'center' });
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(21);
+    doc.text(S(L.title), margin + 17, 16);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5);
+    doc.setTextColor(220, 235, 224);
+    doc.text(S(L.subtitle), margin + 17, 23);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text('HK$', pageWidth - margin, 16, { align: 'right' });
+
+    // Meta strip: generated date | week range | currency
+    var meta = [
+      { x: margin, label: L.generated, value: data.generatedLabel },
+      { x: margin + 58, label: L.week, value: data.weekLabel },
+      { x: margin + 132, label: L.currency, value: L.currencyValue }
+    ];
+    meta.forEach(function (m) {
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7);
+      doc.setTextColor(muted[0], muted[1], muted[2]);
+      doc.text(S(m.label).toUpperCase(), m.x, 45);
+      doc.setFontSize(8.8); doc.setTextColor(ink[0], ink[1], ink[2]);
+      doc.text(S(m.value), m.x, 51);
+    });
+    doc.setDrawColor(line[0], line[1], line[2]); doc.setLineWidth(0.25);
+    doc.line(margin, 55, pageWidth - margin, 55);
+
+    // Budget overview box
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+    doc.setTextColor(sageDark[0], sageDark[1], sageDark[2]);
+    doc.text(S(L.overview), margin, 63);
+    var boxY = 67, boxH = 29;
+    doc.setFillColor(sageLight[0], sageLight[1], sageLight[2]);
+    doc.setDrawColor(line[0], line[1], line[2]);
+    doc.roundedRect(margin, boxY, contentWidth, boxH, 2, 2, 'FD');
+    var stats = [
+      { label: L.totalIncome, value: data.incomeLabel, color: ink },
+      { label: L.totalSpent, value: data.spentLabel, color: ink },
+      { label: L.remaining, value: data.remainingLabel, color: data.remaining < 0 ? red : green }
+    ];
+    var colW = contentWidth / 3;
+    stats.forEach(function (s, i) {
+      var x = margin + i * colW + 5;
+      doc.setFont('helvetica', 'bold'); doc.setFontSize(7.2);
+      doc.setTextColor(muted[0], muted[1], muted[2]);
+      doc.text(S(s.label).toUpperCase(), x, boxY + 10);
+      doc.setFontSize(15); doc.setTextColor(s.color[0], s.color[1], s.color[2]);
+      doc.text(S(s.value), x, boxY + 20.5);
+      if (i > 0) doc.line(margin + i * colW, boxY + 5, margin + i * colW, boxY + boxH - 5);
+    });
+
+    var noteParts = [t('report.transactions', { n: data.rows.length })];
+    if (data.percentSpent != null) noteParts.push(t('report.percentSpent', { pct: data.percentSpent }));
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5);
+    doc.setTextColor(muted[0], muted[1], muted[2]);
+    doc.text(S(noteParts.join(' | ')), margin, boxY + boxH + 7);
+
+    // Expense log table
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(13);
+    doc.setTextColor(sageDark[0], sageDark[1], sageDark[2]);
+    doc.text(S(L.expenseLog), margin, boxY + boxH + 16);
+
+    var body = data.rows.length ? data.rows.map(function (r) {
+      return [S(r.date), S(r.category), S(r.description), S(r.amountLabel)];
+    }) : [[{ content: S(L.noExpenses), colSpan: 4, styles: { halign: 'center', textColor: muted } }]];
+
+    doc.autoTable({
+      startY: boxY + boxH + 20,
+      margin: { left: margin, right: margin, top: 14, bottom: 17 },
+      head: [[S(L.date), S(L.category), S(L.description), S(L.amount)]],
+      body: body,
+      foot: [[{ content: S(L.total), colSpan: 3, styles: { halign: 'right' } }, S(data.totalRowsLabel)]],
+      theme: 'grid',
+      styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.4, textColor: ink, lineColor: [223, 231, 225], lineWidth: 0.15, valign: 'middle', overflow: 'linebreak' },
+      headStyles: { fillColor: sage, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+      bodyStyles: { fillColor: [255, 255, 255] },
+      alternateRowStyles: { fillColor: [247, 250, 248] },
+      footStyles: { fillColor: [232, 242, 235], textColor: ink, fontStyle: 'bold' },
+      columnStyles: {
+        0: { cellWidth: 34 },
+        1: { cellWidth: 36 },
+        3: { cellWidth: 32, halign: 'right', fontStyle: 'bold' }
+      }
+    });
+
+    var pageCount = doc.getNumberOfPages();
+    for (var i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(line[0], line[1], line[2]);
+      doc.line(margin, pageHeight - 11, pageWidth - margin, pageHeight - 11);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(7.5);
+      doc.setTextColor(muted[0], muted[1], muted[2]);
+      doc.text(S(L.footer), margin, pageHeight - 6);
+      doc.text(S(t('report.page', { page: i, pages: pageCount })), pageWidth - margin, pageHeight - 6, { align: 'right' });
+    }
+
+    if (doc.setProperties) doc.setProperties({ title: S(L.title), subject: S(L.subtitle), creator: 'WeeklyBudget' });
+    doc.save(data.filename);
+  }
+
+  function buildPrintReportHtml(data) {
+    var L = data.labels;
+    var rowsHtml = data.rows.length ? data.rows.map(function (r) {
+      return '<tr><td>' + escapeHtml(r.date) + '</td>' +
+        '<td><span class="dot" style="background:' + escapeHtml(r.color) + '; margin-right:6px;"></span>' + escapeHtml(r.category) + '</td>' +
+        '<td>' + escapeHtml(r.description) + '</td>' +
+        '<td class="report-amount">' + escapeHtml(r.amountLabel) + '</td></tr>';
+    }).join('') : '<tr><td class="report-empty" colspan="4">' + escapeHtml(L.noExpenses) + '</td></tr>';
+    var noteParts = [t('report.transactions', { n: data.rows.length })];
+    if (data.percentSpent != null) noteParts.push(t('report.percentSpent', { pct: data.percentSpent }));
+
+    return '' +
+      '<header class="report-header"><div>' +
+        '<p class="report-kicker">WeeklyBudget</p>' +
+        '<h1>' + escapeHtml(L.title) + '</h1>' +
+        '<p class="report-subtitle">' + escapeHtml(L.subtitle) + '</p>' +
+      '</div><span class="report-currency">HK$</span></header>' +
+      '<section class="report-meta">' +
+        '<div><div class="report-meta-label">' + escapeHtml(L.generated) + '</div><div class="report-meta-value">' + escapeHtml(data.generatedLabel) + '</div></div>' +
+        '<div><div class="report-meta-label">' + escapeHtml(L.week) + '</div><div class="report-meta-value">' + escapeHtml(data.weekLabel) + '</div></div>' +
+        '<div><div class="report-meta-label">' + escapeHtml(L.currency) + '</div><div class="report-meta-value">' + escapeHtml(L.currencyValue) + '</div></div>' +
+      '</section>' +
+      '<section><h2>' + escapeHtml(L.overview) + '</h2><div class="report-overview">' +
+        '<div class="report-stat"><div class="report-stat-label">' + escapeHtml(L.totalIncome) + '</div><div class="report-stat-value">' + escapeHtml(data.incomeLabel) + '</div></div>' +
+        '<div class="report-stat"><div class="report-stat-label">' + escapeHtml(L.totalSpent) + '</div><div class="report-stat-value">' + escapeHtml(data.spentLabel) + '</div></div>' +
+        '<div class="report-stat"><div class="report-stat-label">' + escapeHtml(L.remaining) + '</div><div class="report-stat-value ' + (data.remaining < 0 ? 'negative' : 'positive') + '">' + escapeHtml(data.remainingLabel) + '</div></div>' +
+      '</div><p class="report-note">' + escapeHtml(noteParts.join(' · ')) + '</p></section>' +
+      '<section><h2>' + escapeHtml(L.expenseLog) + '</h2>' +
+        '<table><thead><tr><th>' + escapeHtml(L.date) + '</th><th>' + escapeHtml(L.category) + '</th><th>' + escapeHtml(L.description) + '</th><th class="report-amount">' + escapeHtml(L.amount) + '</th></tr></thead>' +
+        '<tbody>' + rowsHtml + '</tbody>' +
+        '<tfoot><tr><td colspan="3" style="text-align:right;">' + escapeHtml(L.total) + '</td><td class="report-amount">' + escapeHtml(data.totalRowsLabel) + '</td></tr></tfoot></table>' +
+      '</section>' +
+      '<footer class="report-footer"><span>' + escapeHtml(L.footer) + '</span><span>' + escapeHtml(data.generatedLabel) + '</span></footer>';
+  }
+
+  function openPrintReport(data) {
+    if (!els.pdfReport) throw new Error('Print report container unavailable');
+    els.pdfReport.innerHTML = buildPrintReportHtml(data);
+    document.body.classList.add('report-printing');
+    showToast(t('report.printReady'));
+    setTimeout(function () {
+      window.print();
+      setTimeout(function () { document.body.classList.remove('report-printing'); }, 500);
+    }, 60);
+  }
+  window.addEventListener('afterprint', function () { document.body.classList.remove('report-printing'); });
+
+  function downloadPdfReport() {
+    var data = getPdfReportData();
+    if (getJsPdfCtor() && canUseBuiltInPdfFonts(data)) {
+      try {
+        generateJsPdfReport(data);
+        showToast(t('report.downloaded'));
+        return;
+      } catch (err) {
+        console.warn('jsPDF generation failed; using print-ready report:', err);
+      }
+    }
+    try { openPrintReport(data); }
+    catch (err) {
+      console.warn('PDF report failed:', err);
+      showToast(t('report.failed'));
+    }
+  }
+
+  if (els.pdfExportBtn) els.pdfExportBtn.addEventListener('click', downloadPdfReport);
+  if (els.settingsPdfBtn) els.settingsPdfBtn.addEventListener('click', downloadPdfReport);
+
+  els.exportBtn.addEventListener('click', function () {
+    if (!state.expenses.length) { showToast(t('log.noExport')); return; }
+    function cell(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }
+    var lines = ['Date,Description,Category,Amount'];
+    state.expenses.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (e) {
+      lines.push([cell(e.date), cell(e.description || e.category), cell(e.category), Number(e.amount).toFixed(2)].join(','));
+    });
+    var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'weekly-budget.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 500);
+    showToast(t('log.exported'));
+  });
+
+
+  /* ---------- Calendar + Settings events ---------- */
+  els.calPrev.addEventListener('click', function () {
+    calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() - 1, 1);
+    renderCalendar();
+  });
+  els.calNext.addEventListener('click', function () {
+    calendarCursor = new Date(calendarCursor.getFullYear(), calendarCursor.getMonth() + 1, 1);
+    renderCalendar();
+  });
+  els.calToday.addEventListener('click', function () { selectDate(toLocalISO(new Date())); });
+  els.calGrid.addEventListener('click', function (ev) {
+    var cell = ev.target.closest('[data-cal-date]');
+    if (cell) selectDate(cell.getAttribute('data-cal-date'));
+  });
+
+  els.calExpenseForm.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var amount = parseFloat(els.calExpAmount.value);
+    if (isNaN(amount) || amount <= 0) { showError(els.calExpenseError, t('exp.error')); els.calExpAmount.focus(); return; }
+    clearError(els.calExpenseError);
+    var entry = addExpense(amount, els.calExpDesc.value, els.calExpCategory.value, selectedDateISO);
+    showToast(t('exp.toastAddedOn', { amount: fmt(entry.amount), date: displayDate(entry.date), remaining: fmt(remaining()) }));
+    els.calExpAmount.value = ''; els.calExpDesc.value = '';
+    els.calExpAmount.focus();
+  });
+  els.calExpAmount.addEventListener('input', function () { clearError(els.calExpenseError); });
+
+  els.calIncomeForm.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var v = parseFloat(els.calIncomeInput.value);
+    if (isNaN(v) || v < 0) { showError(els.calIncomeError, t('inc.error')); els.calIncomeInput.focus(); return; }
+    clearError(els.calIncomeError);
+    setIncome(v, true, selectedDateISO);
+  });
+  els.calIncomeInput.addEventListener('input', function () { clearError(els.calIncomeError); });
+
+  if (els.settingsThemeBtn) els.settingsThemeBtn.addEventListener('click', function () { els.themeToggle.click(); });
+  if (els.settingsExportBtn) els.settingsExportBtn.addEventListener('click', function () { els.exportBtn.click(); });
+  if (els.settingsSampleBtn) els.settingsSampleBtn.addEventListener('click', function () { els.sampleBtn.click(); });
+  if (els.settingsClearBtn) els.settingsClearBtn.addEventListener('click', function () {
+    if (!state.expenses.length) { showToast(t('log.noClear')); return; }
+    armConfirm(els.settingsClearBtn, t('common.confirm'), function () {
+      state.expenses = [];
+      save(); render();
+      showToast(t('log.cleared'));
+    });
+  });
+
+  // Re-draw the fallback chart on resize (Chart.js handles itself)
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    if (typeof window.Chart !== 'undefined') return;
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { renderChart(totalSpent()); }, 150);
+  });
+
+  /* ============================================================
+     9. INIT
+  ============================================================ */
+  els.weekLabel.textContent = weekRangeLabel();
+  syncIncomeInputs();
+  els.expDate.value = selectedDateISO;
+  applyLanguage(currentLang); // restore saved language (also syncs theme + renders)
+  switchView(storage.get(VIEW_KEY) || 'dashboard', true); // restore last view
+  save();   // persist the seed (first visit) or re-affirm loaded state
+  render();
+
+  if (seededFresh) {
+    setTimeout(function () { showToast(t('welcome.toast')); }, 450);
+  }
+})();
+</script>
+
+<!-- Firebase (Auth + Firestore) — modular SDK. Talks to the app via
+     window.WeeklyBudgetCloud + wb:* CustomEvents. If this module fails
+     to load (offline, blocked CDN), the app simply keeps using localStorage. -->
+<script type="module">
+  import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+  import {
+    getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult,
+    signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut
+  } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+  import {
+    getFirestore, doc, setDoc, onSnapshot, serverTimestamp
+  } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBy5Z7VoitTj8doprNvOTQN9oAhVJQGEOo",
+    authDomain: "weekly-budget-6de26.firebaseapp.com",
+    projectId: "weekly-budget-6de26",
+    storageBucket: "weekly-budget-6de26.firebasestorage.app",
+    messagingSenderId: "851436285356",
+    appId: "1:851436285356:web:9faaff88ee711fda4ade09",
+    measurementId: "G-88H6W6HHE1"
+  };
+
+  const emit = (name, detail) => window.dispatchEvent(new CustomEvent(name, { detail }));
+
+  try {
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let unsubscribe = null;
+
+    const makeGoogleProvider = () => {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      return provider;
+    };
+
+    window.WeeklyBudgetCloud = {
+      ready: true,
+      signInWithGoogle: () => signInWithPopup(auth, makeGoogleProvider()),
+      signInWithGoogleRedirect: () => signInWithRedirect(auth, makeGoogleProvider()),
+      signIn: (email, password) => signInWithEmailAndPassword(auth, email, password),
+      signUp: (email, password) => createUserWithEmailAndPassword(auth, email, password),
+      signOut: () => signOut(auth),
+      save: (data) => {
+        if (!auth.currentUser) {
+          return Promise.reject(Object.assign(new Error('Not signed in'), { code: 'wb/no-user' }));
+        }
+        // One document per user: budgets/{uid}
+        return setDoc(
+          doc(db, 'budgets', auth.currentUser.uid),
+          { ...data, updatedAt: serverTimestamp() },
+          { merge: true }
+        );
+      }
+    };
+
+    // Completes redirect sign-in after returning from Google; auth state
+    // handles success, while failures are forwarded to the app UI.
+    getRedirectResult(auth).catch((err) => {
+      emit('wb:auth-error', { code: err && err.code, message: err && err.message });
+    });
+
+    onAuthStateChanged(auth, (user) => {
+      if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+      if (user) {
+        emit('wb:auth', {
+          user: { uid: user.uid, email: user.email, displayName: user.displayName, photoURL: user.photoURL }
+        });
+        // Real-time sync: initial snapshot + every later change (any device)
+        unsubscribe = onSnapshot(
+          doc(db, 'budgets', user.uid),
+          (snap) => emit('wb:remote', { exists: snap.exists(), data: snap.exists() ? snap.data() : null }),
+          (err) => emit('wb:cloud-error', { code: err.code, message: err.message })
+        );
+      } else {
+        emit('wb:auth', { user: null });
+      }
+    });
+
+    emit('wb:cloud-ready', {});
+  } catch (err) {
+    console.warn('Firebase init failed — continuing with localStorage only:', err);
+    window.WeeklyBudgetCloud = { ready: false };
+    emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
+  }
+</script>
+</body>
+</html>
