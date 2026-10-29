@@ -56,34 +56,4 @@ A clean, responsive web application for tracking weekly and monthly income and e
 
 ---
 
-## 🚀 Run Locally
 
-Clone the repository and serve the project with any static file server:
-
-```bash
-git clone https://github.com/zeta0106/weekly-budget.git
-cd weekly-budget
-python3 -m http.server 3000
-```
-
-Then open:
-
-```text
-http://localhost:3000
-```
-
-Google sign-in must be tested from `localhost` or an authorized HTTPS domain rather than a downloaded `file://` page.
-
----
-
-## 🔐 Firebase Notes
-
-For authentication and cloud synchronization:
-
-1. Enable the required providers under **Firebase Authentication > Sign-in method**.
-2. Add `localhost` and the production hostname under **Authentication > Settings > Authorized domains**.
-3. Store each user’s data in a private Firestore document such as `budgets/{uid}`.
-4. Use Firestore Security Rules that only allow an authenticated user to access their own document.
-5. Never commit Firebase Admin credentials, service-account keys, or other server-only secrets to the frontend repository.
-
-When no account is signed in, WeeklyBudget continues to work locally in the browser without sending budget data to the cloud.
