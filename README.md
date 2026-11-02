@@ -1,4 +1,4 @@
-# 🪙 WeeklyBudget Tracker
+# 🪙 WeeklyBudget Tracker v1.1.0
 
 A clean, responsive web application for tracking weekly and monthly income and expenses. WeeklyBudget combines a polished sage-green interface with period-based analytics, an interactive calendar, multilingual support, optional Firebase cloud sync, and downloadable budget reports.
 
