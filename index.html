@@ -1300,6 +1300,10 @@
       <div style="margin-top:.85rem;">
         <label class="label" for="dayTxCategory" id="dayTxCategoryLabel">Category</label>
         <select class="field" id="dayTxCategory"></select>
+        <div id="dayTxCustomCategoryWrap" class="hidden" style="margin-top:.65rem;">
+          <label class="label" for="dayTxCustomCategory" data-i18n="cat.customLabel">Custom category name</label>
+          <input class="field" id="dayTxCustomCategory" type="text" maxlength="40" placeholder="Enter custom category name" data-i18n-ph="cat.customPlaceholder" autocomplete="off" />
+        </div>
       </div>
 
       <div class="day-tx-date"><span data-i18n="common.date">Date</span><strong id="dayTxDateLabel">—</strong></div>
@@ -3575,7 +3579,7 @@
     els.dayTxCategory.innerHTML = names.map(function (name) {
       var label = isIncome ? incomeSourceLabel(name) : catLabel(name);
       return '<option value="' + escapeHtml(name) + '">' + escapeHtml(label) + '</option>';
-    }).join('') + (isIncome ? '' : '<option value="' + ADD_CUSTOM_CATEGORY + '">' + escapeHtml(t('cat.addCustom')) + '</option>');
+    }).join('');
     els.dayTxCategory.value = names.indexOf(previous) >= 0 ? previous : (isIncome ? 'Salary' : 'Other');
     if (els.dayTxCustomCategoryWrap) els.dayTxCustomCategoryWrap.classList.toggle('hidden', isIncome || (els.dayTxCategory.value !== 'Other' && els.dayTxCategory.value !== ADD_CUSTOM_CATEGORY));
     if (els.dayTxCategoryLabel) els.dayTxCategoryLabel.textContent = t(isIncome ? 'daytx.source' : 'common.category');
@@ -4471,5 +4475,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a55e7bb9ae5b04c9',t:'MTc5MzkwOTIzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a55e7bb9ae5b04c9',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a55e8d01d9ac04c9',t:'MTc5MzkwOTkzOQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a55e8d01d9ac04c9',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
