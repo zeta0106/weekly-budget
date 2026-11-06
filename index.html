@@ -194,8 +194,12 @@
     min-height:46px; padding:.65rem .8rem; font-size:.95rem; font-family:inherit;
   }
   .form-grid > div{ min-width:0; }
-  #incomeForm{ min-width:0; }
-  #incomeDateInput{ display:block; width:100%; max-width:100%; min-width:0; box-sizing:border-box; }
+  #incomeForm{ min-width:0; width:100%; max-width:100%; }
+  .income-date-control{ display:flex; width:100%; max-width:100%; min-width:0; }
+  #incomeDateInput{
+    display:block; flex:1 1 0; width:0; max-width:100%; min-width:0 !important;
+    box-sizing:border-box; -webkit-appearance:none; appearance:none;
+  }
   .field:focus{ outline:none; border-color:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,.25); }
   .field::placeholder{ color:var(--muted); opacity:.75; }
   .money-wrap{ position:relative; }
@@ -929,9 +933,11 @@
             <span class="money-sign">$</span>
             <input class="field" id="incomeInput" type="number" inputmode="decimal" min="0" step="0.01" placeholder="1,250.00" autocomplete="off" />
           </div>
-          <div style="margin-top:1rem;">
+          <div style="margin-top:1rem; min-width:0; width:100%;">
             <label class="label" for="incomeDateInput" id="incomeDateLabel">Starting week</label>
-            <input class="field" id="incomeDateInput" type="date" />
+            <div class="income-date-control">
+              <input class="field" id="incomeDateInput" type="date" />
+            </div>
           </div>
           <p class="form-error hidden" id="incomeError" role="alert"></p>
           <div style="margin-top:.9rem;">
@@ -4500,5 +4506,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a562d57169230991',t:'MTc5Mzk1NDg0OQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a562d57169230991',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a562da837d180991',t:'MTc5Mzk1NTA1Nw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a562da837d180991',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
