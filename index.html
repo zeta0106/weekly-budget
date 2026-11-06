@@ -188,10 +188,14 @@
   /* Forms */
   .label{ display:block; font-size:.82rem; font-weight:600; margin-bottom:.4rem; }
   .field{
-    width:100%; background:var(--field); color:var(--text);
+    display:block; width:100%; max-width:100%; min-width:0; box-sizing:border-box;
+    background:var(--field); color:var(--text);
     border:1px solid var(--field-border); border-radius:.55rem;
     min-height:46px; padding:.65rem .8rem; font-size:.95rem; font-family:inherit;
   }
+  .form-grid > div{ min-width:0; }
+  #incomeForm{ min-width:0; }
+  #incomeDateInput{ display:block; width:100%; max-width:100%; min-width:0; box-sizing:border-box; }
   .field:focus{ outline:none; border-color:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,.25); }
   .field::placeholder{ color:var(--muted); opacity:.75; }
   .money-wrap{ position:relative; }
@@ -1407,7 +1411,7 @@
       'budget.titleWeekly': 'Add Weekly Budget', 'budget.titleMonthly': 'Add Monthly Budget',
       'budget.subWeekly': 'Set your starting budget for this week.', 'budget.subMonthly': 'Set your budget for the selected month.',
       'budget.labelWeekly': 'Weekly budget amount', 'budget.labelMonthly': 'Monthly budget amount',
-      'budget.dateWeekly': 'Starting week / budget date', 'budget.dateMonthly': 'Target month',
+      'budget.dateWeekly': 'Starting week budget date', 'budget.dateMonthly': 'Target month',
       'budget.updateWeekly': 'Update Weekly Budget', 'budget.updateMonthly': 'Update Monthly Budget',
       'budget.toastWeekly': 'Weekly budget set to {amount}.', 'budget.toastMonthly': 'Monthly budget set to {amount}.',
       'period.monthRange': '{start} – {end}, {year}',
@@ -1680,7 +1684,7 @@
       'budget.titleWeekly': '新增每週預算', 'budget.titleMonthly': '新增每月預算',
       'budget.subWeekly': '設定本週的起始預算。', 'budget.subMonthly': '設定所選月份的預算。',
       'budget.labelWeekly': '每週預算金額', 'budget.labelMonthly': '每月預算金額',
-      'budget.dateWeekly': '開始週／預算日期', 'budget.dateMonthly': '目標月份',
+      'budget.dateWeekly': '開始週預算日期', 'budget.dateMonthly': '目標月份',
       'budget.updateWeekly': '更新每週預算', 'budget.updateMonthly': '更新每月預算',
       'budget.toastWeekly': '每週預算已設為 {amount}。', 'budget.toastMonthly': '每月預算已設為 {amount}。',
       'period.monthRange': '{year} 年 {start} – {end}',
@@ -1953,7 +1957,7 @@
       'budget.titleWeekly': '新增每周预算', 'budget.titleMonthly': '新增每月预算',
       'budget.subWeekly': '设置本周的起始预算。', 'budget.subMonthly': '设置所选月份的预算。',
       'budget.labelWeekly': '每周预算金额', 'budget.labelMonthly': '每月预算金额',
-      'budget.dateWeekly': '开始周／预算日期', 'budget.dateMonthly': '目标月份',
+      'budget.dateWeekly': '开始周预算日期', 'budget.dateMonthly': '目标月份',
       'budget.updateWeekly': '更新每周预算', 'budget.updateMonthly': '更新每月预算',
       'budget.toastWeekly': '每周预算已设为 {amount}。', 'budget.toastMonthly': '每月预算已设为 {amount}。',
       'period.monthRange': '{year} 年 {start} – {end}',
@@ -4496,5 +4500,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a562b7e64b43ddc5',t:'MTc5Mzk1MzYzOQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a562b7e64b43ddc5',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a562d57169230991',t:'MTc5Mzk1NDg0OQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a562d57169230991',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
