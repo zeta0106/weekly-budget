@@ -1530,7 +1530,7 @@
       'day.net': 'Net for the day',
       'day.tx': 'Transactions',
       'day.empty': 'No transactions on this date yet.',
-      'day.incomeName': 'Weekly income',
+      'day.incomeName': 'Weekly budget',
       'day.incomeCat': 'Income · set in Budget Settings',
       'day.addTitle': 'Add expense for this day',
       'day.descPh': 'e.g. Coffee',
@@ -1800,7 +1800,7 @@
       'day.net': '當日結餘',
       'day.tx': '交易紀錄',
       'day.empty': '此日期尚無交易。',
-      'day.incomeName': '每週收入',
+      'day.incomeName': '每週預算',
       'day.incomeCat': '收入 · 於預算設定中設定',
       'day.addTitle': '為此日新增支出',
       'day.descPh': '例如：咖啡',
@@ -2070,7 +2070,7 @@
       'day.net': '当日结余',
       'day.tx': '交易记录',
       'day.empty': '此日期尚无交易。',
-      'day.incomeName': '每周收入',
+      'day.incomeName': '每周预算',
       'day.incomeCat': '收入 · 于预算设置中设置',
       'day.addTitle': '为此日新增支出',
       'day.descPh': '例如：咖啡',
@@ -2239,6 +2239,10 @@
   };
   var INCOME_SOURCES = Object.keys(INCOME_SOURCE_I18N);
   var PRIMARY_INCOME_ID = 'legacy-income';
+  var MONTHLY_BUDGET_INCOME_ID = 'monthly-budget-income';
+  function isBudgetIncomeEntry(entry) {
+    return !!entry && (String(entry.id) === PRIMARY_INCOME_ID || String(entry.id) === MONTHLY_BUDGET_INCOME_ID);
+  }
   function incomeSourceLabel(name) { var key = INCOME_SOURCE_I18N[name]; return key ? t(key) : name; }
 
   var CATEGORIES = [
@@ -2496,6 +2500,11 @@
     var todayISO = toLocalISO(new Date());
     return todayISO >= range.startISO && todayISO <= range.endISO ? round2(state.income) : 0;
   }
+  function additionalIncomeForRange(range) {
+    return sumIncomeEntries(incomeEntries().filter(function (e) {
+      return !isBudgetIncomeEntry(e) && isValidISODate(e.date) && e.date >= range.startISO && e.date <= range.endISO;
+    }));
+  }
   function expensesForRange(range) {
     return state.expenses.filter(function (e) {
       return isValidISODate(e.date) && e.date >= range.startISO && e.date <= range.endISO;
@@ -2509,7 +2518,7 @@
     var budgetKey = range.mode === 'monthly' ? 'monthly' : 'weekly';
     var configuredKey = budgetKey + 'Configured';
     var income = state.budgets && state.budgets[configuredKey]
-      ? state.budgets[budgetKey]
+      ? round2(Number(state.budgets[budgetKey]) + additionalIncomeForRange(range))
       : incomeForRange(range);
     var spent = sumExpenses(rows);
     return { range: range, expenses: rows, income: income, spent: spent, remaining: round2(income - spent) };
@@ -2964,8 +2973,10 @@
       console.log('Firebase sync success:', { operation: 'applyRemoteData', result: 'already-current', uid: cloudUser && cloudUser.uid });
       setSyncState('synced'); cloudInitialized = true; return; // our own echo
     }
+    var receivedFingerprint = fingerprint(remote);
     suppressCloud = true;
     state = { income: remote.income, incomeDate: remote.incomeDate, incomes: remote.incomes, budgets: remote.budgets, categories: remote.categories, expenses: remote.expenses, demoSeed: false };
+    syncBudgetIncomeEntries();
     document.documentElement.classList.toggle('dark', remote.theme === 'dark');
     storage.set(THEME_KEY, remote.theme);
     syncThemeButton();
@@ -2977,6 +2988,7 @@
     console.log('Firebase sync success:', { operation: 'applyRemoteData', uid: cloudUser && cloudUser.uid });
     if (cloudInitialized) showToast(t('sync.pulled'));
     cloudInitialized = true;
+    if (fingerprint(snapshotData()) !== receivedFingerprint) scheduleCloudSave();
   }
 
   /* ---------- Profile UI (sync runs silently in the background) ---------- */
@@ -3513,10 +3525,12 @@
     };
   }
   function incomeTransactionRow(entry, detailed) {
+    var isWeeklyBudgetEntry = String(entry.id) === PRIMARY_INCOME_ID;
+    var isMonthlyBudgetEntry = String(entry.id) === MONTHLY_BUDGET_INCOME_ID;
     var incomeLabel = entry.description && entry.description.trim()
       ? entry.description
-      : (String(entry.id) === PRIMARY_INCOME_ID ? t('day.incomeName') : incomeSourceLabel(entry.source));
-    var incomeSub = String(entry.id) === PRIMARY_INCOME_ID && !(entry.description && entry.description.trim())
+      : (isWeeklyBudgetEntry ? t('day.incomeName') : (isMonthlyBudgetEntry ? t('rem.incomeMonthly') : incomeSourceLabel(entry.source)));
+    var incomeSub = (isWeeklyBudgetEntry || isMonthlyBudgetEntry) && !(entry.description && entry.description.trim())
       ? t('day.incomeCat')
       : (incomeSourceLabel(entry.source) + ' · ' + t('day.income'));
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
@@ -3735,6 +3749,31 @@
         : (state.budgets.weeklyDate || mondayISO());
     }
   }
+  function upsertBudgetIncomeEntry(mode, amount, dateValue) {
+    var id = mode === 'monthly' ? MONTHLY_BUDGET_INCOME_ID : PRIMARY_INCOME_ID;
+    var rows = incomeEntries().filter(function (entry) { return String(entry.id) !== id; });
+    if (round2(amount) > 0) {
+      var prior = incomeEntries().filter(function (entry) { return String(entry.id) === id; })[0];
+      var entryDate = mode === 'monthly'
+        ? (isValidISODate(String(dateValue || '') + '-01') ? String(dateValue) + '-01' : toLocalISO(new Date()).slice(0, 7) + '-01')
+        : (isValidISODate(dateValue) ? dateValue : mondayISO());
+      rows.unshift({
+        id: id,
+        amount: round2(amount),
+        description: '',
+        source: 'Other Income',
+        date: entryDate,
+        createdAt: prior ? (prior.createdAt || Date.now()) : Date.now()
+      });
+    }
+    state.incomes = rows;
+    syncLegacyIncomeFields();
+  }
+  function syncBudgetIncomeEntries() {
+    if (!state || !state.budgets) return;
+    if (state.budgets.weeklyConfigured) upsertBudgetIncomeEntry('weekly', state.budgets.weekly, state.budgets.weeklyDate);
+    if (state.budgets.monthlyConfigured) upsertBudgetIncomeEntry('monthly', state.budgets.monthly, state.budgets.monthlyDate);
+  }
   function setBudget(value, dateValue, announce) {
     var key = periodMode === 'monthly' ? 'monthly' : 'weekly';
     var amount = round2(value);
@@ -3743,6 +3782,7 @@
     state.demoSeed = false;
     if (key === 'monthly') state.budgets.monthlyDate = /^\d{4}-\d{2}$/.test(String(dateValue || '')) ? dateValue : toLocalISO(new Date()).slice(0, 7);
     else state.budgets.weeklyDate = isValidISODate(dateValue) ? dateValue : mondayISO();
+    upsertBudgetIncomeEntry(key, amount, key === 'monthly' ? state.budgets.monthlyDate : state.budgets.weeklyDate);
     syncIncomeInputs();
     save(); render();
     if (announce) showToast(t(key === 'monthly' ? 'budget.toastMonthly' : 'budget.toastWeekly', { amount: fmt(amount) }));
@@ -3781,6 +3821,7 @@
   els.resetBtn.addEventListener('click', function () {
     armConfirm(els.resetBtn, t('inc.confirmReset'), function () {
       state = { income: 0, incomeDate: null, incomes: [], budgets: state.budgets, categories: state.categories || [], expenses: [], demoSeed: false };
+      syncBudgetIncomeEntries();
       syncIncomeInputs();
       save(); render();
       showToast(t('inc.resetToast'));
@@ -3856,6 +3897,8 @@
       var incomeId = incomeBtn.getAttribute('data-delete-income-id');
       var removedIncome = incomeEntries().filter(function (e) { return String(e.id) === incomeId; })[0];
       state.incomes = incomeEntries().filter(function (e) { return String(e.id) !== incomeId; });
+      if (String(incomeId) === PRIMARY_INCOME_ID) { state.budgets.weekly = 0; state.budgets.weeklyConfigured = true; }
+      if (String(incomeId) === MONTHLY_BUDGET_INCOME_ID) { state.budgets.monthly = 0; state.budgets.monthlyConfigured = true; }
       state.demoSeed = false;
       syncLegacyIncomeFields();
       syncIncomeInputs();
@@ -3896,6 +3939,7 @@
     state.expenses = sampleExpenses();
     state.demoSeed = false;
     if (totalIncome() <= 0) { state.budgets.weekly = 1250; state.budgets.weeklyConfigured = true; state.budgets.weeklyDate = mondayISO(); }
+    syncBudgetIncomeEntries();
     syncIncomeInputs();
     save(); render();
     showToast(t('log.sampleToast'));
@@ -4280,6 +4324,7 @@
      9. INIT
   ============================================================ */
   els.weekLabel.textContent = weekRangeLabel();
+  syncBudgetIncomeEntries();
   syncIncomeInputs();
   els.expDate.value = selectedDateISO;
   applyLanguage(currentLang); // restore saved language (also syncs theme + renders)
@@ -4475,5 +4520,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a55e8d01d9ac04c9',t:'MTc5MzkwOTkzOQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a55e8d01d9ac04c9',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
