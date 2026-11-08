@@ -260,7 +260,12 @@
     background:transparent; color:var(--muted);
   }
   .icon-btn:hover{ color:#dc2626; background:rgba(220,38,38,.08); border-color:rgba(220,38,38,.25); }
+  .icon-btn.edit-btn:hover{ color:#059669; background:rgba(16,185,129,.08); border-color:rgba(16,185,129,.3); }
   .icon-btn svg{ width:16px; height:16px; }
+  .log-actions-cell{ white-space:nowrap; }
+  .log-actions-wrap, .tx-row-actions{ display:flex; align-items:center; justify-content:flex-end; gap:.15rem; }
+  .log-actions-wrap .icon-btn{ width:32px; height:32px; }
+  .tx-row-actions .icon-btn{ width:34px; height:34px; flex:none; }
   .icon-btn.wide{ width:auto; padding:0 .6rem; gap:.4rem; font-size:.8rem; font-weight:600; border-color:var(--border); color:var(--muted); font-family:inherit; }
   .icon-btn.wide:hover{ color:#059669; background:rgba(16,185,129,.08); border-color:rgba(16,185,129,.35); }
   .empty-state{ text-align:center; padding:2rem 1rem; color:var(--muted); }
@@ -590,6 +595,10 @@
   .day-add-btn{ background:linear-gradient(135deg,#059669,#10b981 55%,#0ea5e9); box-shadow:0 8px 18px rgba(5,150,105,.22); }
   .day-add-btn:hover{ filter:brightness(1.04); }
   #dayTxModal{ z-index:90; background:rgba(4,47,36,.48); }
+  .transaction-edit-modal{ z-index:100; }
+  .transaction-edit-card{ width:min(94vw,460px); }
+  .transaction-edit-actions{ display:grid; grid-template-columns:1fr 1fr; gap:.65rem; margin-top:1rem; }
+  .transaction-edit-actions .btn-secondary, .transaction-edit-actions .btn-primary{ margin:0; }
   .day-tx-modal{
     background:linear-gradient(180deg, var(--cream), var(--card) 46%);
     border-color:rgba(16,185,129,.45);
@@ -717,7 +726,7 @@
     table.log{ min-width:0; table-layout:fixed; }
     table.log th:nth-child(1){ width:23% !important; }
     table.log th:nth-child(3){ width:24%; }
-    table.log th:nth-child(4){ width:52px !important; }
+    table.log th:nth-child(4){ width:76px !important; }
     table.log td:first-child{
       white-space:normal !important;
       font-size:.78rem !important;
@@ -1154,7 +1163,7 @@
                 <th scope="col" style="width:110px;" data-i18n="common.date">Date</th>
                 <th scope="col" data-i18n="common.description">Description</th>
                 <th scope="col" class="amt" data-i18n="common.amount">Amount</th>
-                <th scope="col" style="width:48px;"><span class="sr-only" data-i18n="log.actions">Actions</span></th>
+                <th scope="col" style="width:76px;"><span class="sr-only" data-i18n="log.actions">Actions</span></th>
               </tr>
             </thead>
             <tbody id="expenseTbody"></tbody>
@@ -1487,6 +1496,45 @@
     </form>
   </div>
 </div>
+
+<!-- Transaction editor for Dashboard and Calendar records -->
+<div id="transactionEditModal" class="modal-overlay hidden transaction-edit-modal" role="dialog" aria-modal="true" aria-labelledby="transactionEditTitle">
+  <div class="card modal-card transaction-edit-card">
+    <div class="row between" style="align-items:flex-start; gap:1rem;">
+      <div>
+        <span class="eyebrow" id="transactionEditTypeLabel">Expense</span>
+        <h2 class="card-title" id="transactionEditTitle" data-i18n="txedit.title">Edit transaction</h2>
+      </div>
+      <button type="button" class="icon-btn" id="transactionEditClose" aria-label="Close" data-i18n-aria="auth.close" style="border-color:var(--border);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <form id="transactionEditForm" novalidate style="margin-top:1rem;">
+      <label class="label" for="transactionEditAmount" data-i18n="common.amountReq">Amount *</label>
+      <div class="money-wrap">
+        <span class="money-sign">$</span>
+        <input class="field" id="transactionEditAmount" type="number" inputmode="decimal" min="0.01" step="0.01" autocomplete="off" />
+      </div>
+      <div style="margin-top:.85rem;">
+        <label class="label" for="transactionEditDescription" data-i18n="common.description">Description</label>
+        <input class="field" id="transactionEditDescription" type="text" maxlength="80" autocomplete="off" />
+      </div>
+      <div style="margin-top:.85rem;">
+        <label class="label" for="transactionEditCategory" id="transactionEditCategoryLabel">Category</label>
+        <select class="field" id="transactionEditCategory"></select>
+        <div id="transactionEditCustomWrap" class="hidden" style="margin-top:.65rem;">
+          <label class="label" for="transactionEditCustom" data-i18n="cat.customLabel">Custom category name</label>
+          <input class="field" id="transactionEditCustom" type="text" maxlength="40" data-i18n-ph="cat.customPlaceholder" autocomplete="off" />
+        </div>
+      </div>
+      <p class="form-error hidden" id="transactionEditError" role="alert"></p>
+      <div class="transaction-edit-actions">
+        <button type="button" class="btn-secondary" id="transactionEditCancel" data-i18n="common.cancel">Cancel</button>
+        <button type="submit" class="btn-primary" data-i18n="txedit.save">Save changes</button>
+      </div>
+    </form>
+  </div>
+</div>
 <noscript><p style="text-align:center; padding:1rem;">WeeklyBudget needs JavaScript enabled to run.</p></noscript>
 
 <script>
@@ -1708,6 +1756,11 @@
       'log.sampleBtn': 'Load sample data',
       'log.total': 'Total spent',
       'log.deleteAria': 'Delete {name}',
+      'txedit.title': 'Edit transaction',
+      'txedit.titleExpense': 'Edit expense', 'txedit.titleIncome': 'Edit income',
+      'txedit.save': 'Save changes', 'txedit.saved': 'Transaction updated.',
+      'txedit.linkMissing': 'The linked Savings record is unavailable; the amount was not changed.',
+      'txedit.editAria': 'Edit {name}',
       'log.toastDeleted': 'Deleted {amount} expense.',
       'log.noClear': 'There are no expenses to clear.',
       'log.cleared': 'All expenses cleared.',
@@ -2030,6 +2083,11 @@
       'log.sampleBtn': '載入範例資料',
       'log.total': '支出總額',
       'log.deleteAria': '刪除{name}',
+      'txedit.title': '編輯交易',
+      'txedit.titleExpense': '編輯支出', 'txedit.titleIncome': '編輯收入',
+      'txedit.save': '儲存變更', 'txedit.saved': '交易已更新。',
+      'txedit.linkMissing': '找不到連結的儲蓄紀錄，因此金額未有更改。',
+      'txedit.editAria': '編輯{name}',
       'log.toastDeleted': '已刪除 {amount} 的支出。',
       'log.noClear': '沒有可清除的支出。',
       'log.cleared': '已清除所有支出。',
@@ -2352,6 +2410,11 @@
       'log.sampleBtn': '加载示例数据',
       'log.total': '支出总额',
       'log.deleteAria': '删除{name}',
+      'txedit.title': '编辑交易',
+      'txedit.titleExpense': '编辑支出', 'txedit.titleIncome': '编辑收入',
+      'txedit.save': '保存更改', 'txedit.saved': '交易已更新。',
+      'txedit.linkMissing': '找不到关联的储蓄记录，因此金额未更改。',
+      'txedit.editAria': '编辑{name}',
       'log.toastDeleted': '已删除 {amount} 的支出。',
       'log.noClear': '没有可清除的支出。',
       'log.cleared': '已清除所有支出。',
@@ -3348,7 +3411,11 @@
     dayTxExistingList: $('dayTxExistingList'), dayTxExistingEmpty: $('dayTxExistingEmpty'),
     dayTxForm: $('dayTxForm'), dayTxAmount: $('dayTxAmount'), dayTxDesc: $('dayTxDesc'),
     dayTxCategoryLabel: $('dayTxCategoryLabel'), dayTxCategory: $('dayTxCategory'), dayTxCustomCategoryWrap: $('dayTxCustomCategoryWrap'), dayTxCustomCategory: $('dayTxCustomCategory'),
-    dayTxError: $('dayTxError'), dayTxSubmit: $('dayTxSubmit'), dayTxSubmitLabel: $('dayTxSubmitLabel')
+    dayTxError: $('dayTxError'), dayTxSubmit: $('dayTxSubmit'), dayTxSubmitLabel: $('dayTxSubmitLabel'),
+    transactionEditModal: $('transactionEditModal'), transactionEditClose: $('transactionEditClose'), transactionEditCancel: $('transactionEditCancel'),
+    transactionEditForm: $('transactionEditForm'), transactionEditTitle: $('transactionEditTitle'), transactionEditTypeLabel: $('transactionEditTypeLabel'),
+    transactionEditAmount: $('transactionEditAmount'), transactionEditDescription: $('transactionEditDescription'), transactionEditCategory: $('transactionEditCategory'), transactionEditCategoryLabel: $('transactionEditCategoryLabel'),
+    transactionEditCustomWrap: $('transactionEditCustomWrap'), transactionEditCustom: $('transactionEditCustom'), transactionEditError: $('transactionEditError')
   };
 
   /* ============================================================
@@ -3454,6 +3521,9 @@
   var dayTxType = 'expense';
   var dayTxDateISO = selectedDateISO;
   var dayTxReturnFocus = null;
+  var editingTransaction = null;
+  var transactionEditReturnFocus = null;
+  var transactionEditPreviousOverflow = '';
 
   var VIEW_META = {
     dashboard: { titleKey: 'view.dashboard.title', subKey: 'view.dashboard.sub' },
@@ -4174,6 +4244,7 @@
   }
 
   var trashSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+  var pencilSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 4 4 4"/><path d="M4 20l4.5-1 11-11a2.12 2.12 0 0 0-3-3l-11 11L4 20Z"/></svg>';
 
   function renderLog() {
     var sorted = state.expenses.slice().sort(function (a, b) {
@@ -4187,15 +4258,166 @@
 
     els.expenseTbody.innerHTML = sorted.map(function (e) {
       var label = e.description && e.description.trim() ? e.description : catLabel(e.category);
-      var deleteCell = e.kind === 'savings-transfer' ? '<td></td>' : '<td style="text-align:right;"><button type="button" class="icon-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + '</button></td>';
+      var editButton = '<button type="button" class="icon-btn edit-btn" data-edit-expense-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('txedit.editAria', { name: label })) + '" title="' + escapeHtml(t('txedit.editAria', { name: label })) + '">' + pencilSvg + '</button>';
+      var deleteButton = e.kind === 'savings-transfer' ? '' : '<button type="button" class="icon-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + '</button>';
+      var actionCell = '<td class="log-actions-cell"><span class="log-actions-wrap">' + editButton + deleteButton + '</span></td>';
       return '<tr>' +
         '<td style="white-space:nowrap; color:var(--muted); font-size:.83rem;">' + escapeHtml(displayDate(e.date)) + '</td>' +
         '<td><div style="font-weight:600;">' + escapeHtml(label) + '</div>' +
           '<span class="badge"><span class="dot" style="background:' + catColor(e.category) + '"></span>' + escapeHtml(catLabel(e.category)) + '</span></td>' +
         '<td class="amt">-' + fmt(e.amount) + '</td>' +
-        deleteCell +
+        actionCell +
       '</tr>';
     }).join('');
+  }
+
+  function findTransactionForEdit(type, id) {
+    var rows = type === 'income' ? incomeEntries() : state.expenses;
+    return rows.filter(function (entry) { return String(entry.id) === String(id); })[0] || null;
+  }
+  function updateTransactionEditCategoryUI(focusCustom) {
+    if (!els.transactionEditCategory || !editingTransaction) return;
+    var isIncome = editingTransaction.type === 'income';
+    var showCustom = !isIncome && !els.transactionEditCategory.disabled &&
+      (els.transactionEditCategory.value === 'Other' || els.transactionEditCategory.value === ADD_CUSTOM_CATEGORY);
+    if (els.transactionEditCustomWrap) els.transactionEditCustomWrap.classList.toggle('hidden', !showCustom);
+    if (showCustom && focusCustom && els.transactionEditCustom) els.transactionEditCustom.focus();
+  }
+  function openTransactionEdit(type, id, trigger) {
+    if (!els.transactionEditModal || !els.transactionEditForm) return;
+    type = type === 'income' ? 'income' : 'expense';
+    var entry = findTransactionForEdit(type, id);
+    if (!entry) return;
+    editingTransaction = { type: type, id: String(id), kind: entry.kind || '', fromCalendar: !!(trigger && trigger.closest && (trigger.closest('#dayTxModal') || trigger.closest('#dayTxList'))) };
+    transactionEditReturnFocus = trigger && trigger.isConnected ? trigger : null;
+    var isIncome = type === 'income';
+    var label = entry.description && entry.description.trim()
+      ? entry.description
+      : (isIncome ? incomeSourceLabel(entry.source) : catLabel(entry.category));
+    if (els.transactionEditTitle) els.transactionEditTitle.textContent = t(isIncome ? 'txedit.titleIncome' : 'txedit.titleExpense');
+    if (els.transactionEditTypeLabel) els.transactionEditTypeLabel.textContent = t(isIncome ? 'daytx.income' : 'daytx.expense');
+    if (els.transactionEditAmount) els.transactionEditAmount.value = String(entry.amount);
+    if (els.transactionEditDescription) els.transactionEditDescription.value = entry.description || '';
+    if (els.transactionEditCategoryLabel) els.transactionEditCategoryLabel.textContent = t(isIncome ? 'daytx.source' : 'common.category');
+    if (els.transactionEditCategory) {
+      var choices = isIncome ? INCOME_SOURCES : expenseCategoryNames();
+      var selected = isIncome ? entry.source : entry.category;
+      els.transactionEditCategory.innerHTML = choices.map(function (name) {
+        return '<option value="' + escapeHtml(name) + '">' + escapeHtml(isIncome ? incomeSourceLabel(name) : catLabel(name)) + '</option>';
+      }).join('');
+      if (!isIncome) els.transactionEditCategory.innerHTML += '<option value="' + ADD_CUSTOM_CATEGORY + '">' + escapeHtml(t('cat.addCustom')) + '</option>';
+      els.transactionEditCategory.value = choices.indexOf(selected) >= 0 ? selected : (isIncome ? 'Other Income' : 'Other');
+      els.transactionEditCategory.disabled = !isIncome && entry.kind === 'savings-transfer';
+    }
+    if (els.transactionEditCustom) els.transactionEditCustom.value = '';
+    if (els.transactionEditCustomWrap) els.transactionEditCustomWrap.classList.add('hidden');
+    if (els.transactionEditError) clearError(els.transactionEditError);
+    updateTransactionEditCategoryUI(false);
+    transactionEditPreviousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    els.transactionEditModal.classList.remove('hidden');
+    if (els.transactionEditAmount) els.transactionEditAmount.focus();
+    if (label) els.transactionEditModal.setAttribute('data-edit-label', label);
+  }
+  function closeTransactionEdit(restoreFocus) {
+    if (!els.transactionEditModal) return;
+    els.transactionEditModal.classList.add('hidden');
+    document.body.style.overflow = transactionEditPreviousOverflow;
+    transactionEditPreviousOverflow = '';
+    if (els.transactionEditCustom) els.transactionEditCustom.value = '';
+    if (els.transactionEditError) clearError(els.transactionEditError);
+    var stateBeforeClose = editingTransaction;
+    editingTransaction = null;
+    if (restoreFocus === false) { transactionEditReturnFocus = null; return; }
+    var target = transactionEditReturnFocus;
+    transactionEditReturnFocus = null;
+    if (target && target.isConnected) { target.focus(); return; }
+    if (stateBeforeClose && stateBeforeClose.fromCalendar && els.dayTxExistingTitle) {
+      els.dayTxExistingTitle.focus(); return;
+    }
+    if (stateBeforeClose) {
+      var selector = stateBeforeClose.type === 'income' ? '[data-edit-income-id]' : '[data-edit-expense-id]';
+      var buttons = document.querySelectorAll(selector);
+      for (var i = 0; i < buttons.length; i++) {
+        if (buttons[i].getAttribute(stateBeforeClose.type === 'income' ? 'data-edit-income-id' : 'data-edit-expense-id') === stateBeforeClose.id) {
+          buttons[i].focus(); return;
+        }
+      }
+    }
+  }
+  function submitTransactionEdit() {
+    if (!editingTransaction) return;
+    var entry = findTransactionForEdit(editingTransaction.type, editingTransaction.id);
+    if (!entry) { closeTransactionEdit(false); render(); return; }
+    var amountValue = parseFloat(els.transactionEditAmount.value);
+    var amount = round2(amountValue);
+    if (!isFinite(amountValue) || amount <= 0) {
+      showError(els.transactionEditError, t('exp.error'));
+      els.transactionEditAmount.focus(); return;
+    }
+    var description = String(els.transactionEditDescription.value || '').trim().slice(0, 80);
+    if (editingTransaction.type === 'income') {
+      var source = els.transactionEditCategory.value;
+      if (!INCOME_SOURCE_I18N[source]) source = 'Other Income';
+      if (entry.kind === 'savings-withdrawal' && amount !== round2(entry.amount)) {
+        var savings = state.savings || (state.savings = normalizeSavings(state));
+        var linkedWithdrawal = savings.transactions.filter(function (tx) { return String(tx.id) === String(entry.savingsTransactionId || ''); })[0];
+        var withdrawalGoal = linkedWithdrawal && savings.goals.filter(function (goal) { return goal.id === linkedWithdrawal.goalId; })[0];
+        if (linkedWithdrawal && withdrawalGoal) {
+          if (amount > round2(withdrawalGoal.balance + linkedWithdrawal.amount)) {
+            showError(els.transactionEditError, t('savings.insufficient'));
+            els.transactionEditAmount.focus(); return;
+          }
+          withdrawalGoal.balance = round2(withdrawalGoal.balance + linkedWithdrawal.amount - amount);
+          linkedWithdrawal.amount = amount;
+          savings.rollover.updatedAt = Date.now();
+        } else {
+          showError(els.transactionEditError, t('txedit.linkMissing'));
+          els.transactionEditAmount.focus(); return;
+        }
+      }
+      entry.amount = amount;
+      entry.description = description;
+      entry.source = source;
+      if (String(entry.id) === PRIMARY_INCOME_ID) { state.budgets.weekly = amount; state.budgets.weeklyConfigured = true; }
+      if (String(entry.id) === MONTHLY_BUDGET_INCOME_ID) { state.budgets.monthly = amount; state.budgets.monthlyConfigured = true; }
+      syncLegacyIncomeFields(); syncIncomeInputs();
+    } else {
+      var category = entry.kind === 'savings-transfer' ? 'Savings Transfer' : els.transactionEditCategory.value;
+      var customName = cleanCategoryName(els.transactionEditCustom ? els.transactionEditCustom.value : '');
+      if (category === ADD_CUSTOM_CATEGORY || (category === 'Other' && customName)) category = customName || 'Other';
+      if (category === ADD_CUSTOM_CATEGORY) category = 'Other';
+      if (entry.kind === 'savings-transfer' && amount !== round2(entry.amount)) {
+        var depositState = state.savings || (state.savings = normalizeSavings(state));
+        var linkedDeposit = depositState.transactions.filter(function (tx) { return String(tx.id) === String(entry.savingsTransactionId || ''); })[0];
+        var depositGoal = linkedDeposit && depositState.goals.filter(function (goal) { return goal.id === linkedDeposit.goalId; })[0];
+        if (linkedDeposit && depositGoal) {
+          var adjustedDepositBalance = round2(depositGoal.balance + amount - linkedDeposit.amount);
+          if (adjustedDepositBalance < 0) {
+            showError(els.transactionEditError, t('savings.insufficient'));
+            els.transactionEditAmount.focus(); return;
+          }
+          depositGoal.balance = adjustedDepositBalance;
+          linkedDeposit.amount = amount;
+          depositState.rollover.updatedAt = Date.now();
+        } else {
+          showError(els.transactionEditError, t('txedit.linkMissing'));
+          els.transactionEditAmount.focus(); return;
+        }
+      }
+      category = addUserCategory(category) || 'Other';
+      entry.amount = amount;
+      entry.description = description;
+      entry.category = category;
+    }
+    if (editingTransaction.type === 'expense') {
+      refreshExpenseCategoryOptions(els.expCategory ? els.expCategory.value : 'Other');
+      populateDayTxCategories();
+    }
+    state.demoSeed = false;
+    save(); render();
+    closeTransactionEdit(true);
+    showToast(t('txedit.saved'));
   }
 
   function renderLegend(data, spent) {
@@ -4367,19 +4589,21 @@
       ? t('day.incomeCat')
       : (incomeSourceLabel(entry.source) + ' · ' + t('day.income'));
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
+    var editButton = '<button type="button" class="icon-btn edit-btn tx-edit-btn" data-edit-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('txedit.editAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('txedit.editAria', { name: incomeLabel })) + '">' + pencilSvg + '</button>';
     var deleteButton = '<button type="button" class="icon-btn tx-delete-btn" data-delete-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
     return '<li class="tx-row"><span class="dot" style="background:#10b981"></span>' +
       '<span class="tx-main"><span class="tx-name">' + escapeHtml(incomeLabel) + '</span><span class="tx-cat">' + escapeHtml(incomeSub) + '</span></span>' +
-      '<span class="tx-amt" style="color:#059669;">+' + fmt(entry.amount) + '</span>' + deleteButton + '</li>';
+      '<span class="tx-amt" style="color:#059669;">+' + fmt(entry.amount) + '</span><span class="tx-row-actions">' + editButton + deleteButton + '</span></li>';
   }
   function expenseTransactionRow(e, detailed) {
     var label = e.description && e.description.trim() ? e.description : catLabel(e.category);
     var sub = catLabel(e.category) + (detailed ? ' · ' + t('daytx.expense') : '');
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
+    var editButton = '<button type="button" class="icon-btn edit-btn tx-edit-btn" data-edit-expense-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('txedit.editAria', { name: label })) + '" title="' + escapeHtml(t('txedit.editAria', { name: label })) + '">' + pencilSvg + '</button>';
     var deleteButton = '<button type="button" class="icon-btn tx-delete-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
     return '<li class="tx-row"><span class="dot" style="background:' + catColor(e.category) + '"></span>' +
       '<span class="tx-main"><span class="tx-name">' + escapeHtml(label) + '</span><span class="tx-cat">' + escapeHtml(sub) + '</span></span>' +
-      '<span class="tx-amt" style="color:#dc2626;">-' + fmt(e.amount) + '</span>' + deleteButton + '</li>';
+      '<span class="tx-amt" style="color:#dc2626;">-' + fmt(e.amount) + '</span><span class="tx-row-actions">' + editButton + deleteButton + '</span></li>';
   }
   function transactionItemsHtml(data, detailed) {
     return data.incomeRows.map(function (entry) { return incomeTransactionRow(entry, detailed); })
@@ -4734,7 +4958,11 @@
   }
 
   // Delete (event delegation on the table body)
-  document.addEventListener('click', function (ev) { // delete works in both the log and the calendar day list
+  document.addEventListener('click', function (ev) { // edit/delete works in the expense log and calendar transaction lists
+    var editIncomeBtn = ev.target.closest('[data-edit-income-id]');
+    if (editIncomeBtn) { openTransactionEdit('income', editIncomeBtn.getAttribute('data-edit-income-id'), editIncomeBtn); return; }
+    var editExpenseBtn = ev.target.closest('[data-edit-expense-id]');
+    if (editExpenseBtn) { openTransactionEdit('expense', editExpenseBtn.getAttribute('data-edit-expense-id'), editExpenseBtn); return; }
     var incomeBtn = ev.target.closest('[data-delete-income-id]');
     if (incomeBtn) {
       var incomeFromModal = !!(incomeBtn.closest && incomeBtn.closest('#dayTxModal'));
@@ -5112,7 +5340,22 @@
     if (ev.target === els.dayTxModal) closeDayTxModal();
   });
   document.addEventListener('keydown', function (ev) {
-    if (ev.key === 'Escape' && els.dayTxModal && !els.dayTxModal.classList.contains('hidden')) closeDayTxModal();
+    if (ev.key !== 'Escape') return;
+    if (els.transactionEditModal && !els.transactionEditModal.classList.contains('hidden')) { closeTransactionEdit(true); return; }
+    if (els.dayTxModal && !els.dayTxModal.classList.contains('hidden')) closeDayTxModal();
+  });
+  if (els.transactionEditClose) els.transactionEditClose.addEventListener('click', function () { closeTransactionEdit(true); });
+  if (els.transactionEditCancel) els.transactionEditCancel.addEventListener('click', function () { closeTransactionEdit(true); });
+  if (els.transactionEditModal) els.transactionEditModal.addEventListener('click', function (ev) {
+    if (ev.target === els.transactionEditModal) closeTransactionEdit(true);
+  });
+  if (els.transactionEditCategory) els.transactionEditCategory.addEventListener('change', function () {
+    if (els.transactionEditCustom) els.transactionEditCustom.value = '';
+    updateTransactionEditCategoryUI(true);
+  });
+  if (els.transactionEditAmount) els.transactionEditAmount.addEventListener('input', function () { if (els.transactionEditError) clearError(els.transactionEditError); });
+  if (els.transactionEditForm) els.transactionEditForm.addEventListener('submit', function (ev) {
+    ev.preventDefault(); submitTransactionEdit();
   });
   document.querySelectorAll('[data-day-tx-type]').forEach(function (btn) {
     btn.addEventListener('click', function () { setDayTxType(btn.getAttribute('data-day-tx-type')); });
@@ -5472,5 +5715,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a577c5f74a1e1fb8',t:'MTc5NDE3NDQxNg=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a577c5f74a1e1fb8',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a577ece9aacee2e8',t:'MTc5NDE3NjAxMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a577ece9aacee2e8',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
