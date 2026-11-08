@@ -419,6 +419,11 @@
   .rollover-modal-card{ text-align:center; padding:1.5rem; }
   .rollover-celebrate{ font-size:2.5rem; margin-bottom:.4rem; }
   .rollover-modal-actions{ display:grid; gap:.65rem; margin-top:1.1rem; }
+  .savings-summary-actions{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem; width:100%; margin-top:.65rem; }
+  .savings-action-btn{ min-height:54px; padding:.6rem .7rem; font-size:.83rem; line-height:1.25; white-space:normal; }
+  #saveCurrentFundsBtn:disabled, #manualRolloverBtn:disabled{ opacity:.46; cursor:not-allowed; filter:grayscale(.65); box-shadow:none; }
+  #saveCurrentFundsBtn:disabled:hover, #manualRolloverBtn:disabled:hover{ border-color:transparent; color:#fff; background:#94a3b8; }
+  @media (max-width:460px){ .savings-summary-actions{ grid-template-columns:1fr; } }
 
   /* Calendar */
   .cal-summary{ display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; margin-top:1rem; }
@@ -1250,7 +1255,10 @@
         <span class="eyebrow" data-i18n="savings.total">Total savings</span>
         <strong id="savingsTotal">$0.00</strong>
         <span class="s-hint" id="savingsGoalCount">0 goals</span>
-        <button type="button" class="btn-secondary" id="manualRolloverBtn" style="margin-top:.65rem;" data-i18n="savings.manualSweep">Sweep previous period balance</button>
+        <div class="savings-summary-actions">
+          <button type="button" class="btn-primary savings-action-btn" id="saveCurrentFundsBtn">Save current remaining funds ($0.00)</button>
+          <button type="button" class="btn-primary savings-action-btn" id="manualRolloverBtn">Save unused funds ($0.00)</button>
+        </div>
       </div>
       <div class="row between" style="margin-top:1.2rem; align-items:center;">
         <h2 class="card-title" id="savingsOverviewTitle" data-i18n="savings.goals">Your savings goals</h2>
@@ -1527,12 +1535,15 @@
       'rollover.defaultGoal': 'Default savings goal', 'rollover.promptGoal': 'Save this balance to',
       'rollover.noGoals': 'General savings (created automatically if needed)',
       'rollover.modalTitle': 'A fresh period, a little extra saved!',
+      'savings.currentModalTitle': 'Save remaining funds for this period',
+      'savings.currentModalMessage': 'You have {amount} remaining in the current period. Choose a savings goal below.',
       'rollover.message': 'You have {amount} left. Choose a savings goal for it below.',
       'rollover.depositAll': 'Deposit All', 'rollover.skip': 'Skip / Keep',
       'rollover.autoToast': 'Rollover complete: {amount} moved into savings.',
       'rollover.goalName': 'General Savings',
       'savings.total': 'Total savings', 'savings.goals': 'Your savings goals',
-      'savings.manualSweep': 'Save unused funds',
+      'savings.currentSweep': 'Save current remaining funds ({amount})',
+      'savings.manualSweep': 'Save unused funds ({amount})',
       'savings.alreadySwept': 'The previous period has already been swept.',
       'savings.nothingToSweep': 'There is no positive balance to sweep from the previous period.',
       'savings.deleteGoalAria': 'Delete savings goal {goal}',
@@ -1839,12 +1850,15 @@
       'rollover.defaultGoal': '預設儲蓄目標', 'rollover.promptGoal': '將這筆結餘存入',
       'rollover.noGoals': '一般儲蓄（需要時會自動建立）',
       'rollover.modalTitle': '新期間開始了，順便存下一筆！',
+      'savings.currentModalTitle': '存入今期剩餘資金',
+      'savings.currentModalMessage': '今期還剩 {amount}。請選擇要存入的儲蓄目標。',
       'rollover.message': '上期還剩 {amount}。請選擇要存入的儲蓄目標。',
       'rollover.depositAll': '全部存入', 'rollover.skip': '略過／保留',
       'rollover.autoToast': '結轉完成：已將 {amount} 存入儲蓄。',
       'rollover.goalName': '一般儲蓄',
       'savings.total': '儲蓄總額', 'savings.goals': '你的儲蓄目標',
-      'savings.manualSweep': '存入上期剩餘',
+      'savings.currentSweep': '存入今期剩餘 ({amount})',
+      'savings.manualSweep': '存入上期剩餘 ({amount})',
       'savings.alreadySwept': '上個期間的結餘已轉入儲蓄。',
       'savings.nothingToSweep': '上個期間沒有可轉入儲蓄的正數結餘。',
       'savings.deleteGoalAria': '刪除儲蓄目標 {goal}',
@@ -2151,12 +2165,15 @@
       'rollover.defaultGoal': '默认储蓄目标', 'rollover.promptGoal': '将这笔结余存入',
       'rollover.noGoals': '一般储蓄（需要时会自动创建）',
       'rollover.modalTitle': '新周期开始了，顺便存下一笔！',
+      'savings.currentModalTitle': '存入本期剩余资金',
+      'savings.currentModalMessage': '本期还剩 {amount}。请选择要存入的储蓄目标。',
       'rollover.message': '上期还剩 {amount}。请选择要存入的储蓄目标。',
       'rollover.depositAll': '全部存入', 'rollover.skip': '跳过／保留',
       'rollover.autoToast': '结转完成：已将 {amount} 存入储蓄。',
       'rollover.goalName': '一般储蓄',
       'savings.total': '储蓄总额', 'savings.goals': '你的储蓄目标',
-      'savings.manualSweep': '存入上期剩余',
+      'savings.currentSweep': '存入本期剩余 ({amount})',
+      'savings.manualSweep': '存入上期剩余 ({amount})',
       'savings.alreadySwept': '上个周期的结余已转入储蓄。',
       'savings.nothingToSweep': '上个周期没有可转入储蓄的正数结余。',
       'savings.deleteGoalAria': '删除储蓄目标 {goal}',
@@ -2745,6 +2762,7 @@
     var pending = r.pending && typeof r.pending === 'object' && Number(r.pending.amount) > 0 ? {
       amount: round2(r.pending.amount), mode: r.pending.mode === 'monthly' ? 'monthly' : 'weekly',
       fromKey: String(r.pending.fromKey || ''), toKey: String(r.pending.toKey || ''),
+      kind: r.pending.kind === 'current' ? 'current' : 'previous',
       manual: r.pending.manual === true, createdAt: Number(r.pending.createdAt) || Date.now()
     } : null;
     return {
@@ -2935,6 +2953,23 @@
     var total = savingsTotalAmount();
     els.savingsTotal.textContent = fmt(total);
     if (els.savingsGoalCount) els.savingsGoalCount.textContent = t('savings.goalCount', { n: goals.length });
+    var currentBalance = Math.max(0, round2(selectedPeriodSnapshot().remaining));
+    if (els.saveCurrentFundsBtn) {
+      els.saveCurrentFundsBtn.textContent = t('savings.currentSweep', { amount: fmt(currentBalance) });
+      var currentUnavailable = currentBalance <= 0;
+      els.saveCurrentFundsBtn.disabled = currentUnavailable;
+      els.saveCurrentFundsBtn.setAttribute('aria-disabled', String(currentUnavailable));
+    }
+    var previousBalanceData = previousPeriodBalance(periodMode);
+    var previousRange = previousBalanceData.range;
+    var previousBalance = previousBalanceData.amount;
+    var previousPeriodKey = periodMode === 'monthly' ? previousRange.startISO.slice(0, 7) : previousRange.startISO;
+    if (els.manualRolloverBtn) {
+      els.manualRolloverBtn.textContent = t('savings.manualSweep', { amount: fmt(previousBalance) });
+      var unavailable = previousBalance <= 0;
+      els.manualRolloverBtn.disabled = unavailable;
+      els.manualRolloverBtn.setAttribute('aria-disabled', String(unavailable));
+    }
     if (els.savingsGoalsEmpty) els.savingsGoalsEmpty.classList.toggle('hidden', goals.length > 0);
     if (els.savingsGoalsList) {
       els.savingsGoalsList.innerHTML = goals.map(function (goal) {
@@ -3004,6 +3039,15 @@
     var end = new Date(current.end.getFullYear(), current.end.getMonth(), current.end.getDate() - 7);
     return makePeriodRange(start, end, 'weekly');
   }
+  function previousPeriodBalance(mode) {
+    var range = previousPeriodRange(mode || periodMode);
+    var snapshot = snapshotForRange(range);
+    return {
+      range: range,
+      snapshot: snapshot,
+      amount: Math.max(0, round2(snapshot.remaining))
+    };
+  }
   function markPeriodSwept(mode, periodKey) {
     var rollover = state.savings.rollover;
     if (!rollover.sweptPeriods[mode].includes(periodKey)) rollover.sweptPeriods[mode].push(periodKey);
@@ -3016,7 +3060,9 @@
       els.rolloverModal.classList.add('hidden');
       return;
     }
-    if (els.rolloverModalMessage) els.rolloverModalMessage.textContent = t('rollover.message', { amount: fmt(pending.amount) });
+    var currentFundsPrompt = pending.kind === 'current';
+    if (els.rolloverModalTitle) els.rolloverModalTitle.textContent = t(currentFundsPrompt ? 'savings.currentModalTitle' : 'rollover.modalTitle');
+    if (els.rolloverModalMessage) els.rolloverModalMessage.textContent = t(currentFundsPrompt ? 'savings.currentModalMessage' : 'rollover.message', { amount: fmt(pending.amount) });
     els.rolloverModal.classList.remove('hidden');
   }
   function checkRolloverTransition(mode) {
@@ -3036,8 +3082,9 @@
     rollover.lastRolloverPeriod[mode] = key;
     rollover.updatedAt = Date.now();
     if (!rollover.enabled || rollover.pending) { save(); showPendingRolloverModal(); return; }
-    var previousRange = previousPeriodRange(mode);
-    var leftover = round2(snapshotForRange(previousRange).remaining);
+    var previousBalanceData = previousPeriodBalance(mode);
+    var previousRange = previousBalanceData.range;
+    var leftover = previousBalanceData.amount;
     if (leftover <= 0) { save(); return; }
     var previousKey = mode === 'monthly' ? previousRange.startISO.slice(0, 7) : previousRange.startISO;
     if (rollover.sweptPeriods[mode].includes(previousKey)) { save(); return; }
@@ -3049,28 +3096,33 @@
       showToast(t('rollover.autoToast', { amount: fmt(leftover) }));
       return;
     }
-    rollover.pending = { amount: leftover, mode: mode, fromKey: previousKey, toKey: key, manual: false, createdAt: Date.now() };
+    rollover.pending = { amount: leftover, mode: mode, fromKey: previousKey, toKey: key, kind: 'previous', manual: false, createdAt: Date.now() };
     save(); render();
   }
   function sweepPreviousPeriodManually() {
     var rollover = state.savings.rollover;
     if (rollover.pending) { showPendingRolloverModal(); return; }
     var mode = periodMode;
-    var range = previousPeriodRange(mode);
+    var previousBalanceData = previousPeriodBalance(mode);
+    var range = previousBalanceData.range;
     var key = mode === 'monthly' ? range.startISO.slice(0, 7) : range.startISO;
     if (rollover.sweptPeriods[mode].includes(key)) { showToast(t('savings.alreadySwept')); return; }
-    var leftover = round2(snapshotForRange(range).remaining);
+    var leftover = previousBalanceData.amount;
     if (leftover <= 0) { showToast(t('savings.nothingToSweep')); return; }
     rollover.lastRolloverPeriod[mode] = currentPeriodKey(mode);
     rollover.updatedAt = Date.now();
-    if (rollover.enabled && rollover.preference === 'automated') {
-      var goal = ensureSavingsGoal(rollover.defaultGoalId);
-      recordSavingsMovement(goal.id, 'deposit', leftover, 'rollover');
-      markPeriodSwept(mode, key);
-      save(); render(); showToast(t('rollover.autoToast', { amount: fmt(leftover) }));
-      return;
-    }
-    rollover.pending = { amount: leftover, mode: mode, fromKey: key, toKey: currentPeriodKey(mode), manual: true, createdAt: Date.now() };
+    rollover.pending = { amount: leftover, mode: mode, fromKey: key, toKey: currentPeriodKey(mode), kind: 'previous', manual: true, createdAt: Date.now() };
+    save(); render();
+  }
+  function saveCurrentRemainingFunds() {
+    var rollover = state.savings.rollover;
+    if (rollover.pending) { showPendingRolloverModal(); return; }
+    var mode = periodMode;
+    var amount = Math.max(0, round2(selectedPeriodSnapshot().remaining));
+    if (amount <= 0) { showToast(t('savings.nothingToSweep')); return; }
+    var key = currentPeriodKey(mode);
+    rollover.pending = { amount: amount, mode: mode, fromKey: key, toKey: key, kind: 'current', manual: true, createdAt: Date.now() };
+    rollover.updatedAt = Date.now();
     save(); render();
   }
   function completePendingRollover(accept) {
@@ -3078,15 +3130,26 @@
     var rollover = savings.rollover;
     var pending = rollover.pending;
     if (!pending) { showPendingRolloverModal(); return; }
+    var amount = pending.amount;
+    if (accept && pending.kind === 'current') {
+      amount = Math.max(0, round2(selectedPeriodSnapshot().remaining));
+      if (amount <= 0) {
+        rollover.pending = null; rollover.updatedAt = Date.now();
+        save(); render(); showToast(t('savings.nothingToSweep')); return;
+      }
+    }
     if (accept) {
       var goal = ensureSavingsGoal(els.rolloverPromptGoal ? els.rolloverPromptGoal.value : rollover.defaultGoalId);
-      recordSavingsMovement(goal.id, 'deposit', pending.amount, 'rollover');
-      markPeriodSwept(pending.mode, pending.fromKey);
+      recordSavingsMovement(goal.id, 'deposit', amount, pending.kind === 'current' ? 'manual' : 'rollover');
+      if (pending.kind !== 'current') markPeriodSwept(pending.mode, pending.fromKey);
     }
     rollover.pending = null;
     rollover.updatedAt = Date.now();
     save(); render();
-    if (accept) showToast(t('rollover.autoToast', { amount: fmt(pending.amount) }));
+    if (accept) {
+      var successKey = pending.manual ? 'savings.depositToast' : 'rollover.autoToast';
+      showToast(t(successKey, { amount: fmt(amount) }));
+    }
   }
 
   /* ============================================================
@@ -3131,7 +3194,7 @@
     savingsHistory: $('savingsHistory'), savingsHistoryEmpty: $('savingsHistoryEmpty'),
     savingsGoalForm: $('savingsGoalForm'), savingsGoalName: $('savingsGoalName'), savingsGoalTarget: $('savingsGoalTarget'),
     savingsTransactionForm: $('savingsTransactionForm'), savingsGoalSelect: $('savingsGoalSelect'), savingsAction: $('savingsAction'), savingsAmount: $('savingsAmount'),
-    rolloverModal: $('rolloverModal'), rolloverModalMessage: $('rolloverModalMessage'), rolloverDepositBtn: $('rolloverDepositBtn'), rolloverSkipBtn: $('rolloverSkipBtn'), manualRolloverBtn: $('manualRolloverBtn'),
+    rolloverModal: $('rolloverModal'), rolloverModalTitle: $('rolloverModalTitle'), rolloverModalMessage: $('rolloverModalMessage'), rolloverDepositBtn: $('rolloverDepositBtn'), rolloverSkipBtn: $('rolloverSkipBtn'), manualRolloverBtn: $('manualRolloverBtn'), saveCurrentFundsBtn: $('saveCurrentFundsBtn'),
     calTitle: $('calTitle'), calGrid: $('calGrid'), calPrev: $('calPrev'), calNext: $('calNext'), calToday: $('calToday'),
     calMonthIncome: $('calMonthIncome'), calMonthExpenses: $('calMonthExpenses'), calMonthNet: $('calMonthNet'),
     dayTitle: $('dayTitle'), daySub: $('daySub'), dayIncome: $('dayIncome'), dayExpenses: $('dayExpenses'), dayNet: $('dayNet'),
@@ -4944,6 +5007,7 @@
   });
   if (els.rolloverDepositBtn) els.rolloverDepositBtn.addEventListener('click', function () { completePendingRollover(true); });
   if (els.rolloverSkipBtn) els.rolloverSkipBtn.addEventListener('click', function () { completePendingRollover(false); });
+  if (els.saveCurrentFundsBtn) els.saveCurrentFundsBtn.addEventListener('click', saveCurrentRemainingFunds);
   if (els.manualRolloverBtn) els.manualRolloverBtn.addEventListener('click', sweepPreviousPeriodManually);
   document.addEventListener('visibilitychange', function () { if (!document.hidden) checkRolloverTransition(periodMode); });
   window.addEventListener('focus', function () { checkRolloverTransition(periodMode); });
@@ -5157,5 +5221,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a57738b37f152b12',t:'MTc5NDE2ODYzMA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a57738b37f152b12',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5776ce3489fe2ed',t:'MTc5NDE3MDc2Nw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5776ce3489fe2ed',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
