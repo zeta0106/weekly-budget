@@ -1549,7 +1549,9 @@
       'savings.noHistory': 'Deposits and withdrawals will appear here.',
       'savings.goalCount': '{n} goals', 'savings.targetProgress': '{pct}% of target',
       'savings.createdToast': 'Savings goal created.', 'savings.goalLimit': 'You can have up to 100 savings goals.', 'savings.depositToast': '{amount} deposited.',
-      'savings.withdrawToast': '{amount} withdrawn.', 'savings.invalid': 'Enter a valid positive amount.',
+      'savings.withdrawToast': '{amount} withdrawn.',
+      'savings.depositExpenseDescription': 'Savings deposit: {goal}', 'savings.withdrawIncomeDescription': 'Savings withdrawal: {goal}',
+      'savings.invalid': 'Enter a valid positive amount.',
       'savings.noGoalSelected': 'Create or select a savings goal first.',
       'savings.insufficient': 'The withdrawal exceeds this goal’s balance.',
       'savings.historyDeposit': 'Deposit', 'savings.historyWithdraw': 'Withdrawal',
@@ -1802,7 +1804,7 @@
       'cat.shopping': 'Shopping',
       'cat.entertainment': 'Entertainment',
       'cat.health': 'Health',
-      'cat.other': 'Other',
+      'cat.other': 'Other', 'cat.savingsTransfer': 'Savings Transfer',
       'cat.addCustom': '+ Add Custom Category…', 'cat.customLabel': 'Custom category name',
       'cat.customPlaceholder': 'Enter custom category name', 'cat.customRequired': 'Enter a custom category name.'
     },
@@ -1859,7 +1861,9 @@
       'savings.noHistory': '存入及提款紀錄會顯示在這裡。',
       'savings.goalCount': '{n} 個目標', 'savings.targetProgress': '已達目標 {pct}%',
       'savings.createdToast': '已建立儲蓄目標。', 'savings.goalLimit': '最多可建立 100 個儲蓄目標。', 'savings.depositToast': '已存入 {amount}。',
-      'savings.withdrawToast': '已提款 {amount}。', 'savings.invalid': '請輸入大於零的有效金額。',
+      'savings.withdrawToast': '已提款 {amount}。',
+      'savings.depositExpenseDescription': '存入儲蓄：{goal}', 'savings.withdrawIncomeDescription': '儲蓄提款：{goal}',
+      'savings.invalid': '請輸入大於零的有效金額。',
       'savings.noGoalSelected': '請先建立或選擇儲蓄目標。',
       'savings.insufficient': '提款金額超過此目標的儲蓄餘額。',
       'savings.historyDeposit': '存入', 'savings.historyWithdraw': '提款',
@@ -2112,7 +2116,7 @@
       'cat.shopping': '購物',
       'cat.entertainment': '娛樂',
       'cat.health': '健康',
-      'cat.other': '其他',
+      'cat.other': '其他', 'cat.savingsTransfer': '儲蓄轉帳',
       'cat.addCustom': '＋新增自訂類別…', 'cat.customLabel': '自訂類別名稱',
       'cat.customPlaceholder': '例如：寵物護理', 'cat.customRequired': '請輸入自訂類別名稱。'
     },
@@ -2169,7 +2173,9 @@
       'savings.noHistory': '存入和取款记录会显示在这里。',
       'savings.goalCount': '{n} 个目标', 'savings.targetProgress': '已达目标 {pct}%',
       'savings.createdToast': '已创建储蓄目标。', 'savings.goalLimit': '最多可创建 100 个储蓄目标。', 'savings.depositToast': '已存入 {amount}。',
-      'savings.withdrawToast': '已取款 {amount}。', 'savings.invalid': '请输入大于零的有效金额。',
+      'savings.withdrawToast': '已取款 {amount}。',
+      'savings.depositExpenseDescription': '存入储蓄：{goal}', 'savings.withdrawIncomeDescription': '储蓄取款：{goal}',
+      'savings.invalid': '请输入大于零的有效金额。',
       'savings.noGoalSelected': '请先创建或选择储蓄目标。',
       'savings.insufficient': '取款金额超过此目标的储蓄余额。',
       'savings.historyDeposit': '存入', 'savings.historyWithdraw': '取款',
@@ -2422,7 +2428,7 @@
       'cat.shopping': '购物',
       'cat.entertainment': '娱乐',
       'cat.health': '健康',
-      'cat.other': '其他',
+      'cat.other': '其他', 'cat.savingsTransfer': '储蓄转账',
       'cat.addCustom': '＋新增自定义类别…', 'cat.customLabel': '自定义类别名称',
       'cat.customPlaceholder': '例如：宠物护理', 'cat.customRequired': '请输入自定义类别名称。'
     }
@@ -2439,7 +2445,7 @@
   var CAT_I18N = {
     'Food & Dining': 'cat.food', 'Groceries': 'cat.groceries', 'Transport': 'cat.transport',
     'Bills & Utilities': 'cat.bills', 'Shopping': 'cat.shopping', 'Entertainment': 'cat.entertainment',
-    'Health': 'cat.health', 'Other': 'cat.other'
+    'Health': 'cat.health', 'Savings Transfer': 'cat.savingsTransfer', 'Other': 'cat.other'
   };
   function catLabel(name) { return CAT_I18N[name] ? t(CAT_I18N[name]) : name; }
   var EXPENSE_CATEGORY_NAMES = Object.keys(CAT_I18N);
@@ -2504,6 +2510,7 @@
     { name: 'Shopping',          color: '#ec4899' },
     { name: 'Entertainment',     color: '#06b6d4' },
     { name: 'Health',            color: '#ef4444' },
+    { name: 'Savings Transfer',  color: '#8b5cf6' },
     { name: 'Other',             color: '#64748b' }
   ];
   var CUSTOM_CATEGORY_COLORS = ['#8b5cf6','#0ea5e9','#14b8a6','#f97316','#d946ef','#84cc16','#e11d48','#6366f1'];
@@ -2577,7 +2584,7 @@
     var amount = round2(e.amount);
     if (!isFinite(amount) || amount <= 0) return null;
     var source = INCOME_SOURCE_I18N[e.source] ? e.source : (INCOME_SOURCE_I18N[e.category] ? e.category : 'Other Income');
-    return {
+    var clean = {
       id: String(e.id || uid()),
       amount: amount,
       description: String(e.description || '').slice(0, 80),
@@ -2585,6 +2592,12 @@
       date: isValidISODate(e.date) ? e.date : mondayISO(),
       createdAt: Number(e.createdAt) || 0
     };
+    if (e.kind === 'savings-withdrawal' && e.savingsGoalId) {
+      clean.kind = 'savings-withdrawal';
+      clean.savingsGoalId = String(e.savingsGoalId);
+      clean.savingsTransactionId = String(e.savingsTransactionId || '');
+    }
+    return clean;
   }
   function primaryFromEntries(rows) {
     var list = Array.isArray(rows) ? rows : [];
@@ -2896,7 +2909,23 @@
     if (!goal || (type !== 'deposit' && type !== 'withdraw') || amount <= 0) return false;
     if (type === 'withdraw' && amount > goal.balance) return false;
     goal.balance = round2(goal.balance + (type === 'deposit' ? amount : -amount));
-    savings.transactions.push({ id: uid(), goalId: goal.id, type: type, amount: amount, date: toLocalISO(new Date()), source: source || 'manual', createdAt: Date.now() });
+    var date = toLocalISO(new Date());
+    var savingsTransaction = { id: uid(), goalId: goal.id, type: type, amount: amount, date: date, source: source || 'manual', createdAt: Date.now() };
+    savings.transactions.push(savingsTransaction);
+    if (source === 'manual' && type === 'deposit') {
+      state.expenses.push({
+        id: uid(), amount: amount, description: t('savings.depositExpenseDescription', { goal: goal.name }),
+        category: 'Savings Transfer', date: date, createdAt: Date.now(), kind: 'savings-transfer',
+        savingsGoalId: goal.id, savingsTransactionId: savingsTransaction.id
+      });
+    } else if (source === 'manual' && type === 'withdraw') {
+      state.incomes = incomeEntries().concat({
+        id: uid(), amount: amount, description: t('savings.withdrawIncomeDescription', { goal: goal.name }),
+        source: 'Other Income', date: date, createdAt: Date.now(), kind: 'savings-withdrawal',
+        savingsGoalId: goal.id, savingsTransactionId: savingsTransaction.id
+      });
+    }
+    if (source === 'manual') state.demoSeed = false;
     return true;
   }
   function renderSavings() {
@@ -3341,7 +3370,7 @@
     };
   }
   function sanitizeExpense(e) {
-    return {
+    var clean = {
       id: String((e && e.id) || uid()),
       amount: round2(e && e.amount),
       description: String((e && e.description) || ''),
@@ -3349,6 +3378,12 @@
       date: isValidISODate(e && e.date) ? e.date : toLocalISO(new Date()),
       createdAt: Number(e && e.createdAt) || 0
     };
+    if (e && e.kind === 'savings-transfer' && e.savingsGoalId) {
+      clean.kind = 'savings-transfer';
+      clean.savingsGoalId = String(e.savingsGoalId);
+      clean.savingsTransactionId = String(e.savingsTransactionId || '');
+    }
+    return clean;
   }
   function normalizeSnapshot(data) {
     if (!data || typeof data !== 'object') return null;
@@ -3371,8 +3406,8 @@
     if (!n) return '';
     return JSON.stringify({
       i: n.income, d: n.incomeDate, b: n.budgets, c: n.categories, s: n.savings, l: n.lang, th: n.theme,
-      inc: n.incomes.map(function (e) { return [e.id, e.amount, e.description, e.source, e.date, e.createdAt]; }),
-      e: n.expenses.map(function (e) { return [e.id, e.amount, e.description, e.category, e.date, e.createdAt]; })
+      inc: n.incomes.map(function (e) { return [e.id, e.amount, e.description, e.source, e.date, e.createdAt, e.kind, e.savingsGoalId, e.savingsTransactionId]; }),
+      e: n.expenses.map(function (e) { return [e.id, e.amount, e.description, e.category, e.date, e.createdAt, e.kind, e.savingsGoalId, e.savingsTransactionId]; })
     });
   }
   function isMeaningfulRemote(data) {
@@ -3442,6 +3477,11 @@
     if (!remote) return local;
     var incomes = mergeRecordsById(remote.incomes, local.incomes);
     var expenses = mergeRecordsById(remote.expenses, local.expenses);
+    var savings = mergeSavingsSnapshots(local.savings, remote.savings);
+    var deletedSavingsGoalIds = Object.create(null);
+    (savings.deletedGoals || []).forEach(function (item) { deletedSavingsGoalIds[item.id] = true; });
+    incomes = incomes.filter(function (entry) { return !entry.savingsGoalId || !deletedSavingsGoalIds[entry.savingsGoalId]; });
+    expenses = expenses.filter(function (entry) { return !entry.savingsGoalId || !deletedSavingsGoalIds[entry.savingsGoalId]; });
     var localBudgets = local.budgets || {}, remoteBudgets = remote.budgets || {};
     var budgets = {
       weekly: localBudgets.weeklyConfigured ? localBudgets.weekly : remoteBudgets.weekly,
@@ -3459,7 +3499,7 @@
       expenses: expenses,
       categories: normalizeUserCategories((remote.categories || []).concat(local.categories || []), expenses),
       budgets: budgets,
-      savings: mergeSavingsSnapshots(local.savings, remote.savings),
+      savings: savings,
       lang: local.lang || remote.lang,
       theme: local.theme || remote.theme
     };
@@ -3892,12 +3932,13 @@
 
     els.expenseTbody.innerHTML = sorted.map(function (e) {
       var label = e.description && e.description.trim() ? e.description : catLabel(e.category);
+      var deleteCell = e.kind === 'savings-transfer' ? '<td></td>' : '<td style="text-align:right;"><button type="button" class="icon-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + '</button></td>';
       return '<tr>' +
         '<td style="white-space:nowrap; color:var(--muted); font-size:.83rem;">' + escapeHtml(displayDate(e.date)) + '</td>' +
         '<td><div style="font-weight:600;">' + escapeHtml(label) + '</div>' +
           '<span class="badge"><span class="dot" style="background:' + catColor(e.category) + '"></span>' + escapeHtml(catLabel(e.category)) + '</span></td>' +
         '<td class="amt">-' + fmt(e.amount) + '</td>' +
-        '<td style="text-align:right;"><button type="button" class="icon-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + '</button></td>' +
+        deleteCell +
       '</tr>';
     }).join('');
   }
@@ -4071,19 +4112,19 @@
       ? t('day.incomeCat')
       : (incomeSourceLabel(entry.source) + ' · ' + t('day.income'));
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
+    var deleteButton = entry.kind === 'savings-withdrawal' ? '' : '<button type="button" class="icon-btn tx-delete-btn" data-delete-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
     return '<li class="tx-row"><span class="dot" style="background:#10b981"></span>' +
       '<span class="tx-main"><span class="tx-name">' + escapeHtml(incomeLabel) + '</span><span class="tx-cat">' + escapeHtml(incomeSub) + '</span></span>' +
-      '<span class="tx-amt" style="color:#059669;">+' + fmt(entry.amount) + '</span>' +
-      '<button type="button" class="icon-btn tx-delete-btn" data-delete-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button></li>';
+      '<span class="tx-amt" style="color:#059669;">+' + fmt(entry.amount) + '</span>' + deleteButton + '</li>';
   }
   function expenseTransactionRow(e, detailed) {
     var label = e.description && e.description.trim() ? e.description : catLabel(e.category);
     var sub = catLabel(e.category) + (detailed ? ' · ' + t('daytx.expense') : '');
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
+    var deleteButton = e.kind === 'savings-transfer' ? '' : '<button type="button" class="icon-btn tx-delete-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
     return '<li class="tx-row"><span class="dot" style="background:' + catColor(e.category) + '"></span>' +
       '<span class="tx-main"><span class="tx-name">' + escapeHtml(label) + '</span><span class="tx-cat">' + escapeHtml(sub) + '</span></span>' +
-      '<span class="tx-amt" style="color:#dc2626;">-' + fmt(e.amount) + '</span>' +
-      '<button type="button" class="icon-btn tx-delete-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button></li>';
+      '<span class="tx-amt" style="color:#dc2626;">-' + fmt(e.amount) + '</span>' + deleteButton + '</li>';
   }
   function transactionItemsHtml(data, detailed) {
     return data.incomeRows.map(function (entry) { return incomeTransactionRow(entry, detailed); })
@@ -4334,7 +4375,9 @@
 
   els.resetBtn.addEventListener('click', function () {
     armConfirm(els.resetBtn, t('inc.confirmReset'), function () {
-      state = { income: 0, incomeDate: null, incomes: [], budgets: state.budgets, categories: state.categories || [], expenses: [], savings: state.savings || normalizeSavings({}), demoSeed: false };
+      var linkedSavingsIncomes = incomeEntries().filter(function (entry) { return entry.kind === 'savings-withdrawal'; });
+      var linkedSavingsExpenses = state.expenses.filter(function (entry) { return entry.kind === 'savings-transfer'; });
+      state = { income: 0, incomeDate: null, incomes: linkedSavingsIncomes, budgets: state.budgets, categories: state.categories || [], expenses: linkedSavingsExpenses, savings: state.savings || normalizeSavings({}), demoSeed: false };
         syncIncomeInputs();
       save(); render();
       showToast(t('inc.resetToast'));
@@ -4439,9 +4482,9 @@
   });
 
   els.clearBtn.addEventListener('click', function () {
-    if (!state.expenses.length) { showToast(t('log.noClear')); return; }
+    if (!state.expenses.some(function (entry) { return entry.kind !== 'savings-transfer'; })) { showToast(t('log.noClear')); return; }
     armConfirm(els.clearBtn, t('common.confirm'), function () {
-      state.expenses = [];
+      state.expenses = state.expenses.filter(function (entry) { return entry.kind === 'savings-transfer'; });
       state.demoSeed = false;
       save(); render();
       showToast(t('log.cleared'));
@@ -4449,7 +4492,8 @@
   });
 
   els.sampleBtn.addEventListener('click', function () {
-    state.expenses = sampleExpenses();
+    var linkedSavingsExpenses = state.expenses.filter(function (entry) { return entry.kind === 'savings-transfer'; });
+    state.expenses = linkedSavingsExpenses.concat(sampleExpenses());
     state.demoSeed = false;
     if (totalIncome() <= 0) { state.budgets.weekly = 1250; state.budgets.weeklyConfigured = true; state.budgets.weeklyDate = mondayISO(); }
     syncIncomeInputs();
@@ -4821,9 +4865,9 @@
   if (els.settingsExportBtn) els.settingsExportBtn.addEventListener('click', function () { els.exportBtn.click(); });
   if (els.settingsSampleBtn) els.settingsSampleBtn.addEventListener('click', function () { els.sampleBtn.click(); });
   if (els.settingsClearBtn) els.settingsClearBtn.addEventListener('click', function () {
-    if (!state.expenses.length) { showToast(t('log.noClear')); return; }
+    if (!state.expenses.some(function (entry) { return entry.kind !== 'savings-transfer'; })) { showToast(t('log.noClear')); return; }
     armConfirm(els.settingsClearBtn, t('common.confirm'), function () {
-      state.expenses = [];
+      state.expenses = state.expenses.filter(function (entry) { return entry.kind === 'savings-transfer'; });
       state.demoSeed = false;
       save(); render();
       showToast(t('log.cleared'));
@@ -4865,6 +4909,9 @@
       state.savings.goals = state.savings.goals.filter(function (item) { return item.id !== goalId; });
       if (state.savings.rollover.defaultGoalId === goalId) state.savings.rollover.defaultGoalId = state.savings.goals[0] ? state.savings.goals[0].id : '';
       state.savings.transactions = state.savings.transactions.filter(function (item) { return item.goalId !== goalId; });
+      state.expenses = state.expenses.filter(function (item) { return item.savingsGoalId !== goalId; });
+      state.incomes = incomeEntries().filter(function (item) { return item.savingsGoalId !== goalId; });
+      syncLegacyIncomeFields(); syncIncomeInputs();
       save(); render(); showToast(t('savings.deletedToast'));
     });
   });
@@ -5110,5 +5157,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5772b39cc142b12',t:'MTc5NDE2ODA3OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5772b39cc142b12',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a57738b37f152b12',t:'MTc5NDE2ODYzMA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a57738b37f152b12',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
