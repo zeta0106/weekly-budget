@@ -47,14 +47,6 @@ A responsive, multilingual web app for managing weekly and monthly budgets, inco
 
 ---
 
-## Data and Persistence
-
-- Budgets, dated income and expense transactions, Savings goals and movements, rollover preferences and settlement markers, custom categories, and goal order are stored in browser `localStorage`.
-- When signed in, local data is merged with Firestore data and synchronized in real time. The app uses the authenticated user’s UID and writes to `users/{uid}/data/main`.
-- Savings transfers retain links to their Savings movements. Deletion markers and rollover period metadata help keep linked records and settlement state consistent during cloud merges.
-- Firebase Authentication supports Google and email/password sign-in. When signed out, offline, or unable to reach Firebase, the app continues using local storage.
-
----
 
 ## Technology
 
