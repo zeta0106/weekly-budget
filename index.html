@@ -204,6 +204,10 @@
     display:block; flex:1 1 0; width:0; max-width:100%; min-width:0 !important;
     box-sizing:border-box; -webkit-appearance:none; appearance:none;
   }
+  #expDate{
+    display:block; width:100%; max-width:100%; min-width:0 !important;
+    box-sizing:border-box; -webkit-appearance:none; appearance:none;
+  }
   .field:focus{ outline:none; border-color:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,.25); }
   .field::placeholder{ color:var(--muted); opacity:.75; }
   .money-wrap{ position:relative; }
@@ -1097,9 +1101,9 @@
                 <input class="field" id="expAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" autocomplete="off" />
               </div>
             </div>
-            <div>
+            <div class="w-full max-w-full min-w-0 box-border">
               <label class="label" for="expDate" data-i18n="common.date">Date</label>
-              <input class="field" id="expDate" type="date" />
+              <input class="field w-full max-w-full min-w-0 box-border" id="expDate" type="date" />
             </div>
             <div class="span-2">
               <label class="label" for="expDesc"><span data-i18n="common.description">Description</span> <span style="color:var(--muted); font-weight:500;" data-i18n="common.optional">(optional)</span></label>
@@ -5715,5 +5719,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a577ece9aacee2e8',t:'MTc5NDE3NjAxMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a577ece9aacee2e8',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a577f576aec5e2e8',t:'MTc5NDE3NjM2Mg=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a577f576aec5e2e8',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
