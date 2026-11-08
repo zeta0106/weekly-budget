@@ -2769,8 +2769,11 @@
     }).filter(Boolean).slice(-200);
     var goalIds = Object.create(null);
     goals.forEach(function (g) { goalIds[g.id] = true; });
+    var deletedRecords = Array.from(new Set((Array.isArray(raw.deletedRecords) ? raw.deletedRecords : []).map(function (id) { return String(id || '').trim(); }).filter(function (id) { return id.length > 0 && id.length <= 220; }))).slice(-5000);
+    var deletedRecordSet = Object.create(null);
+    deletedRecords.forEach(function (id) { deletedRecordSet[id] = true; });
     var transactions = (Array.isArray(raw.transactions) ? raw.transactions : []).map(function (x) {
-      if (!x || !goalIds[String(x.goalId)]) return null;
+      if (!x || !goalIds[String(x.goalId)] || deletedRecordSet['savings:' + String(x.id || '')]) return null;
       var amount = round2(x.amount);
       if (!isFinite(amount) || amount <= 0 || (x.type !== 'deposit' && x.type !== 'withdraw')) return null;
       return { id: String(x.id || uid()), goalId: String(x.goalId), type: x.type, amount: amount,
@@ -2792,7 +2795,7 @@
       manual: r.pending.manual === true, createdAt: Number(r.pending.createdAt) || Date.now()
     } : null;
     return {
-      goals: goals, transactions: transactions, deletedGoals: deletedGoals,
+      goals: goals, transactions: transactions, deletedGoals: deletedGoals, deletedRecords: deletedRecords,
       rollover: {
         enabled: r.enabled === true,
         preference: r.preference === 'automated' ? 'automated' : 'prompt',
@@ -3484,16 +3487,20 @@
   }
   function normalizeSnapshot(data) {
     if (!data || typeof data !== 'object') return null;
-    var normalizedIncomes = normalizeIncomeEntries(data);
+    var savings = normalizeSavings(data);
+    var deletedRecordSet = Object.create(null);
+    (savings.deletedRecords || []).forEach(function (id) { deletedRecordSet[id] = true; });
+    var normalizedIncomes = normalizeIncomeEntries(data).filter(function (entry) { return !deletedRecordSet['income:' + entry.id]; });
+    var normalizedExpenses = Array.isArray(data.expenses) ? data.expenses.filter(function (e) { return e && isFinite(e.amount); }).map(sanitizeExpense).filter(function (entry) { return !deletedRecordSet['expense:' + entry.id]; }) : [];
     var normalizedPrimary = primaryFromEntries(normalizedIncomes);
     return {
       income: normalizedPrimary ? round2(normalizedPrimary.amount) : 0,
       incomeDate: normalizedPrimary ? normalizedPrimary.date : null,
       incomes: normalizedIncomes,
       budgets: normalizeBudgets(data, normalizedPrimary),
-      categories: normalizeUserCategories(data.categories, data.expenses),
-      expenses: Array.isArray(data.expenses) ? data.expenses.filter(function (e) { return e && isFinite(e.amount); }).map(sanitizeExpense) : [],
-      savings: normalizeSavings(data),
+      categories: normalizeUserCategories(data.categories, normalizedExpenses),
+      expenses: normalizedExpenses,
+      savings: savings,
       lang: TRANSLATIONS[data.lang] ? data.lang : currentLang,
       theme: (data.theme === 'dark' || data.theme === 'light') ? data.theme : (isDark() ? 'dark' : 'light')
     };
@@ -3508,13 +3515,13 @@
     });
   }
   function isMeaningfulRemote(data) {
-    return !!data && (data.budgets != null || (Array.isArray(data.categories) && data.categories.length > 0) || round2(data.income) > 0 || (Array.isArray(data.incomes) && data.incomes.length > 0) || (Array.isArray(data.expenses) && data.expenses.length > 0) || isValidISODate(data.incomeDate) || (data.savings && ((data.savings.goals || []).length || (data.savings.transactions || []).length || (data.savings.deletedGoals || []).length || (data.savings.rollover && data.savings.rollover.enabled))));
+    return !!data && (data.budgets != null || (Array.isArray(data.categories) && data.categories.length > 0) || round2(data.income) > 0 || (Array.isArray(data.incomes) && data.incomes.length > 0) || (Array.isArray(data.expenses) && data.expenses.length > 0) || isValidISODate(data.incomeDate) || (data.savings && ((data.savings.goals || []).length || (data.savings.transactions || []).length || (data.savings.deletedGoals || []).length || (data.savings.deletedRecords || []).length || (data.savings.rollover && data.savings.rollover.enabled))));
   }
   function hasMeaningfulLocalData() {
     if (!state || state.demoSeed) return false;
     var budgets = state.budgets || {};
     return !!(incomeEntries().length || state.expenses.length || (state.categories && state.categories.length) ||
-      (state.savings && ((state.savings.goals || []).length || (state.savings.transactions || []).length || (state.savings.deletedGoals || []).length || state.savings.rollover.enabled)) ||
+      (state.savings && ((state.savings.goals || []).length || (state.savings.transactions || []).length || (state.savings.deletedGoals || []).length || (state.savings.deletedRecords || []).length || state.savings.rollover.enabled)) ||
       (budgets.weeklyConfigured && Number(budgets.weekly) >= 0) || (budgets.monthlyConfigured && Number(budgets.monthly) >= 0));
   }
   function mergeRecordsById(remoteRows, localRows) {
@@ -3536,10 +3543,13 @@
       deletedMap[item.id] = Math.max(Number(deletedMap[item.id]) || 0, Number(item.deletedAt) || 0);
     });
     var deletedGoals = Object.keys(deletedMap).map(function (id) { return { id: id, deletedAt: deletedMap[id] }; }).slice(-200);
+    var deletedRecords = Array.from(new Set((remote.deletedRecords || []).concat(local.deletedRecords || []))).slice(-5000);
+    var deletedRecordSet = Object.create(null);
+    deletedRecords.forEach(function (id) { deletedRecordSet[id] = true; });
     var goals = mergeRecordsById(remote.goals, local.goals).filter(function (goal) { return !deletedMap[goal.id]; }).slice(0, 100);
     var validGoalIds = Object.create(null);
     goals.forEach(function (goal) { validGoalIds[goal.id] = true; });
-    var transactions = mergeRecordsById(remote.transactions, local.transactions).filter(function (tx) { return !!validGoalIds[tx.goalId]; });
+    var transactions = mergeRecordsById(remote.transactions, local.transactions).filter(function (tx) { return !!validGoalIds[tx.goalId] && !deletedRecordSet['savings:' + tx.id]; });
     var totals = Object.create(null);
     goals.forEach(function (g) { totals[g.id] = 0; });
     transactions.forEach(function (x) {
@@ -3550,7 +3560,7 @@
     var lr = local.rollover || {}, rr = remote.rollover || {};
     var newer = Number(lr.updatedAt) >= Number(rr.updatedAt) ? lr : rr;
     return {
-      goals: goals, transactions: transactions, deletedGoals: deletedGoals,
+      goals: goals, transactions: transactions, deletedGoals: deletedGoals, deletedRecords: deletedRecords,
       rollover: {
         enabled: !!newer.enabled, preference: newer.preference === 'automated' ? 'automated' : 'prompt',
         defaultGoalId: goals.some(function (goal) { return goal.id === newer.defaultGoalId; }) ? newer.defaultGoalId : (goals[0] ? goals[0].id : ''),
@@ -3577,8 +3587,10 @@
     var savings = mergeSavingsSnapshots(local.savings, remote.savings);
     var deletedSavingsGoalIds = Object.create(null);
     (savings.deletedGoals || []).forEach(function (item) { deletedSavingsGoalIds[item.id] = true; });
-    incomes = incomes.filter(function (entry) { return !entry.savingsGoalId || !deletedSavingsGoalIds[entry.savingsGoalId]; });
-    expenses = expenses.filter(function (entry) { return !entry.savingsGoalId || !deletedSavingsGoalIds[entry.savingsGoalId]; });
+    var deletedRecordSet = Object.create(null);
+    (savings.deletedRecords || []).forEach(function (id) { deletedRecordSet[id] = true; });
+    incomes = incomes.filter(function (entry) { return (!entry.savingsGoalId || !deletedSavingsGoalIds[entry.savingsGoalId]) && !deletedRecordSet['income:' + entry.id]; });
+    expenses = expenses.filter(function (entry) { return (!entry.savingsGoalId || !deletedSavingsGoalIds[entry.savingsGoalId]) && !deletedRecordSet['expense:' + entry.id]; });
     var localBudgets = local.budgets || {}, remoteBudgets = remote.budgets || {};
     var budgets = {
       weekly: localBudgets.weeklyConfigured ? localBudgets.weekly : remoteBudgets.weekly,
@@ -4209,7 +4221,7 @@
       ? t('day.incomeCat')
       : (incomeSourceLabel(entry.source) + ' · ' + t('day.income'));
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
-    var deleteButton = entry.kind === 'savings-withdrawal' ? '' : '<button type="button" class="icon-btn tx-delete-btn" data-delete-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
+    var deleteButton = '<button type="button" class="icon-btn tx-delete-btn" data-delete-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
     return '<li class="tx-row"><span class="dot" style="background:#10b981"></span>' +
       '<span class="tx-main"><span class="tx-name">' + escapeHtml(incomeLabel) + '</span><span class="tx-cat">' + escapeHtml(incomeSub) + '</span></span>' +
       '<span class="tx-amt" style="color:#059669;">+' + fmt(entry.amount) + '</span>' + deleteButton + '</li>';
@@ -4218,7 +4230,7 @@
     var label = e.description && e.description.trim() ? e.description : catLabel(e.category);
     var sub = catLabel(e.category) + (detailed ? ' · ' + t('daytx.expense') : '');
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
-    var deleteButton = e.kind === 'savings-transfer' ? '' : '<button type="button" class="icon-btn tx-delete-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
+    var deleteButton = '<button type="button" class="icon-btn tx-delete-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
     return '<li class="tx-row"><span class="dot" style="background:' + catColor(e.category) + '"></span>' +
       '<span class="tx-main"><span class="tx-name">' + escapeHtml(label) + '</span><span class="tx-cat">' + escapeHtml(sub) + '</span></span>' +
       '<span class="tx-amt" style="color:#dc2626;">-' + fmt(e.amount) + '</span>' + deleteButton + '</li>';
@@ -4542,13 +4554,49 @@
   refreshExpenseCategoryOptions('Other');
   updateCustomCategoryField();
 
+  function removeLinkedSavingsMovement(entry, recordType) {
+    if (!entry || (entry.kind !== 'savings-transfer' && entry.kind !== 'savings-withdrawal')) return;
+    var savings = state.savings || (state.savings = normalizeSavings(state));
+    savings.deletedRecords = Array.isArray(savings.deletedRecords) ? savings.deletedRecords : [];
+    function addTombstone(key) {
+      if (key && !savings.deletedRecords.includes(key)) savings.deletedRecords.push(key);
+    }
+    addTombstone(recordType + ':' + String(entry.id));
+    var txId = String(entry.savingsTransactionId || '');
+    var tx = txId ? savings.transactions.filter(function (item) { return String(item.id) === txId; })[0] : null;
+    if (!tx) {
+      var expectedType = entry.kind === 'savings-transfer' ? 'deposit' : 'withdraw';
+      var matching = savings.transactions.filter(function (item) {
+        return String(item.goalId) === String(entry.savingsGoalId || '') && item.type === expectedType && round2(item.amount) === round2(entry.amount) && item.date === entry.date && item.source === 'manual';
+      }).sort(function (a, b) { return Math.abs((Number(a.createdAt) || 0) - (Number(entry.createdAt) || 0)) - Math.abs((Number(b.createdAt) || 0) - (Number(entry.createdAt) || 0)); });
+      tx = matching[0] || null;
+      if (tx) txId = String(tx.id);
+    }
+    if (txId) {
+      addTombstone('savings:' + txId);
+      savings.transactions = savings.transactions.filter(function (item) { return String(item.id) !== txId; });
+    }
+    var goal = (savings.goals || []).filter(function (item) { return String(item.id) === String(entry.savingsGoalId || ''); })[0];
+    if (goal) {
+      var amount = round2(tx ? tx.amount : entry.amount);
+      goal.balance = entry.kind === 'savings-transfer'
+        ? round2(Math.max(0, Number(goal.balance || 0) - amount))
+        : round2(Number(goal.balance || 0) + amount);
+    }
+    savings.deletedRecords = savings.deletedRecords.slice(-5000);
+    savings.rollover.updatedAt = Date.now();
+  }
+
   // Delete (event delegation on the table body)
   document.addEventListener('click', function (ev) { // delete works in both the log and the calendar day list
     var incomeBtn = ev.target.closest('[data-delete-income-id]');
     if (incomeBtn) {
       var incomeFromModal = !!(incomeBtn.closest && incomeBtn.closest('#dayTxModal'));
+      var incomeFromCalendar = incomeFromModal || !!(incomeBtn.closest && incomeBtn.closest('#dayTxList'));
       var incomeId = incomeBtn.getAttribute('data-delete-income-id');
       var removedIncome = incomeEntries().filter(function (e) { return String(e.id) === incomeId; })[0];
+      if (removedIncome && removedIncome.kind === 'savings-withdrawal' && !incomeFromCalendar) return;
+      if (removedIncome && removedIncome.kind === 'savings-withdrawal') removeLinkedSavingsMovement(removedIncome, 'income');
       state.incomes = incomeEntries().filter(function (e) { return String(e.id) !== incomeId; });
       if (String(incomeId) === PRIMARY_INCOME_ID) { state.budgets.weekly = 0; state.budgets.weeklyConfigured = true; }
       if (String(incomeId) === MONTHLY_BUDGET_INCOME_ID) { state.budgets.monthly = 0; state.budgets.monthlyConfigured = true; }
@@ -4566,8 +4614,11 @@
     var btn = ev.target.closest('[data-delete-id]');
     if (!btn) return;
     var expenseFromModal = !!(btn.closest && btn.closest('#dayTxModal'));
+    var expenseFromCalendar = expenseFromModal || !!(btn.closest && btn.closest('#dayTxList'));
     var id = btn.getAttribute('data-delete-id');
     var removed = state.expenses.filter(function (e) { return String(e.id) === id; })[0];
+    if (removed && removed.kind === 'savings-transfer' && !expenseFromCalendar) return;
+    if (removed && removed.kind === 'savings-transfer') removeLinkedSavingsMovement(removed, 'expense');
     state.expenses = state.expenses.filter(function (e) { return String(e.id) !== id; });
     state.demoSeed = false;
     save(); render();
@@ -5255,5 +5306,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5777aa3ed7db453',t:'MTc5NDE3MTMzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5777aa3ed7db453',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5778c419b3fe2ed',t:'MTc5NDE3MjA1Mg=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5778c419b3fe2ed',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
