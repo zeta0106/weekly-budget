@@ -400,6 +400,11 @@
   .savings-goal-heading{ display:flex; align-items:flex-start; justify-content:space-between; gap:.8rem; }
   .savings-goal-heading h3{ margin:0; font-size:.98rem; overflow-wrap:anywhere; }
   .savings-goal-actions{ display:flex; align-items:center; gap:.55rem; flex:none; }
+  .savings-order-actions{ display:flex; align-items:center; gap:.2rem; }
+  .savings-order-btn{ width:27px; height:27px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--border); border-radius:.45rem; background:transparent; color:var(--muted); font-size:.85rem; line-height:1; cursor:pointer; }
+  .savings-order-btn:hover:not(:disabled){ border-color:var(--brand-green-strong); color:var(--brand-green-strong); background:rgba(16,185,129,.08); }
+  .savings-order-btn:disabled{ opacity:.35; cursor:not-allowed; }
+  .savings-order-btn:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
   .savings-goal-balance{ font-weight:800; white-space:nowrap; font-variant-numeric:tabular-nums; }
   .savings-delete-goal{ width:34px; height:34px; flex:none; display:inline-flex; align-items:center; justify-content:center; border:1px solid var(--border); border-radius:.55rem; background:transparent; color:var(--muted); cursor:pointer; }
   .savings-delete-goal svg{ width:17px; height:17px; }
@@ -1561,6 +1566,7 @@
       'savings.alreadySwept': 'The previous period has already been swept.',
       'savings.nothingToSweep': 'There is no positive balance to sweep from the previous period.',
       'savings.deleteGoalAria': 'Delete savings goal {goal}',
+      'savings.moveGoalUpAria': 'Move {goal} up', 'savings.moveGoalDownAria': 'Move {goal} down',
       'savings.confirmDelete': 'Delete “{goal}”, including its {amount} balance and activity? This cannot be undone.',
       'savings.confirmDeleteButton': 'Confirm delete?',
       'savings.deletedToast': 'Savings goal deleted.' ,
@@ -1882,6 +1888,7 @@
       'savings.alreadySwept': '上個期間的結餘已轉入儲蓄。',
       'savings.nothingToSweep': '上個期間沒有可轉入儲蓄的正數結餘。',
       'savings.deleteGoalAria': '刪除儲蓄目標 {goal}',
+      'savings.moveGoalUpAria': '將{goal}上移', 'savings.moveGoalDownAria': '將{goal}下移',
       'savings.confirmDelete': '刪除「{goal}」及其 {amount} 餘額和活動紀錄？此操作無法復原。',
       'savings.confirmDeleteButton': '確認刪除？',
       'savings.deletedToast': '已刪除儲蓄目標。',
@@ -2203,6 +2210,7 @@
       'savings.alreadySwept': '上个周期的结余已转入储蓄。',
       'savings.nothingToSweep': '上个周期没有可转入储蓄的正数结余。',
       'savings.deleteGoalAria': '删除储蓄目标 {goal}',
+      'savings.moveGoalUpAria': '将{goal}上移', 'savings.moveGoalDownAria': '将{goal}下移',
       'savings.confirmDelete': '删除“{goal}”及其 {amount} 余额和活动记录？此操作无法撤销。',
       'savings.confirmDeleteButton': '确认删除？',
       'savings.deletedToast': '已删除储蓄目标。',
@@ -2756,12 +2764,13 @@
   }
   function normalizeSavings(data) {
     var raw = data && data.savings && typeof data.savings === 'object' ? data.savings : {};
-    var goals = (Array.isArray(raw.goals) ? raw.goals : []).slice(0, 100).map(function (g) {
+    var goals = (Array.isArray(raw.goals) ? raw.goals : []).slice(0, 100).map(function (g, index) {
       if (!g || typeof g !== 'object') return null;
       var name = String(g.name || '').trim().slice(0, 48);
       if (!name) return null;
-      return { id: String(g.id || uid()), name: name, target: round2(Math.max(0, Number(g.target) || 0)), balance: round2(Math.max(0, Number(g.balance) || 0)), createdAt: Number(g.createdAt) || 0 };
-    }).filter(Boolean);
+      var order = g.order != null && isFinite(Number(g.order)) ? Number(g.order) : index;
+      return { id: String(g.id || uid()), name: name, target: round2(Math.max(0, Number(g.target) || 0)), balance: round2(Math.max(0, Number(g.balance) || 0)), createdAt: Number(g.createdAt) || 0, order: order };
+    }).filter(Boolean).sort(function (a, b) { return a.order - b.order || a.createdAt - b.createdAt; });
     var deletedGoals = (Array.isArray(raw.deletedGoals) ? raw.deletedGoals : []).map(function (item) {
       var id = typeof item === 'string' ? item : (item && item.id);
       if (!id) return null;
@@ -2776,8 +2785,17 @@
       if (!x || !goalIds[String(x.goalId)] || deletedRecordSet['savings:' + String(x.id || '')]) return null;
       var amount = round2(x.amount);
       if (!isFinite(amount) || amount <= 0 || (x.type !== 'deposit' && x.type !== 'withdraw')) return null;
-      return { id: String(x.id || uid()), goalId: String(x.goalId), type: x.type, amount: amount,
+      var transaction = { id: String(x.id || uid()), goalId: String(x.goalId), type: x.type, amount: amount,
         date: isValidISODate(x.date) ? x.date : toLocalISO(new Date()), source: String(x.source || 'manual'), createdAt: Number(x.createdAt) || 0 };
+      if (transaction.source === 'rollover') {
+        var rolloverMode = x.rolloverMode === 'monthly' ? 'monthly' : (x.rolloverMode === 'weekly' ? 'weekly' : '');
+        var rolloverKeyPattern = rolloverMode === 'monthly' ? /^\d{4}-\d{2}$/ : /^\d{4}-\d{2}-\d{2}$/;
+        if (rolloverMode && rolloverKeyPattern.test(String(x.rolloverPeriodKey || ''))) {
+          transaction.rolloverMode = rolloverMode;
+          transaction.rolloverPeriodKey = String(x.rolloverPeriodKey);
+        }
+      }
+      return transaction;
     }).filter(Boolean);
     var r = raw.rollover && typeof raw.rollover === 'object' ? raw.rollover : {};
     var legacyPeriods = r.lastRolloverPeriod && typeof r.lastRolloverPeriod === 'object' ? r.lastRolloverPeriod : {};
@@ -2796,6 +2814,7 @@
     } : null;
     return {
       goals: goals, transactions: transactions, deletedGoals: deletedGoals, deletedRecords: deletedRecords,
+      goalOrderUpdatedAt: Number(raw.goalOrderUpdatedAt) || 0,
       rollover: {
         enabled: r.enabled === true,
         preference: r.preference === 'automated' ? 'automated' : 'prompt',
@@ -2944,12 +2963,13 @@
     var preferred = state.savings.goals.filter(function (goal) { return goal.id === String(preferredGoalId || ''); })[0];
     if (preferred) return preferred;
     if (state.savings.goals.length) return state.savings.goals[0];
-    var goal = { id: uid(), name: t('rollover.goalName'), target: 0, balance: 0, createdAt: Date.now() };
+    var goal = { id: uid(), name: t('rollover.goalName'), target: 0, balance: 0, createdAt: Date.now(), order: state.savings.goals.length };
     state.savings.goals.push(goal);
+    state.savings.goalOrderUpdatedAt = Date.now();
     state.savings.rollover.defaultGoalId = goal.id;
     return goal;
   }
-  function recordSavingsMovement(goalId, type, amount, source) {
+  function recordSavingsMovement(goalId, type, amount, source, rolloverPeriod) {
     var savings = state.savings || (state.savings = normalizeSavings({}));
     var goal = savings.goals.filter(function (g) { return g.id === String(goalId); })[0];
     amount = round2(amount);
@@ -2958,6 +2978,10 @@
     goal.balance = round2(goal.balance + (type === 'deposit' ? amount : -amount));
     var date = toLocalISO(new Date());
     var savingsTransaction = { id: uid(), goalId: goal.id, type: type, amount: amount, date: date, source: source || 'manual', createdAt: Date.now() };
+    if (source === 'rollover' && rolloverPeriod && (rolloverPeriod.mode === 'weekly' || rolloverPeriod.mode === 'monthly')) {
+      savingsTransaction.rolloverMode = rolloverPeriod.mode;
+      savingsTransaction.rolloverPeriodKey = String(rolloverPeriod.periodKey || '');
+    }
     savings.transactions.push(savingsTransaction);
     if (source === 'manual' && type === 'deposit') {
       state.expenses.push({
@@ -2978,6 +3002,7 @@
   function renderSavings() {
     if (!els.savingsTotal) return;
     var savings = state.savings || (state.savings = normalizeSavings({}));
+    reconcileSweptPeriods(savings);
     var goals = savings.goals || [];
     var total = savingsTotalAmount();
     els.savingsTotal.textContent = fmt(total);
@@ -3005,11 +3030,11 @@
     if (els.manualRolloverHint) els.manualRolloverHint.textContent = t('savings.manualSweepHint' + periodSuffix);
     if (els.savingsGoalsEmpty) els.savingsGoalsEmpty.classList.toggle('hidden', goals.length > 0);
     if (els.savingsGoalsList) {
-      els.savingsGoalsList.innerHTML = goals.map(function (goal) {
+      els.savingsGoalsList.innerHTML = goals.map(function (goal, goalIndex) {
         var target = Number(goal.target) || 0;
         var pct = target > 0 ? Math.min(100, Math.round((goal.balance / target) * 100)) : 0;
         var detail = target > 0 ? fmt(goal.balance) + ' / ' + fmt(target) : fmt(goal.balance);
-        return '<article class="savings-goal-card"><div class="savings-goal-heading"><h3>' + escapeHtml(goal.name) + '</h3><div class="savings-goal-actions"><span class="savings-goal-balance">' + escapeHtml(fmt(goal.balance)) + '</span><button type="button" class="savings-delete-goal" data-delete-goal="' + escapeHtml(goal.id) + '" aria-label="' + escapeHtml(t('savings.deleteGoalAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.confirmDelete', { goal: goal.name, amount: fmt(goal.balance) })) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button></div></div>' +
+        return '<article class="savings-goal-card"><div class="savings-goal-heading"><h3>' + escapeHtml(goal.name) + '</h3><div class="savings-goal-actions"><div class="savings-order-actions"><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="-1" aria-label="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '"' + (goalIndex === 0 ? ' disabled' : '') + '><span aria-hidden="true">↑</span></button><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="1" aria-label="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '"' + (goalIndex === goals.length - 1 ? ' disabled' : '') + '><span aria-hidden="true">↓</span></button></div><span class="savings-goal-balance">' + escapeHtml(fmt(goal.balance)) + '</span><button type="button" class="savings-delete-goal" data-delete-goal="' + escapeHtml(goal.id) + '" aria-label="' + escapeHtml(t('savings.deleteGoalAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.confirmDelete', { goal: goal.name, amount: fmt(goal.balance) })) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button></div></div>' +
           (target > 0 ? '<div class="savings-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><span style="width:' + pct + '%"></span></div>' : '') +
           '<div class="savings-goal-meta"><span>' + escapeHtml(detail) + '</span><span>' + (target > 0 ? escapeHtml(t('savings.targetProgress', { pct: pct })) : '') + '</span></div></article>';
       }).join('');
@@ -3072,19 +3097,52 @@
     var end = new Date(current.end.getFullYear(), current.end.getMonth(), current.end.getDate() - 7);
     return makePeriodRange(start, end, 'weekly');
   }
-  function previousPeriodBalance(mode) {
-    var range = previousPeriodRange(mode || periodMode);
-    var snapshot = snapshotForRange(range);
-    return {
-      range: range,
-      snapshot: snapshot,
-      amount: Math.max(0, round2(snapshot.remaining))
-    };
+  function previousPeriodBalance(mode, referenceDate) {
+    var range = previousPeriodRange(mode || periodMode, referenceDate);
+    var incomeRows = incomeEntries().filter(function (entry) {
+      return isValidISODate(entry.date) && entry.date >= range.startISO && entry.date <= range.endISO;
+    });
+    var expenseRows = expensesForRange(range);
+    var income = sumIncomeEntries(incomeRows);
+    var spent = sumExpenses(expenseRows);
+    var snapshot = { range: range, expenses: expenseRows, income: income, spent: spent, remaining: round2(income - spent) };
+    return { range: range, snapshot: snapshot, amount: Math.max(0, round2(snapshot.remaining)) };
   }
   function markPeriodSwept(mode, periodKey) {
     var rollover = state.savings.rollover;
     if (!rollover.sweptPeriods[mode].includes(periodKey)) rollover.sweptPeriods[mode].push(periodKey);
     if (rollover.sweptPeriods[mode].length > 100) rollover.sweptPeriods[mode] = rollover.sweptPeriods[mode].slice(-100);
+  }
+  function reconcileSweptPeriods(savings) {
+    if (!savings || !savings.rollover) return false;
+    var rollover = savings.rollover;
+    var transactions = savings.transactions || [];
+    var hasSavingsBalance = savingsTotalAmount() > 0;
+    var changed = false;
+    ['weekly', 'monthly'].forEach(function (mode) {
+      var existing = rollover.sweptPeriods[mode] || [];
+      var active = existing.filter(function (periodKey) {
+        return hasSavingsBalance && transactions.some(function (tx) {
+          if (tx.type !== 'deposit' || tx.source !== 'rollover') return false;
+          if (tx.rolloverMode) return tx.rolloverMode === mode && tx.rolloverPeriodKey === periodKey;
+          // Older rollover entries predate explicit period metadata. Their entry date
+          // is in the destination period, so infer the period that was swept then.
+          var txDate = parseISO(tx.date);
+          var inferredRange = previousPeriodRange(mode, txDate);
+          var inferredKey = mode === 'monthly' ? inferredRange.startISO.slice(0, 7) : inferredRange.startISO;
+          return inferredKey === periodKey;
+        });
+      });
+      if (active.length !== existing.length) {
+        rollover.sweptPeriods[mode] = active;
+        changed = true;
+      }
+    });
+    if (changed) {
+      rollover.updatedAt = Date.now();
+      save();
+    }
+    return changed;
   }
   function showPendingRolloverModal() {
     if (!els.rolloverModal) return;
@@ -3123,7 +3181,7 @@
     if (rollover.sweptPeriods[mode].includes(previousKey)) { save(); return; }
     if (rollover.preference === 'automated') {
       var goal = ensureSavingsGoal(rollover.defaultGoalId);
-      recordSavingsMovement(goal.id, 'deposit', leftover, 'rollover');
+      recordSavingsMovement(goal.id, 'deposit', leftover, 'rollover', { mode: mode, periodKey: previousKey });
       markPeriodSwept(mode, previousKey);
       save(); render();
       showToast(t('rollover.autoToast', { amount: fmt(leftover) }));
@@ -3177,7 +3235,7 @@
     }
     if (accept) {
       var goal = ensureSavingsGoal(els.rolloverPromptGoal ? els.rolloverPromptGoal.value : rollover.defaultGoalId);
-      recordSavingsMovement(goal.id, 'deposit', amount, pending.kind === 'current' ? 'manual' : 'rollover');
+      recordSavingsMovement(goal.id, 'deposit', amount, pending.kind === 'current' ? 'manual' : 'rollover', pending.kind === 'current' ? null : { mode: pending.mode, periodKey: pending.fromKey });
       if (pending.kind !== 'current') markPeriodSwept(pending.mode, pending.fromKey);
     }
     rollover.pending = null;
@@ -3546,7 +3604,19 @@
     var deletedRecords = Array.from(new Set((remote.deletedRecords || []).concat(local.deletedRecords || []))).slice(-5000);
     var deletedRecordSet = Object.create(null);
     deletedRecords.forEach(function (id) { deletedRecordSet[id] = true; });
-    var goals = mergeRecordsById(remote.goals, local.goals).filter(function (goal) { return !deletedMap[goal.id]; }).slice(0, 100);
+    var orderSource = Number(local.goalOrderUpdatedAt) >= Number(remote.goalOrderUpdatedAt) ? local : remote;
+    var preferredOrder = Object.create(null);
+    (orderSource.goals || []).forEach(function (goal, index) { preferredOrder[goal.id] = index; });
+    var goals = mergeRecordsById(remote.goals, local.goals).filter(function (goal) { return !deletedMap[goal.id]; }).sort(function (a, b) {
+      var ai = preferredOrder[a.id], bi = preferredOrder[b.id];
+      if (ai != null || bi != null) {
+        if (ai == null) return 1;
+        if (bi == null) return -1;
+        if (ai !== bi) return ai - bi;
+      }
+      return (Number(a.order) || 0) - (Number(b.order) || 0) || (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0);
+    }).slice(0, 100);
+    goals.forEach(function (goal, index) { goal.order = index; });
     var validGoalIds = Object.create(null);
     goals.forEach(function (goal) { validGoalIds[goal.id] = true; });
     var transactions = mergeRecordsById(remote.transactions, local.transactions).filter(function (tx) { return !!validGoalIds[tx.goalId] && !deletedRecordSet['savings:' + tx.id]; });
@@ -3561,6 +3631,7 @@
     var newer = Number(lr.updatedAt) >= Number(rr.updatedAt) ? lr : rr;
     return {
       goals: goals, transactions: transactions, deletedGoals: deletedGoals, deletedRecords: deletedRecords,
+      goalOrderUpdatedAt: Math.max(Number(local.goalOrderUpdatedAt) || 0, Number(remote.goalOrderUpdatedAt) || 0),
       rollover: {
         enabled: !!newer.enabled, preference: newer.preference === 'automated' ? 'automated' : 'prompt',
         defaultGoalId: goals.some(function (goal) { return goal.id === newer.defaultGoalId; }) ? newer.defaultGoalId : (goals[0] ? goals[0].id : ''),
@@ -3569,8 +3640,8 @@
           monthly: [lr.lastRolloverPeriod.monthly, rr.lastRolloverPeriod.monthly].sort().pop() || ''
         },
         sweptPeriods: {
-          weekly: Array.from(new Set((lr.sweptPeriods.weekly || []).concat(rr.sweptPeriods.weekly || []))).sort().slice(-100),
-          monthly: Array.from(new Set((lr.sweptPeriods.monthly || []).concat(rr.sweptPeriods.monthly || []))).sort().slice(-100)
+          weekly: (newer.sweptPeriods && newer.sweptPeriods.weekly || []).slice(-100),
+          monthly: (newer.sweptPeriods && newer.sweptPeriods.monthly || []).slice(-100)
         },
         pending: !lr.pending ? rr.pending : (!rr.pending ? lr.pending : (lr.pending.createdAt >= rr.pending.createdAt ? lr.pending : rr.pending)),
         updatedAt: Math.max(Number(lr.updatedAt) || 0, Number(rr.updatedAt) || 0)
@@ -5044,7 +5115,24 @@
     state.savings.rollover.updatedAt = Date.now();
     save(); render();
   });
+  function moveSavingsGoal(goalId, direction) {
+    var goals = state.savings && state.savings.goals || [];
+    var from = goals.findIndex(function (goal) { return String(goal.id) === String(goalId); });
+    var to = from + (direction < 0 ? -1 : 1);
+    if (from < 0 || to < 0 || to >= goals.length) return;
+    var moved = goals[from];
+    goals[from] = goals[to];
+    goals[to] = moved;
+    goals.forEach(function (goal, index) { goal.order = index; });
+    state.savings.goalOrderUpdatedAt = Date.now();
+    save(); render();
+  }
   if (els.savingsGoalsList) els.savingsGoalsList.addEventListener('click', function (ev) {
+    var moveButton = ev.target.closest('[data-move-goal]');
+    if (moveButton) {
+      moveSavingsGoal(moveButton.getAttribute('data-move-goal'), Number(moveButton.getAttribute('data-direction')) || 1);
+      return;
+    }
     var button = ev.target.closest('[data-delete-goal]');
     if (!button) return;
     var goalId = button.getAttribute('data-delete-goal');
@@ -5055,6 +5143,8 @@
       state.savings.deletedGoals.push({ id: goalId, deletedAt: Date.now() });
       if (state.savings.deletedGoals.length > 200) state.savings.deletedGoals = state.savings.deletedGoals.slice(-200);
       state.savings.goals = state.savings.goals.filter(function (item) { return item.id !== goalId; });
+      state.savings.goals.forEach(function (item, index) { item.order = index; });
+      state.savings.goalOrderUpdatedAt = Date.now();
       if (state.savings.rollover.defaultGoalId === goalId) state.savings.rollover.defaultGoalId = state.savings.goals[0] ? state.savings.goals[0].id : '';
       state.savings.transactions = state.savings.transactions.filter(function (item) { return item.goalId !== goalId; });
       state.expenses = state.expenses.filter(function (item) { return item.savingsGoalId !== goalId; });
@@ -5070,8 +5160,9 @@
     if (!name || target < 0) { showToast(t('savings.invalid')); return; }
     if (!state.savings) state.savings = normalizeSavings({});
     if (state.savings.goals.length >= 100) { showToast(t('savings.goalLimit')); return; }
-    var newGoal = { id: uid(), name: name, target: target, balance: 0, createdAt: Date.now() };
+    var newGoal = { id: uid(), name: name, target: target, balance: 0, createdAt: Date.now(), order: state.savings.goals.length };
     state.savings.goals.push(newGoal);
+    state.savings.goalOrderUpdatedAt = Date.now();
     if (!state.savings.rollover.defaultGoalId) state.savings.rollover.defaultGoalId = newGoal.id;
     els.savingsGoalName.value = ''; els.savingsGoalTarget.value = '';
     save(); render(); showToast(t('savings.createdToast'));
@@ -5306,5 +5397,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5778c419b3fe2ed',t:'MTc5NDE3MjA1Mg=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5778c419b3fe2ed',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a577a2b13958b8ce',t:'MTc5NDE3Mjk3MQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a577a2b13958b8ce',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
