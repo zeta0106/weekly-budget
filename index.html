@@ -351,9 +351,11 @@
   [data-active-view="dashboard"] #rightCol{ display:none; }
   [data-active-view="charts"] #leftCol, [data-active-view="charts"] #middleCol{ display:none; }
   [data-active-view="settings"] #middleCol, [data-active-view="settings"] #rightCol{ display:none; }
-  [data-active-view="calendar"] #mainGrid{ display:none; }
-  .calendar-layout{ display:none; }
+  [data-active-view="calendar"] #mainGrid,
+  [data-active-view="savings"] #mainGrid{ display:none; }
+  .calendar-layout, .savings-layout{ display:none; }
   [data-active-view="calendar"] .calendar-layout{ display:grid; gap:1.5rem; grid-template-columns:1fr; align-items:start; }
+  [data-active-view="savings"] .savings-layout{ display:grid; gap:1.5rem; grid-template-columns:1fr; align-items:start; }
 
   @media (min-width:768px){
     [data-active-view="charts"] .wb-grid{ grid-template-columns:1fr; }
@@ -366,6 +368,7 @@
     [data-active-view="charts"] .chart-wrap{ height:320px; }
     [data-active-view="settings"] .wb-grid{ grid-template-columns:minmax(0,1060px); justify-content:center; }
     [data-active-view="calendar"] .calendar-layout{ grid-template-columns:minmax(0,1.65fr) 380px; }
+    [data-active-view="savings"] .savings-layout{ grid-template-columns:minmax(0,1.25fr) minmax(320px,.75fr); }
     .day-card{ position:sticky; top:5.5rem; }
   }
 
@@ -380,6 +383,36 @@
   .setting-row:last-of-type{ border-bottom:none; }
   .setting-row .s-label{ font-weight:600; }
   .setting-row .s-hint{ display:block; color:var(--muted); font-size:.76rem; font-weight:500; margin-top:.15rem; }
+  .rollover-switch{ position:relative; display:inline-flex; flex:none; cursor:pointer; }
+  .rollover-switch input{ position:absolute; opacity:0; width:1px; height:1px; }
+  .rollover-switch-track{ width:48px; height:28px; border-radius:999px; background:#cbd5e1; transition:background .18s ease; }
+  .rollover-switch-track::after{ content:""; position:absolute; top:4px; left:4px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:0 1px 4px rgba(15,23,42,.25); transition:transform .18s ease; }
+  .rollover-switch input:checked + .rollover-switch-track{ background:#059669; }
+  .rollover-switch input:checked + .rollover-switch-track::after{ transform:translateX(20px); }
+  .rollover-switch input:focus-visible + .rollover-switch-track{ outline:2px solid #10b981; outline-offset:3px; }
+  .rollover-mode-wrap{ padding:.65rem 0 .2rem; }
+  .rollover-mode-wrap .field{ max-width:100%; }
+  .savings-layout{ min-width:0; }
+  .savings-total-card{ display:flex; flex-direction:column; gap:.25rem; padding:1.1rem 1.2rem; border:1px solid rgba(16,185,129,.25); border-radius:1rem; background:linear-gradient(135deg,rgba(16,185,129,.12),rgba(14,165,233,.08)); }
+  .savings-total-card strong{ font-size:clamp(2rem,8vw,2.8rem); line-height:1.1; font-variant-numeric:tabular-nums; }
+  .savings-goals-list{ display:grid; gap:.75rem; margin-top:.8rem; }
+  .savings-goal-card{ padding:.9rem 1rem; border:1px solid var(--border); border-radius:.8rem; background:var(--field); }
+  .savings-goal-heading{ display:flex; align-items:flex-start; justify-content:space-between; gap:.8rem; }
+  .savings-goal-heading h3{ margin:0; font-size:.98rem; overflow-wrap:anywhere; }
+  .savings-goal-balance{ font-weight:800; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .savings-goal-meta{ display:flex; justify-content:space-between; gap:.5rem; margin-top:.45rem; color:var(--muted); font-size:.78rem; }
+  .savings-progress{ height:8px; margin-top:.7rem; border-radius:999px; background:var(--track); overflow:hidden; }
+  .savings-progress > span{ display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#059669,#10b981,#0ea5e9); }
+  .savings-history{ list-style:none; padding:0; margin:0; }
+  .savings-history-item{ display:flex; justify-content:space-between; gap:.7rem; padding:.7rem 0; border-bottom:1px solid var(--border); font-size:.84rem; }
+  .savings-history-item:last-child{ border-bottom:0; }
+  .savings-history-main{ min-width:0; }
+  .savings-history-name{ display:block; font-weight:700; overflow-wrap:anywhere; }
+  .savings-history-meta{ display:block; color:var(--muted); font-size:.74rem; margin-top:.1rem; }
+  .savings-history-amount{ font-weight:800; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .rollover-modal-card{ text-align:center; padding:1.5rem; }
+  .rollover-celebrate{ font-size:2.5rem; margin-bottom:.4rem; }
+  .rollover-modal-actions{ display:grid; gap:.65rem; margin-top:1.1rem; }
 
   /* Calendar */
   .cal-summary{ display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; margin-top:1rem; }
@@ -430,8 +463,8 @@
   .bottom-nav{
     position:fixed; left:50%; transform:translateX(-50%);
     bottom:var(--nav-bottom);
-    z-index:50; width:min(calc(100vw - 2rem), 580px);
-    display:grid; grid-template-columns:repeat(4,1fr); gap:.35rem;
+    z-index:50; width:min(calc(100vw - 1rem), 620px);
+    display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:.18rem;
     background:var(--header); backdrop-filter:blur(12px);
     border:1px solid var(--border); border-radius:9999px;
     padding:.45rem; box-shadow:0 18px 40px rgba(2,6,23,.28), 0 4px 10px rgba(2,6,23,.12);
@@ -980,6 +1013,21 @@
             <span><span class="s-label" data-i18n="set.clear">Clear expenses</span><span class="s-hint" data-i18n="set.clearHint">Remove every expense (income is kept)</span></span>
             <button type="button" class="btn-ghost" id="settingsClearBtn" data-i18n="common.clearAll">Clear all</button>
           </div>
+          <div class="setting-row">
+            <span><span class="s-label" data-i18n="rollover.title">Auto-sweep remaining funds to savings</span><span class="s-hint" data-i18n="rollover.hint">At the start of the selected weekly or monthly period</span></span>
+            <label class="rollover-switch" aria-label="Enable automatic savings rollover" data-i18n-aria="rollover.title">
+              <input type="checkbox" id="rolloverEnabled" />
+              <span class="rollover-switch-track" aria-hidden="true"></span>
+            </label>
+          </div>
+          <div class="rollover-mode-wrap" id="rolloverModeWrap">
+            <label class="label" for="rolloverMode" data-i18n="rollover.preference">Rollover preference</label>
+            <select class="field" id="rolloverMode">
+              <option value="prompt" data-i18n="rollover.prompt">Prompt me at rollover</option>
+              <option value="automated" data-i18n="rollover.automated">Fully automated</option>
+            </select>
+            <p class="helper" style="margin-bottom:0;" data-i18n="rollover.modeHint">Uses the current Weekly or Monthly mode above.</p>
+          </div>
         </div>
         <hr class="divider" />
         <p class="helper" style="margin:0;" data-i18n="set.note" data-i18n-full="1">Stored under the same localStorage key as before (<span style="font-weight:700;">weeklyBudget.v1</span>), so existing budgets carry over unchanged. Use “Reset week” in the income card to clear income and expenses together.</p>
@@ -1187,6 +1235,54 @@
     </section>
   </div>
 
+  <!-- ============ SAVINGS GOALS VIEW ============ -->
+  <div class="savings-layout" id="savingsView">
+    <section class="card savings-main-card" aria-labelledby="savingsOverviewTitle">
+      <div class="savings-total-card">
+        <span class="eyebrow" data-i18n="savings.total">Total savings</span>
+        <strong id="savingsTotal">$0.00</strong>
+        <span class="s-hint" id="savingsGoalCount">0 goals</span>
+      </div>
+      <div class="row between" style="margin-top:1.2rem; align-items:center;">
+        <h2 class="card-title" id="savingsOverviewTitle" data-i18n="savings.goals">Your savings goals</h2>
+      </div>
+      <div class="savings-goals-list" id="savingsGoalsList"></div>
+      <p class="helper hidden" id="savingsGoalsEmpty" data-i18n="savings.noGoals">No savings goals yet. Create one to start saving.</p>
+      <hr class="divider" />
+      <h3 class="subhead" data-i18n="savings.history">Recent activity</h3>
+      <ul class="savings-history" id="savingsHistory"></ul>
+      <p class="helper hidden" id="savingsHistoryEmpty" data-i18n="savings.noHistory">Deposits and withdrawals will appear here.</p>
+    </section>
+
+    <div class="wb-col savings-actions-col">
+      <section class="card" aria-labelledby="savingsCreateTitle">
+        <h2 class="card-title" id="savingsCreateTitle" data-i18n="savings.createTitle">Create a savings goal</h2>
+        <form id="savingsGoalForm" novalidate style="margin-top:1rem;">
+          <label class="label" for="savingsGoalName" data-i18n="savings.goalName">Goal name</label>
+          <input class="field" id="savingsGoalName" type="text" maxlength="48" required placeholder="e.g. Emergency fund" data-i18n-ph="savings.goalPlaceholder" />
+          <label class="label" for="savingsGoalTarget" style="margin-top:.85rem;" data-i18n="savings.goalTarget">Target amount (optional)</label>
+          <input class="field" id="savingsGoalTarget" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" />
+          <button class="btn-primary" type="submit" style="margin-top:1rem;" data-i18n="savings.create">Create goal</button>
+        </form>
+      </section>
+      <section class="card" aria-labelledby="savingsTransactionTitle">
+        <h2 class="card-title" id="savingsTransactionTitle" data-i18n="savings.transactionTitle">Deposit or withdraw</h2>
+        <form id="savingsTransactionForm" novalidate style="margin-top:1rem;">
+          <label class="label" for="savingsGoalSelect" data-i18n="savings.chooseGoal">Savings goal</label>
+          <select class="field" id="savingsGoalSelect"></select>
+          <label class="label" for="savingsAction" style="margin-top:.85rem;" data-i18n="savings.action">Action</label>
+          <select class="field" id="savingsAction">
+            <option value="deposit" data-i18n="savings.deposit">Deposit</option>
+            <option value="withdraw" data-i18n="savings.withdraw">Withdraw</option>
+          </select>
+          <label class="label" for="savingsAmount" style="margin-top:.85rem;" data-i18n="savings.amount">Amount</label>
+          <input class="field" id="savingsAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" />
+          <button class="btn-primary" type="submit" style="margin-top:1rem;" data-i18n="savings.saveTransaction">Save transaction</button>
+        </form>
+      </section>
+    </div>
+  </div>
+
   <footer style="text-align:center; color:var(--muted); font-size:.78rem; margin-top:2rem;" data-i18n="footer.text">
     WeeklyBudget · Your data never leaves this browser (stored in localStorage).
   </footer>
@@ -1211,11 +1307,28 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>
     <span data-i18n="nav.calendar">Calendar</span>
   </button>
+  <button type="button" class="nav-btn" data-view-target="savings" aria-label="Savings goals" data-i18n-aria="nav.savingsAria">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v2"/><path d="M5 8h14l1 4-1 8H5l-1-8 1-4Z"/><path d="M8 8c0-2 1.8-3 4-3s4 1 4 3"/><path d="M9 13h.01M15 13h.01"/><path d="M10 17h4"/></svg>
+    <span data-i18n="nav.savings">Savings</span>
+  </button>
   <button type="button" class="nav-btn" data-view-target="settings" aria-label="Budget settings" data-i18n-aria="nav.settingsAria">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></svg>
     <span data-i18n="nav.settings">Settings</span>
   </button>
 </nav>
+
+<!-- Savings rollover confirmation modal -->
+<div id="rolloverModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="rolloverModalTitle">
+  <div class="card modal-card rollover-modal-card">
+    <div class="rollover-celebrate" aria-hidden="true">🎉</div>
+    <h2 class="card-title" id="rolloverModalTitle" data-i18n="rollover.modalTitle">A fresh period, a little extra saved!</h2>
+    <p class="card-sub" id="rolloverModalMessage">You have $0.00 remaining.</p>
+    <div class="rollover-modal-actions">
+      <button type="button" class="btn-primary" id="rolloverDepositBtn" data-i18n="rollover.depositAll">Deposit All</button>
+      <button type="button" class="btn-secondary" id="rolloverSkipBtn" data-i18n="rollover.skip">Skip / Keep</button>
+    </div>
+  </div>
+</div>
 
 <!-- Auth modal: Google / email sign-in for cloud sync -->
 <div id="authModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="authTitle">
@@ -1385,7 +1498,7 @@
       'theme.hintLight': 'Light mode is on',
       'lang.aria': 'Select language',
       'nav.aria': 'Main views',
-      'nav.dashboard': 'Dashboard',
+      'nav.dashboard': 'Main',
       'nav.charts': 'Charts',
       'nav.calendar': 'Calendar',
       'nav.settings': 'Settings',
@@ -1393,6 +1506,34 @@
       'nav.chartsAria': 'Charts and analytics',
       'nav.calendarAria': 'Expense calendar',
       'nav.settingsAria': 'Budget settings',
+      'nav.savings': 'Savings', 'nav.savingsAria': 'Savings goals',
+      'view.savings.title': 'Savings Goals',
+      'view.savings.sub': 'Build savings goals, track progress, and manage deposits or withdrawals.',
+      'rollover.title': 'Auto-sweep remaining funds to savings',
+      'rollover.hint': 'At the start of the selected weekly or monthly period',
+      'rollover.preference': 'Rollover preference', 'rollover.prompt': 'Prompt me at rollover',
+      'rollover.automated': 'Fully automated', 'rollover.modeHint': 'Uses the current Weekly or Monthly mode above.',
+      'rollover.modalTitle': 'A fresh period, a little extra saved!',
+      'rollover.message': '{amount} remained from the last period. Deposit it into “{goal}”?',
+      'rollover.depositAll': 'Deposit All', 'rollover.skip': 'Skip / Keep',
+      'rollover.autoToast': 'Rollover complete: {amount} moved into savings.',
+      'rollover.goalName': 'General savings',
+      'savings.total': 'Total savings', 'savings.goals': 'Your savings goals',
+      'savings.noGoals': 'No savings goals yet. Create one to start saving.',
+      'savings.createTitle': 'Create a savings goal', 'savings.goalName': 'Goal name',
+      'savings.goalPlaceholder': 'e.g. Emergency fund', 'savings.goalTarget': 'Target amount (optional)',
+      'savings.create': 'Create goal', 'savings.transactionTitle': 'Deposit or withdraw',
+      'savings.chooseGoal': 'Savings goal', 'savings.action': 'Action',
+      'savings.deposit': 'Deposit', 'savings.withdraw': 'Withdraw', 'savings.amount': 'Amount',
+      'savings.saveTransaction': 'Save transaction', 'savings.history': 'Recent activity',
+      'savings.noHistory': 'Deposits and withdrawals will appear here.',
+      'savings.goalCount': '{n} goals', 'savings.targetProgress': '{pct}% of target',
+      'savings.createdToast': 'Savings goal created.', 'savings.goalLimit': 'You can have up to 100 savings goals.', 'savings.depositToast': '{amount} deposited.',
+      'savings.withdrawToast': '{amount} withdrawn.', 'savings.invalid': 'Enter a valid positive amount.',
+      'savings.noGoalSelected': 'Create or select a savings goal first.',
+      'savings.insufficient': 'The withdrawal exceeds this goal’s balance.',
+      'savings.historyDeposit': 'Deposit', 'savings.historyWithdraw': 'Withdrawal',
+      'savings.historyRollover': 'Rollover deposit',
       'view.dashboard.title': 'Dashboard',
       'view.dashboard.sub': 'Add expenses, track remaining funds, and review your log.',
       'view.charts.title': 'Charts & Analytics',
@@ -1666,6 +1807,34 @@
       'nav.chartsAria': '圖表與分析',
       'nav.calendarAria': '支出日曆',
       'nav.settingsAria': '預算設定',
+      'nav.savings': '儲蓄', 'nav.savingsAria': '儲蓄目標',
+      'view.savings.title': '儲蓄目標',
+      'view.savings.sub': '建立儲蓄目標、追蹤進度，並管理存入或提款。',
+      'rollover.title': '自動將剩餘資金轉入儲蓄',
+      'rollover.hint': '在所選每週或每月期間開始時執行',
+      'rollover.preference': '結轉偏好設定', 'rollover.prompt': '結轉時詢問我',
+      'rollover.automated': '完全自動', 'rollover.modeHint': '依照上方目前選擇的每週或每月模式。',
+      'rollover.modalTitle': '新期間開始了，順便存下一筆！',
+      'rollover.message': '上個期間還剩 {amount}。要存入「{goal}」嗎？',
+      'rollover.depositAll': '全部存入', 'rollover.skip': '略過／保留',
+      'rollover.autoToast': '結轉完成：已將 {amount} 存入儲蓄。',
+      'rollover.goalName': '一般儲蓄',
+      'savings.total': '儲蓄總額', 'savings.goals': '你的儲蓄目標',
+      'savings.noGoals': '尚未建立儲蓄目標。建立一個目標開始存錢吧。',
+      'savings.createTitle': '建立儲蓄目標', 'savings.goalName': '目標名稱',
+      'savings.goalPlaceholder': '例如：緊急預備金', 'savings.goalTarget': '目標金額（選填）',
+      'savings.create': '建立目標', 'savings.transactionTitle': '存入或提款',
+      'savings.chooseGoal': '儲蓄目標', 'savings.action': '操作',
+      'savings.deposit': '存入', 'savings.withdraw': '提款', 'savings.amount': '金額',
+      'savings.saveTransaction': '儲存交易', 'savings.history': '最近活動',
+      'savings.noHistory': '存入及提款紀錄會顯示在這裡。',
+      'savings.goalCount': '{n} 個目標', 'savings.targetProgress': '已達目標 {pct}%',
+      'savings.createdToast': '已建立儲蓄目標。', 'savings.goalLimit': '最多可建立 100 個儲蓄目標。', 'savings.depositToast': '已存入 {amount}。',
+      'savings.withdrawToast': '已提款 {amount}。', 'savings.invalid': '請輸入大於零的有效金額。',
+      'savings.noGoalSelected': '請先建立或選擇儲蓄目標。',
+      'savings.insufficient': '提款金額超過此目標的儲蓄餘額。',
+      'savings.historyDeposit': '存入', 'savings.historyWithdraw': '提款',
+      'savings.historyRollover': '結轉存入',
       'view.dashboard.title': '主頁',
       'view.dashboard.sub': '新增支出、追蹤剩餘資金，並查看你的紀錄。',
       'view.charts.title': '圖表與分析',
@@ -1939,6 +2108,34 @@
       'nav.chartsAria': '图表与分析',
       'nav.calendarAria': '支出日历',
       'nav.settingsAria': '预算设置',
+      'nav.savings': '储蓄', 'nav.savingsAria': '储蓄目标',
+      'view.savings.title': '储蓄目标',
+      'view.savings.sub': '建立储蓄目标、追踪进度，并管理存入或取款。',
+      'rollover.title': '自动将剩余资金转入储蓄',
+      'rollover.hint': '在所选每周或每月期间开始时执行',
+      'rollover.preference': '结转偏好设置', 'rollover.prompt': '结转时询问我',
+      'rollover.automated': '完全自动', 'rollover.modeHint': '按照上方当前选择的每周或每月模式。',
+      'rollover.modalTitle': '新周期开始了，顺便存下一笔！',
+      'rollover.message': '上个周期还剩 {amount}。要存入“{goal}”吗？',
+      'rollover.depositAll': '全部存入', 'rollover.skip': '跳过／保留',
+      'rollover.autoToast': '结转完成：已将 {amount} 存入储蓄。',
+      'rollover.goalName': '一般储蓄',
+      'savings.total': '储蓄总额', 'savings.goals': '你的储蓄目标',
+      'savings.noGoals': '尚未创建储蓄目标。创建一个目标开始存钱吧。',
+      'savings.createTitle': '创建储蓄目标', 'savings.goalName': '目标名称',
+      'savings.goalPlaceholder': '例如：应急备用金', 'savings.goalTarget': '目标金额（选填）',
+      'savings.create': '创建目标', 'savings.transactionTitle': '存入或取款',
+      'savings.chooseGoal': '储蓄目标', 'savings.action': '操作',
+      'savings.deposit': '存入', 'savings.withdraw': '取款', 'savings.amount': '金额',
+      'savings.saveTransaction': '保存交易', 'savings.history': '最近活动',
+      'savings.noHistory': '存入和取款记录会显示在这里。',
+      'savings.goalCount': '{n} 个目标', 'savings.targetProgress': '已达目标 {pct}%',
+      'savings.createdToast': '已创建储蓄目标。', 'savings.goalLimit': '最多可创建 100 个储蓄目标。', 'savings.depositToast': '已存入 {amount}。',
+      'savings.withdrawToast': '已取款 {amount}。', 'savings.invalid': '请输入大于零的有效金额。',
+      'savings.noGoalSelected': '请先创建或选择储蓄目标。',
+      'savings.insufficient': '取款金额超过此目标的储蓄余额。',
+      'savings.historyDeposit': '存入', 'savings.historyWithdraw': '取款',
+      'savings.historyRollover': '结转存入',
       'view.dashboard.title': '主页',
       'view.dashboard.sub': '新增支出、追踪剩余资金，并查看你的记录。',
       'view.charts.title': '图表与分析',
@@ -2430,6 +2627,7 @@
           budgets: normalizeBudgets(parsed, loadedPrimary),
           categories: normalizeUserCategories(parsed.categories, loadedExpenses),
           expenses: loadedExpenses,
+          savings: normalizeSavings(parsed),
           demoSeed: parsed.demoSeed === true
         };
       } catch (e) { /* corrupted data — fall through to seed */ }
@@ -2445,6 +2643,7 @@
       budgets: { weekly: 1250, monthly: 0, weeklyDate: seedIncomeDate, monthlyDate: toLocalISO(new Date()).slice(0, 7), weeklyConfigured: true, monthlyConfigured: false },
       categories: [],
       expenses: sampleExpenses(),
+      savings: normalizeSavings({}),
       demoSeed: true
     };
   }
@@ -2461,10 +2660,45 @@
       monthlyConfigured: typeof b.monthlyConfigured === 'boolean' ? b.monthlyConfigured : (Number(b.monthly) > 0)
     };
   }
+  function normalizeSavings(data) {
+    var raw = data && data.savings && typeof data.savings === 'object' ? data.savings : {};
+    var goals = (Array.isArray(raw.goals) ? raw.goals : []).slice(0, 100).map(function (g) {
+      if (!g || typeof g !== 'object') return null;
+      var name = String(g.name || '').trim().slice(0, 48);
+      if (!name) return null;
+      return { id: String(g.id || uid()), name: name, target: round2(Math.max(0, Number(g.target) || 0)), balance: round2(Math.max(0, Number(g.balance) || 0)), createdAt: Number(g.createdAt) || 0 };
+    }).filter(Boolean);
+    var goalIds = Object.create(null);
+    goals.forEach(function (g) { goalIds[g.id] = true; });
+    var transactions = (Array.isArray(raw.transactions) ? raw.transactions : []).map(function (x) {
+      if (!x || !goalIds[String(x.goalId)]) return null;
+      var amount = round2(x.amount);
+      if (!isFinite(amount) || amount <= 0 || (x.type !== 'deposit' && x.type !== 'withdraw')) return null;
+      return { id: String(x.id || uid()), goalId: String(x.goalId), type: x.type, amount: amount,
+        date: isValidISODate(x.date) ? x.date : toLocalISO(new Date()), source: String(x.source || 'manual'), createdAt: Number(x.createdAt) || 0 };
+    }).filter(Boolean);
+    var r = raw.rollover && typeof raw.rollover === 'object' ? raw.rollover : {};
+    var pending = r.pending && typeof r.pending === 'object' && Number(r.pending.amount) > 0 ? {
+      amount: round2(r.pending.amount), mode: r.pending.mode === 'monthly' ? 'monthly' : 'weekly',
+      fromKey: String(r.pending.fromKey || ''), toKey: String(r.pending.toKey || ''), createdAt: Number(r.pending.createdAt) || Date.now()
+    } : null;
+    return {
+      goals: goals, transactions: transactions,
+      rollover: {
+        enabled: r.enabled === true,
+        preference: r.preference === 'automated' ? 'automated' : 'prompt',
+        lastWeeklyKey: /^\d{4}-\d{2}-\d{2}$/.test(String(r.lastWeeklyKey || '')) ? r.lastWeeklyKey : '',
+        lastMonthlyKey: /^\d{4}-\d{2}$/.test(String(r.lastMonthlyKey || '')) ? r.lastMonthlyKey : '',
+        pending: pending, updatedAt: Number(r.updatedAt) || 0
+      }
+    };
+  }
+
   var state = loadState();
+  state.savings = normalizeSavings(state);
   function save() {
     syncLegacyIncomeFields();
-    storage.set(STORAGE_KEY, JSON.stringify({ income: state.income, incomeDate: state.incomeDate, incomes: incomeEntries(), budgets: state.budgets, categories: state.categories || [], expenses: state.expenses, demoSeed: state.demoSeed === true }));
+    storage.set(STORAGE_KEY, JSON.stringify({ income: state.income, incomeDate: state.incomeDate, incomes: incomeEntries(), budgets: state.budgets, categories: state.categories || [], expenses: state.expenses, savings: normalizeSavings(state), demoSeed: state.demoSeed === true }));
     scheduleCloudSave(); // no-op unless signed in (localStorage stays the fallback)
   }
 
@@ -2586,6 +2820,140 @@
   }
   function periodRemaining() { return selectedPeriodSnapshot().remaining; }
 
+  function savingsTotalAmount() {
+    return round2((state.savings && state.savings.goals || []).reduce(function (sum, goal) { return sum + Number(goal.balance || 0); }, 0));
+  }
+  function ensureSavingsGoal() {
+    if (!state.savings) state.savings = normalizeSavings({});
+    if (state.savings.goals.length) return state.savings.goals[0];
+    var goal = { id: uid(), name: t('rollover.goalName'), target: 0, balance: 0, createdAt: Date.now() };
+    state.savings.goals.push(goal);
+    return goal;
+  }
+  function recordSavingsMovement(goalId, type, amount, source) {
+    var savings = state.savings || (state.savings = normalizeSavings({}));
+    var goal = savings.goals.filter(function (g) { return g.id === String(goalId); })[0];
+    amount = round2(amount);
+    if (!goal || (type !== 'deposit' && type !== 'withdraw') || amount <= 0) return false;
+    if (type === 'withdraw' && amount > goal.balance) return false;
+    goal.balance = round2(goal.balance + (type === 'deposit' ? amount : -amount));
+    savings.transactions.push({ id: uid(), goalId: goal.id, type: type, amount: amount, date: toLocalISO(new Date()), source: source || 'manual', createdAt: Date.now() });
+    return true;
+  }
+  function renderSavings() {
+    if (!els.savingsTotal) return;
+    var savings = state.savings || (state.savings = normalizeSavings({}));
+    var goals = savings.goals || [];
+    var total = savingsTotalAmount();
+    els.savingsTotal.textContent = fmt(total);
+    if (els.savingsGoalCount) els.savingsGoalCount.textContent = t('savings.goalCount', { n: goals.length });
+    if (els.savingsGoalsEmpty) els.savingsGoalsEmpty.classList.toggle('hidden', goals.length > 0);
+    if (els.savingsGoalsList) {
+      els.savingsGoalsList.innerHTML = goals.map(function (goal) {
+        var target = Number(goal.target) || 0;
+        var pct = target > 0 ? Math.min(100, Math.round((goal.balance / target) * 100)) : 0;
+        var detail = target > 0 ? fmt(goal.balance) + ' / ' + fmt(target) : fmt(goal.balance);
+        return '<article class="savings-goal-card"><div class="savings-goal-heading"><h3>' + escapeHtml(goal.name) + '</h3><span class="savings-goal-balance">' + escapeHtml(fmt(goal.balance)) + '</span></div>' +
+          (target > 0 ? '<div class="savings-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><span style="width:' + pct + '%"></span></div>' : '') +
+          '<div class="savings-goal-meta"><span>' + escapeHtml(detail) + '</span><span>' + (target > 0 ? escapeHtml(t('savings.targetProgress', { pct: pct })) : '') + '</span></div></article>';
+      }).join('');
+    }
+    if (els.savingsGoalSelect) {
+      var previous = els.savingsGoalSelect.value;
+      els.savingsGoalSelect.innerHTML = goals.length ? goals.map(function (goal) {
+        return '<option value="' + escapeHtml(goal.id) + '">' + escapeHtml(goal.name) + ' · ' + escapeHtml(fmt(goal.balance)) + '</option>';
+      }).join('') : '<option value="">' + escapeHtml(t('savings.noGoals')) + '</option>';
+      if (goals.some(function (goal) { return goal.id === previous; })) els.savingsGoalSelect.value = previous;
+    }
+    var goalNames = Object.create(null);
+    goals.forEach(function (goal) { goalNames[goal.id] = goal.name; });
+    var history = (savings.transactions || []).slice().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }).slice(0, 12);
+    if (els.savingsHistory) {
+      els.savingsHistory.innerHTML = history.map(function (item) {
+        var isRollover = item.source === 'rollover';
+        var label = isRollover ? t('savings.historyRollover') : t(item.type === 'deposit' ? 'savings.historyDeposit' : 'savings.historyWithdraw');
+        var sign = item.type === 'deposit' ? '+' : '−';
+        var tone = item.type === 'deposit' ? 'var(--brand-green-strong)' : '#dc2626';
+        return '<li class="savings-history-item"><span class="savings-history-main"><span class="savings-history-name">' + escapeHtml(goalNames[item.goalId] || t('rollover.goalName')) + ' · ' + escapeHtml(label) + '</span><span class="savings-history-meta">' + escapeHtml(displayDate(item.date)) + '</span></span><span class="savings-history-amount" style="color:' + tone + ';">' + sign + escapeHtml(fmt(item.amount)) + '</span></li>';
+      }).join('');
+    }
+    if (els.savingsHistoryEmpty) els.savingsHistoryEmpty.classList.toggle('hidden', history.length > 0);
+  }
+  function syncRolloverControls() {
+    var rollover = (state.savings || normalizeSavings({})).rollover;
+    if (els.rolloverEnabled) els.rolloverEnabled.checked = !!rollover.enabled;
+    if (els.rolloverMode) els.rolloverMode.value = rollover.preference === 'automated' ? 'automated' : 'prompt';
+    if (els.rolloverModeWrap) els.rolloverModeWrap.classList.toggle('hidden', !rollover.enabled);
+  }
+  function currentPeriodKey(mode, date) {
+    var range = currentPeriodRange(mode, date);
+    return mode === 'monthly' ? range.startISO.slice(0, 7) : range.startISO;
+  }
+  function previousPeriodRange(mode, now) {
+    var current = currentPeriodRange(mode, now);
+    if (mode === 'monthly') return previousMonthRange(current.start);
+    var start = new Date(current.start.getFullYear(), current.start.getMonth(), current.start.getDate() - 7);
+    var end = new Date(current.end.getFullYear(), current.end.getMonth(), current.end.getDate() - 7);
+    return makePeriodRange(start, end, 'weekly');
+  }
+  function showPendingRolloverModal() {
+    if (!els.rolloverModal) return;
+    var pending = state.savings && state.savings.rollover && state.savings.rollover.pending;
+    if (!pending || !state.savings.rollover.enabled) {
+      els.rolloverModal.classList.add('hidden');
+      return;
+    }
+    var destination = state.savings.goals[0] ? state.savings.goals[0].name : t('rollover.goalName');
+    if (els.rolloverModalMessage) els.rolloverModalMessage.textContent = t('rollover.message', { amount: fmt(pending.amount), goal: destination });
+    els.rolloverModal.classList.remove('hidden');
+  }
+  function checkRolloverTransition(mode) {
+    if (mode !== 'weekly' && mode !== 'monthly') return;
+    var savings = state.savings || (state.savings = normalizeSavings({}));
+    var rollover = savings.rollover;
+    var key = currentPeriodKey(mode);
+    var keyField = mode === 'monthly' ? 'lastMonthlyKey' : 'lastWeeklyKey';
+    var priorKey = rollover[keyField];
+    if (!priorKey) {
+      rollover[keyField] = key;
+      rollover.updatedAt = Date.now();
+      save();
+      showPendingRolloverModal();
+      return;
+    }
+    if (priorKey === key) { showPendingRolloverModal(); return; }
+    rollover[keyField] = key;
+    rollover.updatedAt = Date.now();
+    if (!rollover.enabled || rollover.pending) { save(); showPendingRolloverModal(); return; }
+    var previousRange = previousPeriodRange(mode);
+    var leftover = round2(snapshotForRange(previousRange).remaining);
+    if (leftover <= 0) { save(); return; }
+    var previousKey = mode === 'monthly' ? previousRange.startISO.slice(0, 7) : previousRange.startISO;
+    if (rollover.preference === 'automated') {
+      var goal = ensureSavingsGoal();
+      recordSavingsMovement(goal.id, 'deposit', leftover, 'rollover');
+      save(); render();
+      showToast(t('rollover.autoToast', { amount: fmt(leftover) }));
+      return;
+    }
+    rollover.pending = { amount: leftover, mode: mode, fromKey: previousKey, toKey: key, createdAt: Date.now() };
+    save(); render();
+  }
+  function completePendingRollover(accept) {
+    var savings = state.savings || normalizeSavings({});
+    var rollover = savings.rollover;
+    var pending = rollover.pending;
+    if (!pending) { showPendingRolloverModal(); return; }
+    if (accept) {
+      var goal = ensureSavingsGoal();
+      recordSavingsMovement(goal.id, 'deposit', pending.amount, 'rollover');
+    }
+    rollover.pending = null;
+    rollover.updatedAt = Date.now();
+    save(); render();
+    if (accept) showToast(t('rollover.autoToast', { amount: fmt(pending.amount) }));
+  }
+
   /* ============================================================
      3. DOM REFERENCES
   ============================================================ */
@@ -2622,6 +2990,12 @@
     settingsThemeBtn: $('settingsThemeBtn'), settingsThemeLabel: $('settingsThemeLabel'),
     settingsExportBtn: $('settingsExportBtn'), settingsPdfBtn: $('settingsPdfBtn'), settingsSampleBtn: $('settingsSampleBtn'),
     settingsClearBtn: $('settingsClearBtn'),
+    rolloverEnabled: $('rolloverEnabled'), rolloverMode: $('rolloverMode'), rolloverModeWrap: $('rolloverModeWrap'),
+    savingsTotal: $('savingsTotal'), savingsGoalCount: $('savingsGoalCount'), savingsGoalsList: $('savingsGoalsList'), savingsGoalsEmpty: $('savingsGoalsEmpty'),
+    savingsHistory: $('savingsHistory'), savingsHistoryEmpty: $('savingsHistoryEmpty'),
+    savingsGoalForm: $('savingsGoalForm'), savingsGoalName: $('savingsGoalName'), savingsGoalTarget: $('savingsGoalTarget'),
+    savingsTransactionForm: $('savingsTransactionForm'), savingsGoalSelect: $('savingsGoalSelect'), savingsAction: $('savingsAction'), savingsAmount: $('savingsAmount'),
+    rolloverModal: $('rolloverModal'), rolloverModalMessage: $('rolloverModalMessage'), rolloverDepositBtn: $('rolloverDepositBtn'), rolloverSkipBtn: $('rolloverSkipBtn'),
     calTitle: $('calTitle'), calGrid: $('calGrid'), calPrev: $('calPrev'), calNext: $('calNext'), calToday: $('calToday'),
     calMonthIncome: $('calMonthIncome'), calMonthExpenses: $('calMonthExpenses'), calMonthNet: $('calMonthNet'),
     dayTitle: $('dayTitle'), daySub: $('daySub'), dayIncome: $('dayIncome'), dayExpenses: $('dayExpenses'), dayNet: $('dayNet'),
@@ -2744,6 +3118,7 @@
     dashboard: { titleKey: 'view.dashboard.title', subKey: 'view.dashboard.sub' },
     charts:    { titleKey: 'view.charts.title',    subKey: 'view.charts.sub' },
     calendar:  { titleKey: 'view.calendar.title',  subKey: 'view.calendar.sub' },
+    savings:   { titleKey: 'view.savings.title',   subKey: 'view.savings.sub' },
     settings:  { titleKey: 'view.settings.title',  subKey: 'view.settings.sub' }
   };
 
@@ -2791,6 +3166,7 @@
     periodMode = mode;
     storage.set(PERIOD_KEY, mode);
     render();
+    checkRolloverTransition(mode);
   }
 
   function switchView(name, initial) {
@@ -2852,6 +3228,7 @@
       budgets: state.budgets,
       categories: state.categories || [],
       expenses: state.expenses,
+      savings: normalizeSavings(state),
       lang: currentLang,
       theme: isDark() ? 'dark' : 'light'
     };
@@ -2877,6 +3254,7 @@
       budgets: normalizeBudgets(data, normalizedPrimary),
       categories: normalizeUserCategories(data.categories, data.expenses),
       expenses: Array.isArray(data.expenses) ? data.expenses.filter(function (e) { return e && isFinite(e.amount); }).map(sanitizeExpense) : [],
+      savings: normalizeSavings(data),
       lang: TRANSLATIONS[data.lang] ? data.lang : currentLang,
       theme: (data.theme === 'dark' || data.theme === 'light') ? data.theme : (isDark() ? 'dark' : 'light')
     };
@@ -2885,18 +3263,19 @@
     var n = normalizeSnapshot(data);
     if (!n) return '';
     return JSON.stringify({
-      i: n.income, d: n.incomeDate, b: n.budgets, c: n.categories, l: n.lang, th: n.theme,
+      i: n.income, d: n.incomeDate, b: n.budgets, c: n.categories, s: n.savings, l: n.lang, th: n.theme,
       inc: n.incomes.map(function (e) { return [e.id, e.amount, e.description, e.source, e.date, e.createdAt]; }),
       e: n.expenses.map(function (e) { return [e.id, e.amount, e.description, e.category, e.date, e.createdAt]; })
     });
   }
   function isMeaningfulRemote(data) {
-    return !!data && (data.budgets != null || (Array.isArray(data.categories) && data.categories.length > 0) || round2(data.income) > 0 || (Array.isArray(data.incomes) && data.incomes.length > 0) || (Array.isArray(data.expenses) && data.expenses.length > 0) || isValidISODate(data.incomeDate));
+    return !!data && (data.budgets != null || (Array.isArray(data.categories) && data.categories.length > 0) || round2(data.income) > 0 || (Array.isArray(data.incomes) && data.incomes.length > 0) || (Array.isArray(data.expenses) && data.expenses.length > 0) || isValidISODate(data.incomeDate) || (data.savings && ((data.savings.goals || []).length || (data.savings.transactions || []).length || (data.savings.rollover && data.savings.rollover.enabled))));
   }
   function hasMeaningfulLocalData() {
     if (!state || state.demoSeed) return false;
     var budgets = state.budgets || {};
     return !!(incomeEntries().length || state.expenses.length || (state.categories && state.categories.length) ||
+      (state.savings && ((state.savings.goals || []).length || (state.savings.transactions || []).length || state.savings.rollover.enabled)) ||
       (budgets.weeklyConfigured && Number(budgets.weekly) >= 0) || (budgets.monthlyConfigured && Number(budgets.monthly) >= 0));
   }
   function mergeRecordsById(remoteRows, localRows) {
@@ -2910,6 +3289,31 @@
     rows.sort(function (a, b) { return (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0); });
     return rows;
   }
+  function mergeSavingsSnapshots(localSavings, remoteSavings) {
+    var local = localSavings || normalizeSavings({}), remote = remoteSavings || normalizeSavings({});
+    var goals = mergeRecordsById(remote.goals, local.goals).slice(0, 100);
+    var transactions = mergeRecordsById(remote.transactions, local.transactions);
+    var totals = Object.create(null);
+    goals.forEach(function (g) { totals[g.id] = 0; });
+    transactions.forEach(function (x) {
+      if (totals[x.goalId] == null) return;
+      totals[x.goalId] += x.type === 'deposit' ? Number(x.amount) : -Number(x.amount);
+    });
+    goals.forEach(function (g) { g.balance = round2(Math.max(0, totals[g.id])); });
+    var lr = local.rollover || {}, rr = remote.rollover || {};
+    var newer = Number(lr.updatedAt) >= Number(rr.updatedAt) ? lr : rr;
+    return {
+      goals: goals, transactions: transactions,
+      rollover: {
+        enabled: !!newer.enabled, preference: newer.preference === 'automated' ? 'automated' : 'prompt',
+        lastWeeklyKey: [lr.lastWeeklyKey, rr.lastWeeklyKey].sort().pop() || '',
+        lastMonthlyKey: [lr.lastMonthlyKey, rr.lastMonthlyKey].sort().pop() || '',
+        pending: !lr.pending ? rr.pending : (!rr.pending ? lr.pending : (lr.pending.createdAt >= rr.pending.createdAt ? lr.pending : rr.pending)),
+        updatedAt: Math.max(Number(lr.updatedAt) || 0, Number(rr.updatedAt) || 0)
+      }
+    };
+  }
+
   function mergeCloudSnapshots(localData, remoteData) {
     var local = normalizeSnapshot(localData), remote = normalizeSnapshot(remoteData);
     if (!local) return remote;
@@ -2933,6 +3337,7 @@
       expenses: expenses,
       categories: normalizeUserCategories((remote.categories || []).concat(local.categories || []), expenses),
       budgets: budgets,
+      savings: mergeSavingsSnapshots(local.savings, remote.savings),
       lang: local.lang || remote.lang,
       theme: local.theme || remote.theme
     };
@@ -2984,7 +3389,7 @@
     }
     var receivedFingerprint = fingerprint(remote);
     suppressCloud = true;
-    state = { income: remote.income, incomeDate: remote.incomeDate, incomes: remote.incomes, budgets: remote.budgets, categories: remote.categories, expenses: remote.expenses, demoSeed: false };
+    state = { income: remote.income, incomeDate: remote.incomeDate, incomes: remote.incomes, budgets: remote.budgets, categories: remote.categories, expenses: remote.expenses, savings: remote.savings, demoSeed: false };
     document.documentElement.classList.toggle('dark', remote.theme === 'dark');
     storage.set(THEME_KEY, remote.theme);
     syncThemeButton();
@@ -2992,6 +3397,7 @@
     save(); // writes the local cache; suppressCloud stops the echo push
     if (remote.lang !== currentLang) applyLanguage(remote.lang); else render();
     suppressCloud = false;
+    checkRolloverTransition(periodMode);
     setSyncState('synced');
     console.log('Firebase sync success:', { operation: 'applyRemoteData', uid: cloudUser && cloudUser.uid });
     if (cloudInitialized) showToast(t('sync.pulled'));
@@ -3713,6 +4119,9 @@
     renderInsights(snapshot);
     renderCalendar();
     renderDayDetail();
+    renderSavings();
+    syncRolloverControls();
+    showPendingRolloverModal();
     updateCloudUI();
   }
 
@@ -3803,7 +4212,7 @@
 
   els.resetBtn.addEventListener('click', function () {
     armConfirm(els.resetBtn, t('inc.confirmReset'), function () {
-      state = { income: 0, incomeDate: null, incomes: [], budgets: state.budgets, categories: state.categories || [], expenses: [], demoSeed: false };
+      state = { income: 0, incomeDate: null, incomes: [], budgets: state.budgets, categories: state.categories || [], expenses: [], savings: state.savings || normalizeSavings({}), demoSeed: false };
         syncIncomeInputs();
       save(); render();
       showToast(t('inc.resetToast'));
@@ -4299,6 +4708,53 @@
     });
   });
 
+  if (els.rolloverEnabled) els.rolloverEnabled.addEventListener('change', function () {
+    var rollover = state.savings.rollover;
+    rollover.enabled = els.rolloverEnabled.checked;
+    rollover.updatedAt = Date.now();
+    if (!rollover.enabled) rollover.pending = null;
+    else {
+      rollover.lastWeeklyKey = currentPeriodKey('weekly');
+      rollover.lastMonthlyKey = currentPeriodKey('monthly');
+    }
+    save(); render();
+  });
+  if (els.rolloverMode) els.rolloverMode.addEventListener('change', function () {
+    state.savings.rollover.preference = els.rolloverMode.value === 'automated' ? 'automated' : 'prompt';
+    state.savings.rollover.updatedAt = Date.now();
+    save(); render();
+  });
+  if (els.savingsGoalForm) els.savingsGoalForm.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var name = String(els.savingsGoalName.value || '').trim().slice(0, 48);
+    var target = round2(Number(els.savingsGoalTarget.value) || 0);
+    if (!name || target < 0) { showToast(t('savings.invalid')); return; }
+    if (!state.savings) state.savings = normalizeSavings({});
+    if (state.savings.goals.length >= 100) { showToast(t('savings.goalLimit')); return; }
+    state.savings.goals.push({ id: uid(), name: name, target: target, balance: 0, createdAt: Date.now() });
+    els.savingsGoalName.value = ''; els.savingsGoalTarget.value = '';
+    save(); render(); showToast(t('savings.createdToast'));
+  });
+  if (els.savingsTransactionForm) els.savingsTransactionForm.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var amount = round2(Number(els.savingsAmount.value));
+    var goalId = els.savingsGoalSelect.value;
+    var type = els.savingsAction.value === 'withdraw' ? 'withdraw' : 'deposit';
+    if (!goalId) { showToast(t('savings.noGoalSelected')); return; }
+    if (!isFinite(amount) || amount <= 0) { showToast(t('savings.invalid')); return; }
+    var goal = state.savings.goals.filter(function (g) { return g.id === goalId; })[0];
+    if (type === 'withdraw' && (!goal || amount > goal.balance)) { showToast(t('savings.insufficient')); return; }
+    if (!recordSavingsMovement(goalId, type, amount, 'manual')) { showToast(t('savings.noGoalSelected')); return; }
+    els.savingsAmount.value = '';
+    save(); render();
+    showToast(t(type === 'deposit' ? 'savings.depositToast' : 'savings.withdrawToast', { amount: fmt(amount) }));
+  });
+  if (els.rolloverDepositBtn) els.rolloverDepositBtn.addEventListener('click', function () { completePendingRollover(true); });
+  if (els.rolloverSkipBtn) els.rolloverSkipBtn.addEventListener('click', function () { completePendingRollover(false); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) checkRolloverTransition(periodMode); });
+  window.addEventListener('focus', function () { checkRolloverTransition(periodMode); });
+  window.setInterval(function () { if (!document.hidden) checkRolloverTransition(periodMode); }, 60000);
+
   // Re-draw the fallback chart on resize (Chart.js handles itself)
   var resizeTimer = null;
   window.addEventListener('resize', function () {
@@ -4317,6 +4773,7 @@
   switchView(storage.get(VIEW_KEY) || 'dashboard', true); // restore last view
   save();   // persist the seed (first visit) or re-affirm loaded state
   render();
+  checkRolloverTransition(periodMode);
 
   if (seededFresh) {
     setTimeout(function () { showToast(t('welcome.toast')); }, 450);
@@ -4506,5 +4963,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a562da837d180991',t:'MTc5Mzk1NTA1Nw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a562da837d180991',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a576fdce39537558',t:'MTc5NDE2NjIxNw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a576fdce39537558',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
