@@ -2809,6 +2809,7 @@
     var pending = r.pending && typeof r.pending === 'object' && Number(r.pending.amount) > 0 ? {
       amount: round2(r.pending.amount), mode: r.pending.mode === 'monthly' ? 'monthly' : 'weekly',
       fromKey: String(r.pending.fromKey || ''), toKey: String(r.pending.toKey || ''),
+      transactionDate: isValidISODate(r.pending.transactionDate) ? r.pending.transactionDate : '',
       kind: r.pending.kind === 'current' ? 'current' : 'previous',
       manual: r.pending.manual === true, createdAt: Number(r.pending.createdAt) || Date.now()
     } : null;
@@ -2976,19 +2977,24 @@
     if (!goal || (type !== 'deposit' && type !== 'withdraw') || amount <= 0) return false;
     if (type === 'withdraw' && amount > goal.balance) return false;
     goal.balance = round2(goal.balance + (type === 'deposit' ? amount : -amount));
-    var date = toLocalISO(new Date());
+    var date = source === 'rollover' && rolloverPeriod && isValidISODate(rolloverPeriod.date) ? rolloverPeriod.date : toLocalISO(new Date());
     var savingsTransaction = { id: uid(), goalId: goal.id, type: type, amount: amount, date: date, source: source || 'manual', createdAt: Date.now() };
     if (source === 'rollover' && rolloverPeriod && (rolloverPeriod.mode === 'weekly' || rolloverPeriod.mode === 'monthly')) {
       savingsTransaction.rolloverMode = rolloverPeriod.mode;
       savingsTransaction.rolloverPeriodKey = String(rolloverPeriod.periodKey || '');
     }
     savings.transactions.push(savingsTransaction);
-    if (source === 'manual' && type === 'deposit') {
+    if ((source === 'manual' || source === 'rollover') && type === 'deposit') {
       state.expenses.push({
         id: uid(), amount: amount, description: t('savings.depositExpenseDescription', { goal: goal.name }),
         category: 'Savings Transfer', date: date, createdAt: Date.now(), kind: 'savings-transfer',
         savingsGoalId: goal.id, savingsTransactionId: savingsTransaction.id
       });
+      if (source === 'rollover') {
+        selectedDateISO = date;
+        var rolloverCalendarDate = parseISO(date);
+        calendarCursor = new Date(rolloverCalendarDate.getFullYear(), rolloverCalendarDate.getMonth(), 1);
+      }
     } else if (source === 'manual' && type === 'withdraw') {
       state.incomes = incomeEntries().concat({
         id: uid(), amount: amount, description: t('savings.withdrawIncomeDescription', { goal: goal.name }),
@@ -3097,8 +3103,19 @@
     var end = new Date(current.end.getFullYear(), current.end.getMonth(), current.end.getDate() - 7);
     return makePeriodRange(start, end, 'weekly');
   }
-  function previousPeriodBalance(mode, referenceDate) {
-    var range = previousPeriodRange(mode || periodMode, referenceDate);
+  function periodRangeFromKey(mode, periodKey) {
+    if (mode === 'monthly' && /^\d{4}-\d{2}$/.test(String(periodKey || ''))) {
+      var monthParts = String(periodKey).split('-').map(Number);
+      var monthStart = new Date(monthParts[0], monthParts[1] - 1, 1);
+      return makePeriodRange(monthStart, new Date(monthParts[0], monthParts[1], 0), 'monthly');
+    }
+    if (mode === 'weekly' && /^\d{4}-\d{2}-\d{2}$/.test(String(periodKey || ''))) {
+      var weekStart = parseISO(periodKey);
+      return makePeriodRange(weekStart, new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6), 'weekly');
+    }
+    return null;
+  }
+  function transactionBalanceForRange(range) {
     var incomeRows = incomeEntries().filter(function (entry) {
       return isValidISODate(entry.date) && entry.date >= range.startISO && entry.date <= range.endISO;
     });
@@ -3107,6 +3124,9 @@
     var spent = sumExpenses(expenseRows);
     var snapshot = { range: range, expenses: expenseRows, income: income, spent: spent, remaining: round2(income - spent) };
     return { range: range, snapshot: snapshot, amount: Math.max(0, round2(snapshot.remaining)) };
+  }
+  function previousPeriodBalance(mode, referenceDate) {
+    return transactionBalanceForRange(previousPeriodRange(mode || periodMode, referenceDate));
   }
   function markPeriodSwept(mode, periodKey) {
     var rollover = state.savings.rollover;
@@ -3117,12 +3137,11 @@
     if (!savings || !savings.rollover) return false;
     var rollover = savings.rollover;
     var transactions = savings.transactions || [];
-    var hasSavingsBalance = savingsTotalAmount() > 0;
     var changed = false;
     ['weekly', 'monthly'].forEach(function (mode) {
       var existing = rollover.sweptPeriods[mode] || [];
       var active = existing.filter(function (periodKey) {
-        return hasSavingsBalance && transactions.some(function (tx) {
+        return transactions.some(function (tx) {
           if (tx.type !== 'deposit' || tx.source !== 'rollover') return false;
           if (tx.rolloverMode) return tx.rolloverMode === mode && tx.rolloverPeriodKey === periodKey;
           // Older rollover entries predate explicit period metadata. Their entry date
@@ -3181,13 +3200,13 @@
     if (rollover.sweptPeriods[mode].includes(previousKey)) { save(); return; }
     if (rollover.preference === 'automated') {
       var goal = ensureSavingsGoal(rollover.defaultGoalId);
-      recordSavingsMovement(goal.id, 'deposit', leftover, 'rollover', { mode: mode, periodKey: previousKey });
+      recordSavingsMovement(goal.id, 'deposit', leftover, 'rollover', { mode: mode, periodKey: previousKey, date: previousRange.endISO });
       markPeriodSwept(mode, previousKey);
       save(); render();
       showToast(t('rollover.autoToast', { amount: fmt(leftover) }));
       return;
     }
-    rollover.pending = { amount: leftover, mode: mode, fromKey: previousKey, toKey: key, kind: 'previous', manual: false, createdAt: Date.now() };
+    rollover.pending = { amount: leftover, mode: mode, fromKey: previousKey, toKey: key, transactionDate: previousRange.endISO, kind: 'previous', manual: false, createdAt: Date.now() };
     save(); render();
   }
   function sweepPreviousPeriodManually() {
@@ -3202,7 +3221,7 @@
     if (leftover <= 0) { showToast(t('savings.nothingToSweep')); return; }
     rollover.lastRolloverPeriod[mode] = currentPeriodKey(mode);
     rollover.updatedAt = Date.now();
-    rollover.pending = { amount: leftover, mode: mode, fromKey: key, toKey: currentPeriodKey(mode), kind: 'previous', manual: true, createdAt: Date.now() };
+    rollover.pending = { amount: leftover, mode: mode, fromKey: key, toKey: currentPeriodKey(mode), transactionDate: range.endISO, kind: 'previous', manual: true, createdAt: Date.now() };
     save(); render();
   }
   function saveCurrentRemainingFunds() {
@@ -3226,6 +3245,17 @@
       save(); render(); showToast(t('savings.alreadySwept')); return;
     }
     var amount = pending.amount;
+    var rolloverTransactionDate = pending.transactionDate;
+    if (accept && pending.kind !== 'current') {
+      var pendingRange = periodRangeFromKey(pending.mode, pending.fromKey);
+      var freshPreviousData = pendingRange ? transactionBalanceForRange(pendingRange) : previousPeriodBalance(pending.mode);
+      amount = freshPreviousData.amount;
+      rolloverTransactionDate = freshPreviousData.range.endISO;
+      if (amount <= 0) {
+        rollover.pending = null; rollover.updatedAt = Date.now();
+        save(); render(); showToast(t('savings.nothingToSweep')); return;
+      }
+    }
     if (accept && pending.kind === 'current') {
       amount = Math.max(0, round2(selectedPeriodSnapshot().remaining));
       if (amount <= 0) {
@@ -3235,7 +3265,7 @@
     }
     if (accept) {
       var goal = ensureSavingsGoal(els.rolloverPromptGoal ? els.rolloverPromptGoal.value : rollover.defaultGoalId);
-      recordSavingsMovement(goal.id, 'deposit', amount, pending.kind === 'current' ? 'manual' : 'rollover', pending.kind === 'current' ? null : { mode: pending.mode, periodKey: pending.fromKey });
+      recordSavingsMovement(goal.id, 'deposit', amount, pending.kind === 'current' ? 'manual' : 'rollover', pending.kind === 'current' ? null : { mode: pending.mode, periodKey: pending.fromKey, date: isValidISODate(rolloverTransactionDate) ? rolloverTransactionDate : previousPeriodBalance(pending.mode).range.endISO });
       if (pending.kind !== 'current') markPeriodSwept(pending.mode, pending.fromKey);
     }
     rollover.pending = null;
@@ -5397,5 +5427,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a577a2b13958b8ce',t:'MTc5NDE3Mjk3MQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a577a2b13958b8ce',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a577ad7bae8cb8ce',t:'MTc5NDE3MzQxMw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a577ad7bae8cb8ce',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
