@@ -135,7 +135,11 @@
   .theme-switch svg{ width:18px; height:18px; }
 
   /* Layout grid: 3 columns on desktop -> 2 on tablet -> 1 on mobile */
-  .wb-shell{ width:100%; max-width:1400px; margin:0 auto; padding:1.5rem clamp(1rem, 2vw, 2rem) 2.5rem; }
+  .wb-shell{ width:100%; max-width:1400px; margin:0 auto; padding:1.5rem clamp(1rem, 2vw, 2rem) 2.5rem; transition:opacity .25s ease-out, transform .25s ease-out; }
+  #appMain.opacity-0{ opacity:0; }
+  #appMain.opacity-100{ opacity:1; }
+  #appMain.translate-y-2{ transform:translateY(.5rem); }
+  #appMain.translate-y-0{ transform:translateY(0); }
   .wb-grid{ display:grid; gap:1.5rem; grid-template-columns:1fr; align-items:start; }
   .wb-col{ display:flex; flex-direction:column; gap:1.5rem; min-width:0; }
   @media (min-width:768px) and (max-width:1023.98px){
@@ -165,7 +169,7 @@
   .remaining-amount{ font-size:clamp(2.4rem,4vw,3.1rem); font-weight:800; line-height:1.05; letter-spacing:-.02em; margin:.35rem 0 .25rem; color:#059669; font-variant-numeric:tabular-nums; }
   .pill{ display:inline-flex; align-items:center; gap:.35rem; font-size:.72rem; font-weight:700; padding:.3rem .65rem; border-radius:9999px; white-space:nowrap; }
   .progress-track{ height:10px; border-radius:9999px; background:var(--track); overflow:hidden; }
-  .progress-bar{ height:100%; width:0%; border-radius:9999px; background:#10b981; transition:width .6s ease, background-color .3s ease; }
+  .progress-bar{ height:100%; width:0%; border-radius:9999px; background:#10b981; transition:all .5s ease-out; }
   .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
   .stat-box{ border:1px solid var(--border); border-radius:.6rem; padding:.8rem .9rem; background:transparent; }
   .stat-label{ font-size:.72rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
@@ -214,8 +218,9 @@
     box-shadow:0 2px 6px rgba(5,150,105,.35);
     transition:background-color .15s ease, transform .15s ease;
   }
+  .btn-primary.transition-transform{ transition:background-color .15s ease, transform .15s ease; }
   .btn-primary:hover{ background:#047857; transform:translateY(-1px); }
-  .btn-primary:active{ transform:translateY(0); }
+  .btn-primary:active{ transform:scale(.95); }
   .btn-primary:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
   .btn-primary svg{ width:18px; height:18px; }
   .btn-ghost{
@@ -323,19 +328,26 @@
   }
   .period-range{ color:var(--text); font-size:.9rem; font-weight:700; }
   .period-toggle{
-    display:inline-grid; grid-template-columns:1fr 1fr; gap:.25rem; flex:none;
+    position:relative; isolation:isolate; display:inline-grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0; flex:none;
     padding:.25rem; background:var(--card); border:1px solid var(--border);
     border-radius:9999px; box-shadow:0 2px 8px rgba(15,23,42,.08);
   }
+  .period-toggle-pill{
+    position:absolute; z-index:0; top:.25rem; bottom:.25rem; left:.25rem;
+    width:calc((100% - .5rem)/2); border-radius:9999px; pointer-events:none;
+    background:#059669; box-shadow:0 3px 9px rgba(5,150,105,.32);
+    transform:translateX(0); transition:transform .3s cubic-bezier(.22,1,.36,1);
+  }
+  .period-toggle-pill.translate-x-full{ transform:translateX(100%); }
   .period-btn{
-    min-height:40px; padding:.55rem 1rem; border:1px solid transparent;
+    position:relative; z-index:1; min-height:40px; padding:.55rem 1rem; border:1px solid transparent;
     border-radius:9999px; background:transparent; color:var(--muted);
     font-family:inherit; font-size:.85rem; font-weight:700; cursor:pointer;
-    transition:background-color .15s ease, color .15s ease, box-shadow .15s ease;
+    transition:color .3s ease-out, background-color .2s ease-out;
   }
-  .period-btn:hover{ color:var(--text); background:var(--row-hover); }
+  .period-btn:hover{ color:var(--text); background:transparent; }
   .period-btn:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
-  .period-btn.active{ background:#059669; color:#fff; box-shadow:0 3px 9px rgba(5,150,105,.32); }
+  .period-btn.active{ background:transparent; color:#fff; box-shadow:none; }
   @media (max-width:640px){
     .period-bar{ flex-direction:column; align-items:stretch; gap:.65rem; }
     .period-toggle{ width:100%; }
@@ -413,7 +425,7 @@
   .savings-delete-goal:focus-visible{ outline:2px solid #ef4444; outline-offset:2px; }
   .savings-goal-meta{ display:flex; justify-content:space-between; gap:.5rem; margin-top:.45rem; color:var(--muted); font-size:.78rem; }
   .savings-progress{ height:8px; margin-top:.7rem; border-radius:999px; background:var(--track); overflow:hidden; }
-  .savings-progress > span{ display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#059669,#10b981,#0ea5e9); }
+  .savings-progress > span{ display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#059669,#10b981,#0ea5e9); transition:all .5s ease-out; }
   .savings-history{ list-style:none; padding:0; margin:0; }
   .savings-history-item{ display:flex; justify-content:space-between; gap:.7rem; padding:.7rem 0; border-bottom:1px solid var(--border); font-size:.84rem; }
   .savings-history-item:last-child{ border-bottom:0; }
@@ -494,6 +506,8 @@
     font-size:.68rem; font-weight:700; font-family:inherit;
     transition:background-color .15s ease, color .15s ease, transform .15s ease;
   }
+  .nav-btn.transition-transform{ transition:background-color .15s ease, color .15s ease, transform .15s ease; }
+  .nav-btn:active{ transform:scale(.95); }
   .nav-btn svg{ width:21px; height:21px; }
   .nav-btn:hover{ color:var(--text); background:var(--row-hover); }
   .nav-btn:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
@@ -831,8 +845,9 @@
   }
 
   @media (prefers-reduced-motion: reduce){
-    .toast, .nav-btn, .theme-switch,
-    .btn-primary, .btn-secondary, .cal-cell{ transition:none; }
+    .toast, .nav-btn, .theme-switch, .btn-primary, .btn-secondary, .cal-cell,
+    .period-toggle-pill, .period-btn, .progress-bar, .savings-progress > span, #appMain{ transition:none !important; animation:none !important; }
+    .nav-btn:active, .btn-primary:active{ transform:none !important; }
   }
 
   @media print{
@@ -905,7 +920,7 @@
   </div>
 </header>
 
-<main class="wb-shell" id="appMain" data-active-view="dashboard">
+<main class="wb-shell transition-all duration-300 ease-out opacity-100 translate-y-0" id="appMain" data-active-view="dashboard">
   <div class="view-head">
     <h2 id="viewTitle">Dashboard</h2>
     <p id="viewSubtitle">Add expenses, track remaining funds, and review your log.</p>
@@ -916,7 +931,8 @@
       <span class="period-kicker" data-i18n="period.label">Budget period</span>
       <span class="period-range" id="periodRangeLabel"></span>
     </div>
-    <div class="period-toggle" role="group" aria-label="Choose weekly or monthly budget period" data-i18n-aria="period.aria">
+    <div class="period-toggle" role="group" aria-label="Choose weekly or monthly budget period" data-i18n-aria="period.aria" data-active-mode="weekly">
+      <span class="period-toggle-pill transition-transform duration-300 ease-out translate-x-0" aria-hidden="true"></span>
       <button type="button" class="period-btn active" data-period-mode="weekly" aria-pressed="true" data-i18n="period.weekly">Weekly</button>
       <button type="button" class="period-btn" data-period-mode="monthly" aria-pressed="false" data-i18n="period.monthly">Monthly</button>
     </div>
@@ -939,7 +955,7 @@
 
         <div style="margin-top:1.1rem;">
           <div class="progress-track" role="progressbar" aria-label="Percent of income spent" data-i18n-aria="rem.progressAria" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="spentProgressTrack">
-            <div class="progress-bar" id="spentProgress"></div>
+            <div class="progress-bar transition-all duration-500 ease-out" id="spentProgress"></div>
           </div>
           <div class="row between" style="margin-top:.45rem; font-size:.78rem; color:var(--muted);">
             <span id="progressSpentLabel">Spent $0.00</span>
@@ -971,7 +987,8 @@
 
       <!-- Card 2: Add Weekly Income -->
       <section class="card view-card" data-view="settings" aria-labelledby="incomeTitle">
-        <div class="period-toggle" role="group" aria-label="Choose weekly or monthly budget period" data-i18n-aria="period.aria" style="margin-bottom:1rem;">
+        <div class="period-toggle" role="group" aria-label="Choose weekly or monthly budget period" data-i18n-aria="period.aria" data-active-mode="weekly" style="margin-bottom:1rem;">
+          <span class="period-toggle-pill transition-transform duration-300 ease-out translate-x-0" aria-hidden="true"></span>
           <button type="button" class="period-btn active" data-period-mode="weekly" aria-pressed="true" data-i18n="period.weekly">Weekly</button>
           <button type="button" class="period-btn" data-period-mode="monthly" aria-pressed="false" data-i18n="period.monthly">Monthly</button>
         </div>
@@ -1102,7 +1119,7 @@
           <p class="form-error hidden" id="expenseError" role="alert"></p>
 
           <div style="margin-top:1rem;">
-            <button class="btn-primary" type="submit" data-i18n="common.addExpense">
+            <button class="btn-primary active:scale-95 transition-transform duration-150" type="submit" data-i18n="common.addExpense">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
               Add Expense
             </button>
@@ -1264,11 +1281,11 @@
         <span class="s-hint" id="savingsGoalCount">0 goals</span>
         <div class="savings-summary-actions">
           <div class="savings-summary-action">
-            <button type="button" class="btn-primary savings-action-btn" id="saveCurrentFundsBtn">Save this week's remaining ($0.00)</button>
+            <button type="button" class="btn-primary savings-action-btn active:scale-95 transition-transform duration-150" id="saveCurrentFundsBtn">Save this week's remaining ($0.00)</button>
             <span class="savings-action-helper" id="saveCurrentFundsHint">Deducts from current remaining funds</span>
           </div>
           <div class="savings-summary-action">
-            <button type="button" class="btn-primary savings-action-btn" id="manualRolloverBtn">Save last week's unused ($0.00)</button>
+            <button type="button" class="btn-primary savings-action-btn active:scale-95 transition-transform duration-150" id="manualRolloverBtn">Save last week's unused ($0.00)</button>
             <span class="savings-action-helper" id="manualRolloverHint">Does not affect current balance</span>
           </div>
         </div>
@@ -1325,23 +1342,23 @@
 
 <!-- Floating bottom navigation: switches the main view -->
 <nav class="bottom-nav" aria-label="Main views" data-i18n-aria="nav.aria">
-  <button type="button" class="nav-btn active" data-view-target="dashboard" aria-label="Dashboard and add expense" data-i18n-aria="nav.dashboardAria" aria-current="page">
+  <button type="button" class="nav-btn active active:scale-95 transition-transform duration-150" data-view-target="dashboard" aria-label="Dashboard and add expense" data-i18n-aria="nav.dashboardAria" aria-current="page">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
     <span data-i18n="nav.dashboard">Dashboard</span>
   </button>
-  <button type="button" class="nav-btn" data-view-target="charts" aria-label="Charts and analytics" data-i18n-aria="nav.chartsAria">
+  <button type="button" class="nav-btn active:scale-95 transition-transform duration-150" data-view-target="charts" aria-label="Charts and analytics" data-i18n-aria="nav.chartsAria">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg>
     <span data-i18n="nav.charts">Charts</span>
   </button>
-  <button type="button" class="nav-btn" data-view-target="calendar" aria-label="Expense calendar" data-i18n-aria="nav.calendarAria">
+  <button type="button" class="nav-btn active:scale-95 transition-transform duration-150" data-view-target="calendar" aria-label="Expense calendar" data-i18n-aria="nav.calendarAria">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/></svg>
     <span data-i18n="nav.calendar">Calendar</span>
   </button>
-  <button type="button" class="nav-btn" data-view-target="savings" aria-label="Savings goals" data-i18n-aria="nav.savingsAria">
+  <button type="button" class="nav-btn active:scale-95 transition-transform duration-150" data-view-target="savings" aria-label="Savings goals" data-i18n-aria="nav.savingsAria">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v2"/><path d="M5 8h14l1 4-1 8H5l-1-8 1-4Z"/><path d="M8 8c0-2 1.8-3 4-3s4 1 4 3"/><path d="M9 13h.01M15 13h.01"/><path d="M10 17h4"/></svg>
     <span data-i18n="nav.savings">Savings</span>
   </button>
-  <button type="button" class="nav-btn" data-view-target="settings" aria-label="Budget settings" data-i18n-aria="nav.settingsAria">
+  <button type="button" class="nav-btn active:scale-95 transition-transform duration-150" data-view-target="settings" aria-label="Budget settings" data-i18n-aria="nav.settingsAria">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="21" y1="4" x2="14" y2="4"/><line x1="10" y1="4" x2="3" y2="4"/><line x1="21" y1="12" x2="12" y2="12"/><line x1="8" y1="12" x2="3" y2="12"/><line x1="21" y1="20" x2="16" y2="20"/><line x1="12" y1="20" x2="3" y2="20"/><line x1="14" y1="2" x2="14" y2="6"/><line x1="8" y1="10" x2="8" y2="14"/><line x1="16" y1="18" x2="16" y2="22"/></svg>
     <span data-i18n="nav.settings">Settings</span>
   </button>
@@ -3041,7 +3058,7 @@
         var pct = target > 0 ? Math.min(100, Math.round((goal.balance / target) * 100)) : 0;
         var detail = target > 0 ? fmt(goal.balance) + ' / ' + fmt(target) : fmt(goal.balance);
         return '<article class="savings-goal-card"><div class="savings-goal-heading"><h3>' + escapeHtml(goal.name) + '</h3><div class="savings-goal-actions"><div class="savings-order-actions"><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="-1" aria-label="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '"' + (goalIndex === 0 ? ' disabled' : '') + '><span aria-hidden="true">↑</span></button><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="1" aria-label="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '"' + (goalIndex === goals.length - 1 ? ' disabled' : '') + '><span aria-hidden="true">↓</span></button></div><span class="savings-goal-balance">' + escapeHtml(fmt(goal.balance)) + '</span><button type="button" class="savings-delete-goal" data-delete-goal="' + escapeHtml(goal.id) + '" aria-label="' + escapeHtml(t('savings.deleteGoalAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.confirmDelete', { goal: goal.name, amount: fmt(goal.balance) })) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button></div></div>' +
-          (target > 0 ? '<div class="savings-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><span style="width:' + pct + '%"></span></div>' : '') +
+          (target > 0 ? '<div class="savings-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><span class="transition-all duration-500 ease-out" style="width:' + pct + '%"></span></div>' : '') +
           '<div class="savings-goal-meta"><span>' + escapeHtml(detail) + '</span><span>' + (target > 0 ? escapeHtml(t('savings.targetProgress', { pct: pct })) : '') + '</span></div></article>';
       }).join('');
     }
@@ -3453,6 +3470,14 @@
       btn.classList.toggle('active', active);
       btn.setAttribute('aria-pressed', String(active));
     });
+    document.querySelectorAll('.period-toggle').forEach(function (toggle) {
+      toggle.setAttribute('data-active-mode', periodMode);
+      var pill = toggle.querySelector('.period-toggle-pill');
+      if (pill) {
+        pill.classList.toggle('translate-x-full', periodMode === 'monthly');
+        pill.classList.toggle('translate-x-0', periodMode !== 'monthly');
+      }
+    });
     var monthlyMode = periodMode === 'monthly';
     if (els.incomeInput && state.budgets) {
       var budgetKey = monthlyMode ? 'monthly' : 'weekly';
@@ -3493,9 +3518,29 @@
     checkRolloverTransition(mode);
   }
 
+  var viewTransitionToken = 0;
+  function animateMainViewEntry() {
+    var token = ++viewTransitionToken;
+    var main = els.appMain;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      main.classList.remove('opacity-0', 'translate-y-2');
+      main.classList.add('opacity-100', 'translate-y-0');
+      return;
+    }
+    main.classList.remove('opacity-100', 'translate-y-0');
+    main.classList.add('opacity-0', 'translate-y-2');
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        if (token !== viewTransitionToken) return;
+        main.classList.remove('opacity-0', 'translate-y-2');
+        main.classList.add('opacity-100', 'translate-y-0');
+      });
+    });
+  }
   function switchView(name, initial) {
     if (!VIEW_META[name]) name = 'dashboard';
     els.appMain.dataset.activeView = name;
+    if (!initial) animateMainViewEntry();
     els.viewTitle.textContent = t(VIEW_META[name].titleKey);
     els.viewSubtitle.textContent = t(VIEW_META[name].subKey);
     document.querySelectorAll('[data-view-target]').forEach(function (btn) {
@@ -5427,5 +5472,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a577ad7bae8cb8ce',t:'MTc5NDE3MzQxMw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a577ad7bae8cb8ce',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a577c5f74a1e1fb8',t:'MTc5NDE3NDQxNg=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a577c5f74a1e1fb8',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
