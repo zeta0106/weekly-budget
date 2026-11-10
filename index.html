@@ -257,6 +257,7 @@
   th.amt{ text-align:right; }
   table.log th:last-child{ position:relative; }
   .badge{ display:inline-flex; align-items:center; gap:.35rem; font-size:.7rem; font-weight:600; color:var(--muted); border:1px solid var(--border); border-radius:9999px; padding:.15rem .55rem; margin-top:.25rem; }
+  .payment-method-badge{ display:inline-flex; align-items:center; font-size:.68rem; font-weight:600; color:var(--muted); background:rgba(100,116,139,.07); border:1px solid var(--border); border-radius:9999px; padding:.14rem .48rem; margin:.25rem 0 0 .25rem; }
   .dot{ width:8px; height:8px; border-radius:9999px; flex:none; display:inline-block; }
   .icon-btn{
     display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
@@ -1127,6 +1128,22 @@
                 <input class="field" id="expCustomCategory" type="text" maxlength="40" placeholder="e.g. Pet care" data-i18n-ph="cat.customPlaceholder" autocomplete="off" />
               </div>
             </div>
+            <div class="span-2">
+              <label class="label" for="expPaymentMethod" data-i18n="common.paymentMethod">Payment Method</label>
+              <select class="field" id="expPaymentMethod">
+                <option value="Cash" data-i18n="pay.cash" selected>Cash</option>
+                <option value="Octopus" data-i18n="pay.octopus">Octopus</option>
+                <option value="Visa" data-i18n="pay.visa">Visa</option>
+                <option value="Mastercard" data-i18n="pay.mastercard">Mastercard</option>
+                <option value="EPS" data-i18n="pay.eps">EPS</option>
+                <option value="UnionPay" data-i18n="pay.unionpay">UnionPay</option>
+                <option value="AlipayHK" data-i18n="pay.alipayhk">AlipayHK</option>
+                <option value="WeChat Pay HK" data-i18n="pay.wechat">WeChat Pay HK</option>
+                <option value="PayMe" data-i18n="pay.payme">PayMe</option>
+                <option value="FPS" data-i18n="pay.fps">FPS</option>
+                <option value="Other" data-i18n="pay.other">Other</option>
+              </select>
+            </div>
           </div>
 
           <p class="form-error hidden" id="expenseError" role="alert"></p>
@@ -1490,6 +1507,22 @@
           <input class="field" id="dayTxCustomCategory" type="text" maxlength="40" placeholder="Enter custom category name" data-i18n-ph="cat.customPlaceholder" autocomplete="off" />
         </div>
       </div>
+      <div id="dayTxPaymentWrap" style="margin-top:.85rem;">
+        <label class="label" for="dayTxPaymentMethod" data-i18n="common.paymentMethod">Payment Method</label>
+        <select class="field" id="dayTxPaymentMethod">
+          <option value="Cash" data-i18n="pay.cash" selected>Cash</option>
+          <option value="Octopus" data-i18n="pay.octopus">Octopus</option>
+          <option value="Visa" data-i18n="pay.visa">Visa</option>
+          <option value="Mastercard" data-i18n="pay.mastercard">Mastercard</option>
+          <option value="EPS" data-i18n="pay.eps">EPS</option>
+          <option value="UnionPay" data-i18n="pay.unionpay">UnionPay</option>
+          <option value="AlipayHK" data-i18n="pay.alipayhk">AlipayHK</option>
+          <option value="WeChat Pay HK" data-i18n="pay.wechat">WeChat Pay HK</option>
+          <option value="PayMe" data-i18n="pay.payme">PayMe</option>
+          <option value="FPS" data-i18n="pay.fps">FPS</option>
+          <option value="Other" data-i18n="pay.other">Other</option>
+        </select>
+      </div>
 
       <div class="day-tx-date"><span data-i18n="common.date">Date</span><strong id="dayTxDateLabel">—</strong></div>
       <p class="form-error hidden" id="dayTxError" role="alert"></p>
@@ -1530,6 +1563,23 @@
           <label class="label" for="transactionEditCustom" data-i18n="cat.customLabel">Custom category name</label>
           <input class="field" id="transactionEditCustom" type="text" maxlength="40" data-i18n-ph="cat.customPlaceholder" autocomplete="off" />
         </div>
+      </div>
+      <div id="transactionEditPaymentWrap" style="margin-top:.85rem;">
+        <label class="label" for="transactionEditPaymentMethod" data-i18n="common.paymentMethod">Payment Method</label>
+        <select class="field" id="transactionEditPaymentMethod">
+          <option value="" data-i18n="pay.none">Not specified</option>
+          <option value="Cash" data-i18n="pay.cash">Cash</option>
+          <option value="Octopus" data-i18n="pay.octopus">Octopus</option>
+          <option value="Visa" data-i18n="pay.visa">Visa</option>
+          <option value="Mastercard" data-i18n="pay.mastercard">Mastercard</option>
+          <option value="EPS" data-i18n="pay.eps">EPS</option>
+          <option value="UnionPay" data-i18n="pay.unionpay">UnionPay</option>
+          <option value="AlipayHK" data-i18n="pay.alipayhk">AlipayHK</option>
+          <option value="WeChat Pay HK" data-i18n="pay.wechat">WeChat Pay HK</option>
+          <option value="PayMe" data-i18n="pay.payme">PayMe</option>
+          <option value="FPS" data-i18n="pay.fps">FPS</option>
+          <option value="Other" data-i18n="pay.other">Other</option>
+        </select>
       </div>
       <p class="form-error hidden" id="transactionEditError" role="alert"></p>
       <div class="transaction-edit-actions">
@@ -1739,6 +1789,11 @@
       'common.description': 'Description',
       'common.optional': '(optional)',
       'common.category': 'Category',
+      'common.paymentMethod': 'Payment Method',
+      'pay.none': 'Not specified', 'pay.cash': 'Cash', 'pay.octopus': 'Octopus', 'pay.visa': 'Visa',
+      'pay.mastercard': 'Mastercard', 'pay.eps': 'EPS', 'pay.unionpay': 'UnionPay',
+      'pay.alipayhk': 'AlipayHK', 'pay.wechat': 'WeChat Pay HK', 'pay.payme': 'PayMe',
+      'pay.fps': 'FPS', 'pay.other': 'Other',
       'common.addExpense': 'Add Expense',
       'common.delete': 'Delete',
       'common.amount': 'Amount',
@@ -2066,6 +2121,11 @@
       'common.description': '說明',
       'common.optional': '（選填）',
       'common.category': '類別',
+      'common.paymentMethod': '付款方式',
+      'pay.none': '未指定', 'pay.cash': '現金', 'pay.octopus': '八達通', 'pay.visa': 'Visa',
+      'pay.mastercard': 'Mastercard', 'pay.eps': '易辦事', 'pay.unionpay': '銀聯',
+      'pay.alipayhk': '支付寶香港', 'pay.wechat': '微信支付', 'pay.payme': 'PayMe',
+      'pay.fps': '轉數快', 'pay.other': '其他',
       'common.addExpense': '新增支出',
       'common.delete': '刪除',
       'common.amount': '金額',
@@ -2393,6 +2453,11 @@
       'common.description': '说明',
       'common.optional': '（选填）',
       'common.category': '类别',
+      'common.paymentMethod': '付款方式',
+      'pay.none': '未指定', 'pay.cash': '现金', 'pay.octopus': '八达通', 'pay.visa': 'Visa',
+      'pay.mastercard': 'Mastercard', 'pay.eps': '易办事', 'pay.unionpay': '银联',
+      'pay.alipayhk': '支付宝香港', 'pay.wechat': '微信支付', 'pay.payme': 'PayMe',
+      'pay.fps': '转数快', 'pay.other': '其他',
       'common.addExpense': '新增支出',
       'common.delete': '删除',
       'common.amount': '金额',
@@ -2633,6 +2698,24 @@
     'Refund': 'src.refund', 'Gift': 'src.gift', 'Other Income': 'src.other'
   };
   var INCOME_SOURCES = Object.keys(INCOME_SOURCE_I18N);
+  var PAYMENT_METHOD_OPTIONS = [
+    { value: 'Cash', key: 'pay.cash' }, { value: 'Octopus', key: 'pay.octopus' },
+    { value: 'Visa', key: 'pay.visa' }, { value: 'Mastercard', key: 'pay.mastercard' },
+    { value: 'EPS', key: 'pay.eps' }, { value: 'UnionPay', key: 'pay.unionpay' },
+    { value: 'AlipayHK', key: 'pay.alipayhk' }, { value: 'WeChat Pay HK', key: 'pay.wechat' },
+    { value: 'PayMe', key: 'pay.payme' }, { value: 'FPS', key: 'pay.fps' }, { value: 'Other', key: 'pay.other' }
+  ];
+  function normalizePaymentMethod(value) {
+    var name = String(value == null ? '' : value).trim();
+    var match = PAYMENT_METHOD_OPTIONS.filter(function (item) { return item.value.toLowerCase() === name.toLowerCase(); })[0];
+    return match ? match.value : '';
+  }
+  function paymentMethodLabel(value) {
+    var normalized = normalizePaymentMethod(value);
+    if (!normalized) return '';
+    var option = PAYMENT_METHOD_OPTIONS.filter(function (item) { return item.value === normalized; })[0];
+    return option ? t(option.key) : '';
+  }
   var PRIMARY_INCOME_ID = 'legacy-income';
   var MONTHLY_BUDGET_INCOME_ID = 'monthly-budget-income';
   function incomeSourceLabel(name) { var key = INCOME_SOURCE_I18N[name]; return key ? t(key) : name; }
@@ -3385,7 +3468,7 @@
     incomeForm: $('incomeForm'), incomeInput: $('incomeInput'), incomeDateInput: $('incomeDateInput'), incomeError: $('incomeError'),
     resetBtn: $('resetBtn'),
     expenseForm: $('expenseForm'), expAmount: $('expAmount'), expDate: $('expDate'),
-    expDesc: $('expDesc'), expCategory: $('expCategory'), expCustomCategoryWrap: $('expCustomCategoryWrap'), expCustomCategory: $('expCustomCategory'), expenseError: $('expenseError'),
+    expDesc: $('expDesc'), expCategory: $('expCategory'), expCustomCategoryWrap: $('expCustomCategoryWrap'), expCustomCategory: $('expCustomCategory'), expPaymentMethod: $('expPaymentMethod'), expenseError: $('expenseError'),
     expenseTbody: $('expenseTbody'), emptyState: $('emptyState'), sampleBtn: $('sampleBtn'),
     logCount: $('logCount'), logTotal: $('logTotal'), clearBtn: $('clearBtn'), exportBtn: $('exportBtn'), pdfExportBtn: $('pdfExportBtn'),
     chartTitle: $('chartTitle'), chartSub: $('chartSub'), insightsTitle: $('insightsTitle'),
@@ -3415,11 +3498,13 @@
     dayTxExistingList: $('dayTxExistingList'), dayTxExistingEmpty: $('dayTxExistingEmpty'),
     dayTxForm: $('dayTxForm'), dayTxAmount: $('dayTxAmount'), dayTxDesc: $('dayTxDesc'),
     dayTxCategoryLabel: $('dayTxCategoryLabel'), dayTxCategory: $('dayTxCategory'), dayTxCustomCategoryWrap: $('dayTxCustomCategoryWrap'), dayTxCustomCategory: $('dayTxCustomCategory'),
+    dayTxPaymentWrap: $('dayTxPaymentWrap'), dayTxPaymentMethod: $('dayTxPaymentMethod'),
     dayTxError: $('dayTxError'), dayTxSubmit: $('dayTxSubmit'), dayTxSubmitLabel: $('dayTxSubmitLabel'),
     transactionEditModal: $('transactionEditModal'), transactionEditClose: $('transactionEditClose'), transactionEditCancel: $('transactionEditCancel'),
     transactionEditForm: $('transactionEditForm'), transactionEditTitle: $('transactionEditTitle'), transactionEditTypeLabel: $('transactionEditTypeLabel'),
     transactionEditAmount: $('transactionEditAmount'), transactionEditDescription: $('transactionEditDescription'), transactionEditCategory: $('transactionEditCategory'), transactionEditCategoryLabel: $('transactionEditCategoryLabel'),
-    transactionEditCustomWrap: $('transactionEditCustomWrap'), transactionEditCustom: $('transactionEditCustom'), transactionEditError: $('transactionEditError')
+    transactionEditCustomWrap: $('transactionEditCustomWrap'), transactionEditCustom: $('transactionEditCustom'),
+    transactionEditPaymentWrap: $('transactionEditPaymentWrap'), transactionEditPaymentMethod: $('transactionEditPaymentMethod'), transactionEditError: $('transactionEditError')
   };
 
   /* ============================================================
@@ -3685,6 +3770,7 @@
       date: isValidISODate(e && e.date) ? e.date : toLocalISO(new Date()),
       createdAt: Number(e && e.createdAt) || 0
     };
+    if (e && Object.prototype.hasOwnProperty.call(e, 'paymentMethod')) clean.paymentMethod = normalizePaymentMethod(e.paymentMethod);
     if (e && e.kind === 'savings-transfer' && e.savingsGoalId) {
       clean.kind = 'savings-transfer';
       clean.savingsGoalId = String(e.savingsGoalId);
@@ -3736,6 +3822,10 @@
     (Array.isArray(remoteRows) ? remoteRows : []).concat(Array.isArray(localRows) ? localRows : []).forEach(function (entry) {
       if (!entry) return;
       var id = String(entry.id || uid());
+      var previous = map[id];
+      if (previous && !Object.prototype.hasOwnProperty.call(entry, 'paymentMethod') && Object.prototype.hasOwnProperty.call(previous, 'paymentMethod')) {
+        entry = Object.assign({}, entry, { paymentMethod: previous.paymentMethod });
+      }
       map[id] = entry;
     });
     Object.keys(map).forEach(function (id) { rows.push(map[id]); });
@@ -4262,13 +4352,15 @@
 
     els.expenseTbody.innerHTML = sorted.map(function (e) {
       var label = e.description && e.description.trim() ? e.description : catLabel(e.category);
+      var paymentLabel = paymentMethodLabel(e.paymentMethod);
       var editButton = '<button type="button" class="icon-btn edit-btn" data-edit-expense-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('txedit.editAria', { name: label })) + '" title="' + escapeHtml(t('txedit.editAria', { name: label })) + '">' + pencilSvg + '</button>';
       var deleteButton = e.kind === 'savings-transfer' ? '' : '<button type="button" class="icon-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + '</button>';
       var actionCell = '<td class="log-actions-cell"><span class="log-actions-wrap">' + editButton + deleteButton + '</span></td>';
       return '<tr>' +
         '<td style="white-space:nowrap; color:var(--muted); font-size:.83rem;">' + escapeHtml(displayDate(e.date)) + '</td>' +
         '<td><div style="font-weight:600;">' + escapeHtml(label) + '</div>' +
-          '<span class="badge"><span class="dot" style="background:' + catColor(e.category) + '"></span>' + escapeHtml(catLabel(e.category)) + '</span></td>' +
+          '<span class="badge"><span class="dot" style="background:' + catColor(e.category) + '"></span>' + escapeHtml(catLabel(e.category)) + '</span>' +
+          (paymentLabel ? '<span class="payment-method-badge">' + escapeHtml(paymentLabel) + '</span>' : '') + '</td>' +
         '<td class="amt">-' + fmt(e.amount) + '</td>' +
         actionCell +
       '</tr>';
@@ -4315,6 +4407,8 @@
     }
     if (els.transactionEditCustom) els.transactionEditCustom.value = '';
     if (els.transactionEditCustomWrap) els.transactionEditCustomWrap.classList.add('hidden');
+    if (els.transactionEditPaymentMethod) els.transactionEditPaymentMethod.value = normalizePaymentMethod(entry.paymentMethod);
+    if (els.transactionEditPaymentWrap) els.transactionEditPaymentWrap.classList.toggle('hidden', isIncome);
     if (els.transactionEditError) clearError(els.transactionEditError);
     updateTransactionEditCategoryUI(false);
     transactionEditPreviousOverflow = document.body.style.overflow;
@@ -4413,6 +4507,7 @@
       entry.amount = amount;
       entry.description = description;
       entry.category = category;
+      entry.paymentMethod = normalizePaymentMethod(els.transactionEditPaymentMethod ? els.transactionEditPaymentMethod.value : '');
     }
     if (editingTransaction.type === 'expense') {
       refreshExpenseCategoryOptions(els.expCategory ? els.expCategory.value : 'Other');
@@ -4601,7 +4696,8 @@
   }
   function expenseTransactionRow(e, detailed) {
     var label = e.description && e.description.trim() ? e.description : catLabel(e.category);
-    var sub = catLabel(e.category) + (detailed ? ' · ' + t('daytx.expense') : '');
+    var paymentLabel = paymentMethodLabel(e.paymentMethod);
+    var sub = catLabel(e.category) + (paymentLabel ? ' · ' + paymentLabel : '') + (detailed ? ' · ' + t('daytx.expense') : '');
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
     var editButton = '<button type="button" class="icon-btn edit-btn tx-edit-btn" data-edit-expense-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('txedit.editAria', { name: label })) + '" title="' + escapeHtml(t('txedit.editAria', { name: label })) + '">' + pencilSvg + '</button>';
     var deleteButton = '<button type="button" class="icon-btn tx-delete-btn" data-delete-id="' + escapeHtml(e.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: label })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
@@ -4657,6 +4753,7 @@
     }).join('');
     els.dayTxCategory.value = names.indexOf(previous) >= 0 ? previous : (isIncome ? 'Salary' : 'Other');
     if (els.dayTxCustomCategoryWrap) els.dayTxCustomCategoryWrap.classList.toggle('hidden', isIncome || (els.dayTxCategory.value !== 'Other' && els.dayTxCategory.value !== ADD_CUSTOM_CATEGORY));
+    if (els.dayTxPaymentWrap) els.dayTxPaymentWrap.classList.toggle('hidden', isIncome);
     if (els.dayTxCategoryLabel) els.dayTxCategoryLabel.textContent = t(isIncome ? 'daytx.source' : 'common.category');
     if (els.dayTxDesc) els.dayTxDesc.placeholder = t(isIncome ? 'daytx.incomeDescPh' : 'day.descPh');
     if (els.dayTxSubmitLabel) els.dayTxSubmitLabel.textContent = t(isIncome ? 'daytx.addIncome' : 'common.addExpense');
@@ -4712,6 +4809,7 @@
     setDayTxType('expense');
     if (els.dayTxAmount) els.dayTxAmount.value = '';
     if (els.dayTxDesc) els.dayTxDesc.value = '';
+    if (els.dayTxPaymentMethod) els.dayTxPaymentMethod.value = 'Cash';
     if (els.dayTxError) clearError(els.dayTxError);
     syncDayTxModal();
     els.dayTxModal.classList.remove('hidden');
@@ -4870,11 +4968,12 @@
   /* ============================================================
      8. EVENTS — Expenses
   ============================================================ */
-  function addExpense(amount, description, category, date) {
+  function addExpense(amount, description, category, date, paymentMethod) {
     var finalCategory = addUserCategory(category || 'Other') || 'Other';
     var entry = {
       id: uid(), amount: round2(amount), description: (description || '').trim(),
-      category: finalCategory, date: isValidISODate(date) ? date : toLocalISO(new Date()),
+      category: finalCategory, paymentMethod: normalizePaymentMethod(paymentMethod || 'Cash'),
+      date: isValidISODate(date) ? date : toLocalISO(new Date()),
       createdAt: Date.now()
     };
     state.expenses.push(entry);
@@ -4898,7 +4997,7 @@
     else if (selectedCategory === ADD_CUSTOM_CATEGORY) selectedCategory = 'Other';
     clearError(els.expenseError);
 
-    var entry = addExpense(amount, els.expDesc.value, selectedCategory, date);
+    var entry = addExpense(amount, els.expDesc.value, selectedCategory, date, els.expPaymentMethod ? els.expPaymentMethod.value : 'Cash');
     showToast(t('exp.toastAdded', { amount: fmt(entry.amount), remaining: fmt(periodRemaining()) }));
 
     els.expAmount.value = ''; els.expDesc.value = ''; els.expCustomCategory.value = '';
@@ -5058,6 +5157,7 @@
       return {
         date: formatReportDate(e.date),
         category: catLabel(e.category),
+        paymentMethod: paymentMethodLabel(e.paymentMethod),
         description: (e.description && e.description.trim()) ? e.description.trim() : catLabel(e.category),
         color: catColor(e.category),
         amount: amount,
@@ -5085,7 +5185,7 @@
         overview: t('report.overview'), totalIncome: t('report.totalIncome'),
         totalSpent: t('report.totalSpent'), remaining: t('report.remaining'),
         expenseLog: t('log.title'), date: t('common.date'), category: t('common.category'),
-        description: t('common.description'), amount: t('report.amountHkd'),
+        paymentMethod: t('common.paymentMethod'), description: t('common.description'), amount: t('report.amountHkd'),
         total: t('report.total'), noExpenses: t(monthly ? 'report.noExpensesMonthly' : 'report.noExpenses'),
         footer: t('report.footer')
       }
@@ -5099,7 +5199,7 @@
   function canUseBuiltInPdfFonts(data) {
     if (currentLang !== 'en') return false;
     var all = [data.generatedLabel, data.weekLabel].concat(data.rows.map(function (r) {
-      return r.date + ' ' + r.category + ' ' + r.description;
+      return r.date + ' ' + r.category + ' ' + r.paymentMethod + ' ' + r.description;
     })).join(' ');
     return !/[^\u0000-\u00ff]/.test(makePdfSafeText(all));
   }
@@ -5195,15 +5295,15 @@
     doc.text(S(L.expenseLog), margin, boxY + boxH + 16);
 
     var body = data.rows.length ? data.rows.map(function (r) {
-      return [S(r.date), S(r.category), S(r.description), S(r.amountLabel)];
-    }) : [[{ content: S(L.noExpenses), colSpan: 4, styles: { halign: 'center', textColor: muted } }]];
+      return [S(r.date), S(r.category), S(r.paymentMethod), S(r.description), S(r.amountLabel)];
+    }) : [[{ content: S(L.noExpenses), colSpan: 5, styles: { halign: 'center', textColor: muted } }]];
 
     doc.autoTable({
       startY: boxY + boxH + 20,
       margin: { left: margin, right: margin, top: 14, bottom: 17 },
-      head: [[S(L.date), S(L.category), S(L.description), S(L.amount)]],
+      head: [[S(L.date), S(L.category), S(L.paymentMethod), S(L.description), S(L.amount)]],
       body: body,
-      foot: [[{ content: S(L.total), colSpan: 3, styles: { halign: 'right' } }, S(data.totalRowsLabel)]],
+      foot: [[{ content: S(L.total), colSpan: 4, styles: { halign: 'right' } }, S(data.totalRowsLabel)]],
       theme: 'grid',
       styles: { font: 'helvetica', fontSize: 8.5, cellPadding: 2.4, textColor: ink, lineColor: [223, 231, 225], lineWidth: 0.15, valign: 'middle', overflow: 'linebreak' },
       headStyles: { fillColor: sage, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
@@ -5211,9 +5311,10 @@
       alternateRowStyles: { fillColor: [247, 250, 248] },
       footStyles: { fillColor: [232, 242, 235], textColor: ink, fontStyle: 'bold' },
       columnStyles: {
-        0: { cellWidth: 34 },
-        1: { cellWidth: 36 },
-        3: { cellWidth: 32, halign: 'right', fontStyle: 'bold' }
+        0: { cellWidth: 28 },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 34 },
+        4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
       }
     });
 
@@ -5237,9 +5338,10 @@
     var rowsHtml = data.rows.length ? data.rows.map(function (r) {
       return '<tr><td>' + escapeHtml(r.date) + '</td>' +
         '<td><span class="dot" style="background:' + escapeHtml(r.color) + '; margin-right:6px;"></span>' + escapeHtml(r.category) + '</td>' +
+        '<td>' + escapeHtml(r.paymentMethod) + '</td>' +
         '<td>' + escapeHtml(r.description) + '</td>' +
         '<td class="report-amount">' + escapeHtml(r.amountLabel) + '</td></tr>';
-    }).join('') : '<tr><td class="report-empty" colspan="4">' + escapeHtml(L.noExpenses) + '</td></tr>';
+    }).join('') : '<tr><td class="report-empty" colspan="5">' + escapeHtml(L.noExpenses) + '</td></tr>';
     var noteParts = [t('report.transactions', { n: data.rows.length })];
     if (data.percentSpent != null) noteParts.push(t('report.percentSpent', { pct: data.percentSpent }));
 
@@ -5260,9 +5362,9 @@
         '<div class="report-stat"><div class="report-stat-label">' + escapeHtml(L.remaining) + '</div><div class="report-stat-value ' + (data.remaining < 0 ? 'negative' : 'positive') + '">' + escapeHtml(data.remainingLabel) + '</div></div>' +
       '</div><p class="report-note">' + escapeHtml(noteParts.join(' · ')) + '</p></section>' +
       '<section><h2>' + escapeHtml(L.expenseLog) + '</h2>' +
-        '<table><thead><tr><th>' + escapeHtml(L.date) + '</th><th>' + escapeHtml(L.category) + '</th><th>' + escapeHtml(L.description) + '</th><th class="report-amount">' + escapeHtml(L.amount) + '</th></tr></thead>' +
+        '<table><thead><tr><th>' + escapeHtml(L.date) + '</th><th>' + escapeHtml(L.category) + '</th><th>' + escapeHtml(L.paymentMethod) + '</th><th>' + escapeHtml(L.description) + '</th><th class="report-amount">' + escapeHtml(L.amount) + '</th></tr></thead>' +
         '<tbody>' + rowsHtml + '</tbody>' +
-        '<tfoot><tr><td colspan="3" style="text-align:right;">' + escapeHtml(L.total) + '</td><td class="report-amount">' + escapeHtml(data.totalRowsLabel) + '</td></tr></tfoot></table>' +
+        '<tfoot><tr><td colspan="4" style="text-align:right;">' + escapeHtml(L.total) + '</td><td class="report-amount">' + escapeHtml(data.totalRowsLabel) + '</td></tr></tfoot></table>' +
       '</section>' +
       '<footer class="report-footer"><span>' + escapeHtml(L.footer) + '</span><span>' + escapeHtml(data.generatedLabel) + '</span></footer>';
   }
@@ -5303,9 +5405,9 @@
   els.exportBtn.addEventListener('click', function () {
     if (!state.expenses.length) { showToast(t('log.noExport')); return; }
     function cell(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }
-    var lines = ['Date,Description,Category,Amount'];
+    var lines = ['Date,Description,Category,' + cell(t('common.paymentMethod')) + ',Amount'];
     state.expenses.slice().sort(function (a, b) { return a.date < b.date ? -1 : 1; }).forEach(function (e) {
-      lines.push([cell(e.date), cell(e.description || e.category), cell(e.category), Number(e.amount).toFixed(2)].join(','));
+      lines.push([cell(e.date), cell(e.description || e.category), cell(e.category), cell(paymentMethodLabel(e.paymentMethod)), Number(e.amount).toFixed(2)].join(','));
     });
     var blob = new Blob([lines.join('\n')], { type: 'text/csv' });
     var a = document.createElement('a');
@@ -5389,7 +5491,7 @@
         remaining: fmt(periodRemaining())
       }));
     } else {
-      var expenseEntry = addExpense(amount, description, categoryOrSource, date);
+      var expenseEntry = addExpense(amount, description, categoryOrSource, date, els.dayTxPaymentMethod ? els.dayTxPaymentMethod.value : 'Cash');
       closeDayTxModal();
       showToast(t('exp.toastAddedOn', {
         amount: fmt(expenseEntry.amount),
@@ -5719,5 +5821,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a577f576aec5e2e8',t:'MTc5NDE3NjM2Mg=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a577f576aec5e2e8',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
