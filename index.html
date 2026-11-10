@@ -1143,6 +1143,10 @@
                 <option value="FPS" data-i18n="pay.fps">FPS</option>
                 <option value="Other" data-i18n="pay.other">Other</option>
               </select>
+              <div id="expPaymentCustomWrap" class="hidden" style="margin-top:.65rem;">
+                <label class="label" for="expPaymentCustom" data-i18n="pay.customLabel">Custom payment method</label>
+                <input class="field" id="expPaymentCustom" type="text" maxlength="40" data-i18n-ph="pay.customPlaceholder" autocomplete="off" />
+              </div>
             </div>
           </div>
 
@@ -1225,6 +1229,21 @@
         <p class="helper hidden" id="chartEmpty" style="text-align:center;" data-i18n="chart.empty">Nothing to chart yet — add an expense and your breakdown will appear here.</p>
 
         <ul class="legend" id="chartLegend"></ul>
+      </section>
+
+      <section class="card view-card" data-view="charts" aria-labelledby="paymentChartTitle">
+        <div class="row between wrap-flex" style="gap:.5rem;">
+          <div>
+            <h2 class="card-title" id="paymentChartTitle" data-i18n="chart.paymentTitle">Spending by Payment Method</h2>
+            <p class="card-sub" id="paymentChartSub">By payment method</p>
+          </div>
+          <span class="pill" id="paymentChartTotal" style="background:var(--bg); border:1px solid var(--border); color:var(--text);">$0.00</span>
+        </div>
+        <div class="chart-wrap" id="paymentChartWrap" style="margin-top:1rem;">
+          <canvas id="paymentMethodChart" aria-label="Doughnut chart of spending by payment method" data-i18n-aria="chart.paymentAria" role="img"></canvas>
+        </div>
+        <p class="helper hidden" id="paymentChartEmpty" style="text-align:center;" data-i18n="chart.paymentEmpty">No payment-method data for this period yet.</p>
+        <ul class="legend" id="paymentChartLegend"></ul>
       </section>
 
       <!-- Bonus: quick insights (balances the right column) -->
@@ -1522,6 +1541,10 @@
           <option value="FPS" data-i18n="pay.fps">FPS</option>
           <option value="Other" data-i18n="pay.other">Other</option>
         </select>
+        <div id="dayTxPaymentCustomWrap" class="hidden" style="margin-top:.65rem;">
+          <label class="label" for="dayTxPaymentCustom" data-i18n="pay.customLabel">Custom payment method</label>
+          <input class="field" id="dayTxPaymentCustom" type="text" maxlength="40" data-i18n-ph="pay.customPlaceholder" autocomplete="off" />
+        </div>
       </div>
 
       <div class="day-tx-date"><span data-i18n="common.date">Date</span><strong id="dayTxDateLabel">—</strong></div>
@@ -1580,6 +1603,10 @@
           <option value="FPS" data-i18n="pay.fps">FPS</option>
           <option value="Other" data-i18n="pay.other">Other</option>
         </select>
+        <div id="transactionEditPaymentCustomWrap" class="hidden" style="margin-top:.65rem;">
+          <label class="label" for="transactionEditPaymentCustom" data-i18n="pay.customLabel">Custom payment method</label>
+          <input class="field" id="transactionEditPaymentCustom" type="text" maxlength="40" data-i18n-ph="pay.customPlaceholder" autocomplete="off" />
+        </div>
       </div>
       <p class="form-error hidden" id="transactionEditError" role="alert"></p>
       <div class="transaction-edit-actions">
@@ -1794,6 +1821,7 @@
       'pay.mastercard': 'Mastercard', 'pay.eps': 'EPS', 'pay.unionpay': 'UnionPay',
       'pay.alipayhk': 'AlipayHK', 'pay.wechat': 'WeChat Pay HK', 'pay.payme': 'PayMe',
       'pay.fps': 'FPS', 'pay.other': 'Other',
+      'pay.customLabel': 'Custom payment method', 'pay.customPlaceholder': 'e.g. Bank transfer',
       'common.addExpense': 'Add Expense',
       'common.delete': 'Delete',
       'common.amount': 'Amount',
@@ -1830,6 +1858,8 @@
       'chart.sub': 'By category',
       'chart.aria': 'Doughnut chart of spending by category',
       'chart.empty': 'Nothing to chart yet — add an expense and your breakdown will appear here.',
+      'chart.paymentTitle': 'Spending by Payment Method', 'chart.paymentEmpty': 'No payment-method data for this period yet.',
+      'chart.paymentAria': 'Doughnut chart of spending by payment method', 'chart.paymentCenter': 'TOTAL SPENT',
       'chart.noSpending': 'No spending yet',
       'chart.center': 'TOTAL SPENT',
       'ins.title': 'Weekly Insights',
@@ -2126,6 +2156,7 @@
       'pay.mastercard': 'Mastercard', 'pay.eps': '易辦事', 'pay.unionpay': '銀聯',
       'pay.alipayhk': '支付寶香港', 'pay.wechat': '微信支付', 'pay.payme': 'PayMe',
       'pay.fps': '轉數快', 'pay.other': '其他',
+      'pay.customLabel': '自訂付款方式', 'pay.customPlaceholder': '例如：銀行轉帳',
       'common.addExpense': '新增支出',
       'common.delete': '刪除',
       'common.amount': '金額',
@@ -2162,6 +2193,8 @@
       'chart.sub': '按類別',
       'chart.aria': '按類別顯示支出的圓環圖',
       'chart.empty': '尚無資料可顯示 — 新增支出後，分佈圖會顯示在這裡。',
+      'chart.paymentTitle': '支付方式分布', 'chart.paymentEmpty': '此期間尚無付款方式資料。',
+      'chart.paymentAria': '按付款方式顯示支出的圓環圖', 'chart.paymentCenter': '總支出',
       'chart.noSpending': '尚無支出',
       'chart.center': '總支出',
       'ins.title': '每週概覽',
@@ -2458,6 +2491,7 @@
       'pay.mastercard': 'Mastercard', 'pay.eps': '易办事', 'pay.unionpay': '银联',
       'pay.alipayhk': '支付宝香港', 'pay.wechat': '微信支付', 'pay.payme': 'PayMe',
       'pay.fps': '转数快', 'pay.other': '其他',
+      'pay.customLabel': '自定义付款方式', 'pay.customPlaceholder': '例如：银行转账',
       'common.addExpense': '新增支出',
       'common.delete': '删除',
       'common.amount': '金额',
@@ -2494,6 +2528,8 @@
       'chart.sub': '按类别',
       'chart.aria': '按类别显示支出的圆环图',
       'chart.empty': '尚无数据可显示 — 新增支出后，分布图会显示在这里。',
+      'chart.paymentTitle': '支付方式分布', 'chart.paymentEmpty': '此期间尚无付款方式数据。',
+      'chart.paymentAria': '按付款方式显示支出的圆环图', 'chart.paymentCenter': '总支出',
       'chart.noSpending': '尚无支出',
       'chart.center': '总支出',
       'ins.title': '每周概览',
@@ -2706,15 +2742,16 @@
     { value: 'PayMe', key: 'pay.payme' }, { value: 'FPS', key: 'pay.fps' }, { value: 'Other', key: 'pay.other' }
   ];
   function normalizePaymentMethod(value) {
-    var name = String(value == null ? '' : value).trim();
+    var name = cleanPaymentMethodName(value);
+    if (!name) return '';
     var match = PAYMENT_METHOD_OPTIONS.filter(function (item) { return item.value.toLowerCase() === name.toLowerCase(); })[0];
-    return match ? match.value : '';
+    return match ? match.value : name;
   }
   function paymentMethodLabel(value) {
     var normalized = normalizePaymentMethod(value);
     if (!normalized) return '';
     var option = PAYMENT_METHOD_OPTIONS.filter(function (item) { return item.value === normalized; })[0];
-    return option ? t(option.key) : '';
+    return option ? t(option.key) : normalized;
   }
   var PRIMARY_INCOME_ID = 'legacy-income';
   var MONTHLY_BUDGET_INCOME_ID = 'monthly-budget-income';
@@ -2876,7 +2913,7 @@
     var now = Date.now();
     return rows.map(function (r, i) {
       var d = new Date(); d.setDate(d.getDate() - r.daysAgo);
-      return { id: uid(), amount: r.amount, description: r.description, category: r.category, date: toLocalISO(d), createdAt: now - i * 1000 };
+      return { id: uid(), amount: r.amount, description: r.description, category: r.category, paymentMethod: 'Cash', date: toLocalISO(d), createdAt: now - i * 1000 };
     });
   }
 
@@ -3468,11 +3505,12 @@
     incomeForm: $('incomeForm'), incomeInput: $('incomeInput'), incomeDateInput: $('incomeDateInput'), incomeError: $('incomeError'),
     resetBtn: $('resetBtn'),
     expenseForm: $('expenseForm'), expAmount: $('expAmount'), expDate: $('expDate'),
-    expDesc: $('expDesc'), expCategory: $('expCategory'), expCustomCategoryWrap: $('expCustomCategoryWrap'), expCustomCategory: $('expCustomCategory'), expPaymentMethod: $('expPaymentMethod'), expenseError: $('expenseError'),
+    expDesc: $('expDesc'), expCategory: $('expCategory'), expCustomCategoryWrap: $('expCustomCategoryWrap'), expCustomCategory: $('expCustomCategory'), expPaymentMethod: $('expPaymentMethod'), expPaymentCustomWrap: $('expPaymentCustomWrap'), expPaymentCustom: $('expPaymentCustom'), expenseError: $('expenseError'),
     expenseTbody: $('expenseTbody'), emptyState: $('emptyState'), sampleBtn: $('sampleBtn'),
     logCount: $('logCount'), logTotal: $('logTotal'), clearBtn: $('clearBtn'), exportBtn: $('exportBtn'), pdfExportBtn: $('pdfExportBtn'),
     chartTitle: $('chartTitle'), chartSub: $('chartSub'), insightsTitle: $('insightsTitle'),
     chartCanvas: $('spendingChart'), chartLegend: $('chartLegend'), chartTotal: $('chartTotal'), chartEmpty: $('chartEmpty'),
+    paymentChartCanvas: $('paymentMethodChart'), paymentChartSub: $('paymentChartSub'), paymentChartTotal: $('paymentChartTotal'), paymentChartWrap: $('paymentChartWrap'), paymentChartEmpty: $('paymentChartEmpty'), paymentChartLegend: $('paymentChartLegend'),
     insTopCat: $('insTopCat'), insLargest: $('insLargest'), insAvg: $('insAvg'), insCount: $('insCount'),
     pdfReport: $('pdfReport'),
     toast: $('toast'),
@@ -3498,13 +3536,14 @@
     dayTxExistingList: $('dayTxExistingList'), dayTxExistingEmpty: $('dayTxExistingEmpty'),
     dayTxForm: $('dayTxForm'), dayTxAmount: $('dayTxAmount'), dayTxDesc: $('dayTxDesc'),
     dayTxCategoryLabel: $('dayTxCategoryLabel'), dayTxCategory: $('dayTxCategory'), dayTxCustomCategoryWrap: $('dayTxCustomCategoryWrap'), dayTxCustomCategory: $('dayTxCustomCategory'),
-    dayTxPaymentWrap: $('dayTxPaymentWrap'), dayTxPaymentMethod: $('dayTxPaymentMethod'),
+    dayTxPaymentWrap: $('dayTxPaymentWrap'), dayTxPaymentMethod: $('dayTxPaymentMethod'), dayTxPaymentCustomWrap: $('dayTxPaymentCustomWrap'), dayTxPaymentCustom: $('dayTxPaymentCustom'),
     dayTxError: $('dayTxError'), dayTxSubmit: $('dayTxSubmit'), dayTxSubmitLabel: $('dayTxSubmitLabel'),
     transactionEditModal: $('transactionEditModal'), transactionEditClose: $('transactionEditClose'), transactionEditCancel: $('transactionEditCancel'),
     transactionEditForm: $('transactionEditForm'), transactionEditTitle: $('transactionEditTitle'), transactionEditTypeLabel: $('transactionEditTypeLabel'),
     transactionEditAmount: $('transactionEditAmount'), transactionEditDescription: $('transactionEditDescription'), transactionEditCategory: $('transactionEditCategory'), transactionEditCategoryLabel: $('transactionEditCategoryLabel'),
     transactionEditCustomWrap: $('transactionEditCustomWrap'), transactionEditCustom: $('transactionEditCustom'),
-    transactionEditPaymentWrap: $('transactionEditPaymentWrap'), transactionEditPaymentMethod: $('transactionEditPaymentMethod'), transactionEditError: $('transactionEditError')
+    transactionEditPaymentWrap: $('transactionEditPaymentWrap'), transactionEditPaymentMethod: $('transactionEditPaymentMethod'),
+    transactionEditPaymentCustomWrap: $('transactionEditPaymentCustomWrap'), transactionEditPaymentCustom: $('transactionEditPaymentCustom'), transactionEditError: $('transactionEditError')
   };
 
   /* ============================================================
@@ -3525,7 +3564,7 @@
     document.documentElement.classList.toggle('dark', dark);
     storage.set(THEME_KEY, dark ? 'dark' : 'light');
     syncThemeButton();
-    renderChart(totalSpent()); // refresh chart colours / centre text
+    renderCharts(selectedPeriodSnapshot()); // refresh both chart themes
     scheduleCloudSave(); // theme is a synced preference
   });
 
@@ -3711,7 +3750,7 @@
     syncPeriodControls();
     if (!initial) window.scrollTo({ top: 0, behavior: 'smooth' });
     // Canvas-based content must be (re)drawn once its view is visible.
-    if (name === 'charts') requestAnimationFrame(function () { renderChart(totalSpent()); });
+    if (name === 'charts') requestAnimationFrame(function () { renderCharts(selectedPeriodSnapshot()); });
     if (name === 'calendar') requestAnimationFrame(function () { renderCalendar(); renderDayDetail(); });
   }
 
@@ -4240,6 +4279,7 @@
      5. RENDERING
   ============================================================ */
   var chartInstance = null;
+  var paymentChartInstance = null;
 
   // Chart.js plugin: draws "Total spent" in the doughnut centre.
   var centerTextPlugin = {
@@ -4267,6 +4307,40 @@
     return Object.keys(map).map(function (name) {
       return { name: name, total: round2(map[name]), color: catColor(name) };
     }).sort(function (a, b) { return b.total - a.total; });
+  }
+  function aggregateByPaymentMethod(expenses) {
+    var rows = Array.isArray(expenses) ? expenses : state.expenses;
+    var map = Object.create(null);
+    rows.forEach(function (entry) {
+      var name = normalizePaymentMethod(entry && entry.paymentMethod);
+      if (!name) return; // legacy transactions with no payment method stay out of the breakdown
+      var key = name.toLocaleLowerCase();
+      if (!map[key]) map[key] = { name: paymentMethodLabel(name), total: 0 };
+      map[key].total += Number(entry.amount) || 0;
+    });
+    var palette = ['#059669', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#ec4899', '#64748b', '#a855f7'];
+    return Object.keys(map).map(function (key) { return map[key]; })
+      .map(function (item) { item.total = round2(item.total); return item; })
+      .sort(function (a, b) { return b.total - a.total; })
+      .map(function (item, index) { item.color = palette[index % palette.length]; return item; });
+  }
+  function cleanPaymentMethodName(value) {
+    return String(value == null ? '' : value).replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 40);
+  }
+  function paymentMethodFromSelection(select, customInput) {
+    var selected = normalizePaymentMethod(select ? select.value : '');
+    if (selected === 'Other') return cleanPaymentMethodName(customInput ? customInput.value : '') || 'Other';
+    return selected || '';
+  }
+  function syncPaymentCustomUI(select, wrap, input, focusCustom) {
+    var isOther = !!select && select.value === 'Other';
+    if (wrap) wrap.classList.toggle('hidden', !isOther);
+    if (!isOther && input) input.value = '';
+    if (isOther && focusCustom && input) input.focus();
+  }
+  function isBuiltInPaymentMethod(value) {
+    var normalized = normalizePaymentMethod(value);
+    return PAYMENT_METHOD_OPTIONS.some(function (option) { return option.value === normalized; });
   }
 
   function setPill(text, bg, fg) {
@@ -4407,7 +4481,11 @@
     }
     if (els.transactionEditCustom) els.transactionEditCustom.value = '';
     if (els.transactionEditCustomWrap) els.transactionEditCustomWrap.classList.add('hidden');
-    if (els.transactionEditPaymentMethod) els.transactionEditPaymentMethod.value = normalizePaymentMethod(entry.paymentMethod);
+    var savedPaymentMethod = normalizePaymentMethod(entry.paymentMethod);
+    var savedPaymentIsKnown = isBuiltInPaymentMethod(savedPaymentMethod);
+    if (els.transactionEditPaymentMethod) els.transactionEditPaymentMethod.value = !savedPaymentMethod ? '' : (savedPaymentIsKnown ? savedPaymentMethod : 'Other');
+    if (els.transactionEditPaymentCustom) els.transactionEditPaymentCustom.value = savedPaymentMethod && !savedPaymentIsKnown ? savedPaymentMethod : '';
+    syncPaymentCustomUI(els.transactionEditPaymentMethod, els.transactionEditPaymentCustomWrap, els.transactionEditPaymentCustom, false);
     if (els.transactionEditPaymentWrap) els.transactionEditPaymentWrap.classList.toggle('hidden', isIncome);
     if (els.transactionEditError) clearError(els.transactionEditError);
     updateTransactionEditCategoryUI(false);
@@ -4507,7 +4585,7 @@
       entry.amount = amount;
       entry.description = description;
       entry.category = category;
-      entry.paymentMethod = normalizePaymentMethod(els.transactionEditPaymentMethod ? els.transactionEditPaymentMethod.value : '');
+      entry.paymentMethod = normalizePaymentMethod(paymentMethodFromSelection(els.transactionEditPaymentMethod, els.transactionEditPaymentCustom));
     }
     if (editingTransaction.type === 'expense') {
       refreshExpenseCategoryOptions(els.expCategory ? els.expCategory.value : 'Other');
@@ -4605,6 +4683,82 @@
     });
   }
 
+  function renderPaymentMethodLegend(data, total) {
+    if (!els.paymentChartLegend) return;
+    if (!data.length || total <= 0) { els.paymentChartLegend.innerHTML = ''; return; }
+    els.paymentChartLegend.innerHTML = data.map(function (item) {
+      var pct = Math.round((item.total / total) * 100);
+      return '<li><div class="legend-top"><span class="dot" style="background:' + item.color + '"></span>' +
+        '<span class="legend-name">' + escapeHtml(item.name) + '</span><span class="legend-pct">' + pct + '%</span>' +
+        '<span class="legend-amt">' + fmt(item.total) + '</span></div>' +
+        '<div class="legend-bar-track"><div class="legend-bar" style="width:' + pct + '%; background:' + item.color + '"></div></div></li>';
+    }).join('');
+  }
+  function drawFallbackPaymentChart(data, total) {
+    var canvas = els.paymentChartCanvas, wrap = canvas && canvas.parentElement;
+    if (!canvas || !wrap) return;
+    var W = wrap.clientWidth || 300, H = wrap.clientHeight || 260, dpr = window.devicePixelRatio || 1;
+    canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    var ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var cx = W / 2, cy = H / 2, r = Math.min(W, H) / 2 - 22;
+    ctx.lineWidth = 34; ctx.lineCap = 'butt';
+    var start = -Math.PI / 2;
+    data.forEach(function (item) {
+      var sweep = (item.total / total) * Math.PI * 2;
+      ctx.strokeStyle = item.color;
+      ctx.beginPath(); ctx.arc(cx, cy, r, start + .02, start + sweep - .02); ctx.stroke();
+      start += sweep;
+    });
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = isDark() ? '#94a3b8' : '#64748b'; ctx.font = '600 10px Inter, system-ui, sans-serif';
+    ctx.fillText(t('chart.paymentCenter'), cx, cy - 13);
+    ctx.fillStyle = isDark() ? '#f1f5f9' : '#0f172a'; ctx.font = '800 20px Inter, system-ui, sans-serif';
+    ctx.fillText(fmt(total), cx, cy + 11);
+  }
+  function renderPaymentMethodChart(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
+    var data = aggregateByPaymentMethod(snapshot.expenses);
+    var total = round2(data.reduce(function (sum, item) { return sum + item.total; }, 0));
+    var empty = !data.length || total <= 0;
+    if (els.paymentChartSub) els.paymentChartSub.textContent = t('chart.subPeriod', { range: snapshot.rangeLabel });
+    if (els.paymentChartTotal) els.paymentChartTotal.textContent = fmt(total);
+    if (els.paymentChartEmpty) els.paymentChartEmpty.classList.toggle('hidden', !empty);
+    if (els.paymentChartWrap) els.paymentChartWrap.classList.toggle('hidden', empty);
+    renderPaymentMethodLegend(data, total);
+    if (empty) {
+      if (paymentChartInstance) { paymentChartInstance.destroy(); paymentChartInstance = null; }
+      return;
+    }
+    if (typeof window.Chart === 'undefined') { drawFallbackPaymentChart(data, total); return; }
+    if (paymentChartInstance) { paymentChartInstance.destroy(); paymentChartInstance = null; }
+    paymentChartInstance = new Chart(els.paymentChartCanvas.getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: data.map(function (item) { return item.name; }), datasets: [{
+        data: data.map(function (item) { return item.total; }),
+        backgroundColor: data.map(function (item) { return item.color; }),
+        borderColor: isDark() ? '#0f172a' : '#ffffff', borderWidth: 3, hoverOffset: 8
+      }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        animation: { duration: 650, easing: 'easeOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function (ctx) {
+            var amount = Number(ctx.parsed) || 0;
+            var pct = total > 0 ? Math.round((amount / total) * 100) : 0;
+            return ' ' + ctx.label + ': ' + fmt(amount) + ' (' + pct + '%)';
+          } } },
+          wbCenterText: { display: true, amountText: fmt(total), labelText: t('chart.paymentCenter') }
+        }
+      },
+      plugins: [centerTextPlugin]
+    });
+  }
+  function renderCharts(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
+    renderChart(snapshot);
+    renderPaymentMethodChart(snapshot);
+  }
 
   /* ---------- Calendar (Sunday -> Saturday month grid) ---------- */
   function incomesOn(iso) { return incomeEntries().filter(function (e) { return e.date === iso; }); }
@@ -4754,6 +4908,7 @@
     els.dayTxCategory.value = names.indexOf(previous) >= 0 ? previous : (isIncome ? 'Salary' : 'Other');
     if (els.dayTxCustomCategoryWrap) els.dayTxCustomCategoryWrap.classList.toggle('hidden', isIncome || (els.dayTxCategory.value !== 'Other' && els.dayTxCategory.value !== ADD_CUSTOM_CATEGORY));
     if (els.dayTxPaymentWrap) els.dayTxPaymentWrap.classList.toggle('hidden', isIncome);
+    if (els.dayTxPaymentCustomWrap) els.dayTxPaymentCustomWrap.classList.toggle('hidden', isIncome || !els.dayTxPaymentMethod || els.dayTxPaymentMethod.value !== 'Other');
     if (els.dayTxCategoryLabel) els.dayTxCategoryLabel.textContent = t(isIncome ? 'daytx.source' : 'common.category');
     if (els.dayTxDesc) els.dayTxDesc.placeholder = t(isIncome ? 'daytx.incomeDescPh' : 'day.descPh');
     if (els.dayTxSubmitLabel) els.dayTxSubmitLabel.textContent = t(isIncome ? 'daytx.addIncome' : 'common.addExpense');
@@ -4809,7 +4964,10 @@
     setDayTxType('expense');
     if (els.dayTxAmount) els.dayTxAmount.value = '';
     if (els.dayTxDesc) els.dayTxDesc.value = '';
-    if (els.dayTxPaymentMethod) els.dayTxPaymentMethod.value = 'Cash';
+    if (els.dayTxPaymentMethod) {
+      els.dayTxPaymentMethod.value = 'Cash';
+      syncPaymentCustomUI(els.dayTxPaymentMethod, els.dayTxPaymentCustomWrap, els.dayTxPaymentCustom, false);
+    }
     if (els.dayTxError) clearError(els.dayTxError);
     syncDayTxModal();
     els.dayTxModal.classList.remove('hidden');
@@ -4859,7 +5017,7 @@
     syncPeriodControls(snapshot);
     renderSummary(snapshot);
     renderLog();
-    renderChart(snapshot);
+    renderCharts(snapshot);
     renderInsights(snapshot);
     renderCalendar();
     renderDayDetail();
@@ -4997,7 +5155,7 @@
     else if (selectedCategory === ADD_CUSTOM_CATEGORY) selectedCategory = 'Other';
     clearError(els.expenseError);
 
-    var entry = addExpense(amount, els.expDesc.value, selectedCategory, date, els.expPaymentMethod ? els.expPaymentMethod.value : 'Cash');
+    var entry = addExpense(amount, els.expDesc.value, selectedCategory, date, paymentMethodFromSelection(els.expPaymentMethod, els.expPaymentCustom));
     showToast(t('exp.toastAdded', { amount: fmt(entry.amount), remaining: fmt(periodRemaining()) }));
 
     els.expAmount.value = ''; els.expDesc.value = ''; els.expCustomCategory.value = '';
@@ -5016,6 +5174,10 @@
     updateCustomCategoryField();
     if (els.expCustomCategoryWrap && !els.expCustomCategoryWrap.classList.contains('hidden') && els.expCustomCategory) els.expCustomCategory.focus();
   });
+  if (els.expPaymentMethod) els.expPaymentMethod.addEventListener('change', function () {
+    syncPaymentCustomUI(els.expPaymentMethod, els.expPaymentCustomWrap, els.expPaymentCustom, true);
+  });
+  syncPaymentCustomUI(els.expPaymentMethod, els.expPaymentCustomWrap, els.expPaymentCustom, false);
   if (els.dayTxCategory) els.dayTxCategory.addEventListener('change', function () {
     var showCustom = dayTxType !== 'income' && (els.dayTxCategory.value === 'Other' || els.dayTxCategory.value === ADD_CUSTOM_CATEGORY);
     if (els.dayTxCustomCategoryWrap) els.dayTxCustomCategoryWrap.classList.toggle('hidden', !showCustom);
@@ -5023,6 +5185,9 @@
       els.dayTxCustomCategory.value = '';
       if (showCustom) els.dayTxCustomCategory.focus();
     }
+  });
+  if (els.dayTxPaymentMethod) els.dayTxPaymentMethod.addEventListener('change', function () {
+    syncPaymentCustomUI(els.dayTxPaymentMethod, els.dayTxPaymentCustomWrap, els.dayTxPaymentCustom, true);
   });
   refreshExpenseCategoryOptions('Other');
   updateCustomCategoryField();
@@ -5459,6 +5624,9 @@
     if (els.transactionEditCustom) els.transactionEditCustom.value = '';
     updateTransactionEditCategoryUI(true);
   });
+  if (els.transactionEditPaymentMethod) els.transactionEditPaymentMethod.addEventListener('change', function () {
+    syncPaymentCustomUI(els.transactionEditPaymentMethod, els.transactionEditPaymentCustomWrap, els.transactionEditPaymentCustom, true);
+  });
   if (els.transactionEditAmount) els.transactionEditAmount.addEventListener('input', function () { if (els.transactionEditError) clearError(els.transactionEditError); });
   if (els.transactionEditForm) els.transactionEditForm.addEventListener('submit', function (ev) {
     ev.preventDefault(); submitTransactionEdit();
@@ -5491,7 +5659,7 @@
         remaining: fmt(periodRemaining())
       }));
     } else {
-      var expenseEntry = addExpense(amount, description, categoryOrSource, date, els.dayTxPaymentMethod ? els.dayTxPaymentMethod.value : 'Cash');
+      var expenseEntry = addExpense(amount, description, categoryOrSource, date, paymentMethodFromSelection(els.dayTxPaymentMethod, els.dayTxPaymentCustom));
       closeDayTxModal();
       showToast(t('exp.toastAddedOn', {
         amount: fmt(expenseEntry.amount),
@@ -5618,7 +5786,7 @@
   window.addEventListener('resize', function () {
     if (typeof window.Chart !== 'undefined') return;
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () { renderChart(totalSpent()); }, 150);
+    resizeTimer = setTimeout(function () { renderCharts(selectedPeriodSnapshot()); }, 150);
   });
 
   /* ============================================================
@@ -5821,5 +5989,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a586eaeb5a14ae24',t:'MTc5NDMzMzIxNg=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a586eaeb5a14ae24',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
