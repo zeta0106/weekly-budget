@@ -1,0 +1,11 @@
+{
+  "name": "weeklybudget-receipt-proxy",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}
