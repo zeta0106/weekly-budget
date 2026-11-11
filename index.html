@@ -210,6 +210,10 @@
   }
   .field:focus{ outline:none; border-color:#10b981; box-shadow:0 0 0 3px rgba(16,185,129,.25); }
   .field::placeholder{ color:var(--muted); opacity:.75; }
+  .receipt-scan-tools{ margin:.75rem 0 .25rem; }
+  .receipt-scan-tools .helper{ margin:.5rem 0 0; }
+  .receipt-scan-tools .helper.error{ color:#dc2626; }
+  #receiptScanButton:disabled, #dayTxReceiptScanButton:disabled{ opacity:.65; cursor:wait; }
   .money-wrap{ position:relative; }
   .money-wrap .money-sign{ position:absolute; left:.8rem; top:50%; transform:translateY(-50%); color:var(--muted); font-weight:600; pointer-events:none; }
   .money-wrap .field{ padding-left:1.7rem; }
@@ -1054,6 +1058,11 @@
               <button type="button" class="chip" id="settingsPdfBtn" data-i18n="report.downloadBtn">Download PDF Report</button>
             </div>
           </div>
+          <div class="setting-row" style="display:block;">
+            <label class="label" for="openRouterApiKey" data-i18n="receipt.apiKeyLabel">OpenRouter API Key</label>
+            <input class="field" id="openRouterApiKey" type="password" autocomplete="off" spellcheck="false" data-i18n-ph="receipt.apiKeyPlaceholder" placeholder="sk-or-v1-…" />
+            <p class="helper" style="margin-bottom:0;" data-i18n="receipt.apiKeyHint">Stored only in this browser’s localStorage; it is not synced to the cloud.</p>
+          </div>
           <div class="setting-row">
             <span><span class="s-label" data-i18n="set.sample">Sample data</span><span class="s-hint" data-i18n="set.sampleHint">Replace the log with demo transactions</span></span>
             <button type="button" class="chip" id="settingsSampleBtn" data-i18n="set.sampleBtn">Load sample</button>
@@ -1151,8 +1160,13 @@
           </div>
 
           <p class="form-error hidden" id="expenseError" role="alert"></p>
+          <div class="receipt-scan-tools">
+            <input class="hidden" id="receiptImageInput" type="file" accept="image/*" />
+            <button type="button" class="btn-secondary" id="receiptScanButton" data-receipt-target="dashboard" data-i18n="receipt.scanButton">Scan receipt with AI</button>
+            <p class="helper hidden" id="receiptScanStatus" role="status" aria-live="polite"></p>
+          </div>
 
-          <div style="margin-top:1rem;">
+          <div style="margin-top:.65rem;">
             <button class="btn-primary active:scale-95 transition-transform duration-150" type="submit" data-i18n="common.addExpense">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
               Add Expense
@@ -1549,6 +1563,11 @@
 
       <div class="day-tx-date"><span data-i18n="common.date">Date</span><strong id="dayTxDateLabel">—</strong></div>
       <p class="form-error hidden" id="dayTxError" role="alert"></p>
+      <div class="receipt-scan-tools hidden" id="dayTxReceiptTools">
+        <input class="hidden" id="dayTxReceiptImageInput" type="file" accept="image/*" />
+        <button type="button" class="btn-secondary" id="dayTxReceiptScanButton" data-receipt-target="calendar" data-i18n="receipt.scanButton">Scan receipt with AI</button>
+        <p class="helper hidden" id="dayTxReceiptScanStatus" role="status" aria-live="polite"></p>
+      </div>
       <div class="day-tx-actions">
         <button type="button" class="btn-secondary" id="dayTxCancel" data-i18n="common.cancel">Cancel</button>
         <button type="submit" class="btn-primary" id="dayTxSubmit"><span id="dayTxSubmitLabel">Add Expense</span></button>
@@ -1630,6 +1649,7 @@
   var VIEW_KEY = 'weeklyBudget.view';
   var LANG_KEY = 'weeklyBudget.lang';
   var PERIOD_KEY = 'weeklyBudget.periodMode';
+  var OPENROUTER_API_KEY_KEY = 'weeklyBudget.openrouterApiKey';
 
   // Currency is locked to HKD, always displayed with a clean "$"
   // (e.g. $1,250.00) — no currency codes or doubled labels anywhere.
@@ -1830,7 +1850,15 @@
       'exp.sub': 'Amount is required — description is optional.',
       'exp.descPh': 'e.g. Grocery run at the market',
       'exp.error': 'Please enter an amount greater than 0.',
-      'exp.toastAdded': 'Added {amount} — remaining {remaining}.',
+      'receipt.scanButton': 'Scan receipt with AI', 'receipt.apiKeyLabel': 'OpenRouter API Key',
+      'receipt.apiKeyPlaceholder': 'sk-or-v1-…',
+      'receipt.apiKeyHint': 'Stored only in this browser’s localStorage; it is not synced to the cloud.',
+      'receipt.missingKey': 'Add your OpenRouter API key in Settings to scan a receipt.',
+      'receipt.scanning': 'Reading receipt…',
+      'receipt.success': 'Receipt details filled in. Review them before adding the expense.',
+      'receipt.failed': 'Receipt scan failed. Check the image, API key, and connection, then try again.',
+      'receipt.invalidFile': 'Please select an image file.',
+      'receipt.toastAdded': 'Added {amount} — remaining {remaining}.',
       'exp.toastAddedOn': 'Added {amount} on {date} — remaining {remaining}.',
       'log.title': 'Expense Log',
       'log.itemsOne': '{n} item',
@@ -2165,6 +2193,14 @@
       'exp.sub': '金額為必填 — 說明可選填。',
       'exp.descPh': '例如：在市場買菜',
       'exp.error': '請輸入大於 0 的金額。',
+      'receipt.scanButton': 'AI 掃描收據', 'receipt.apiKeyLabel': 'OpenRouter API 金鑰',
+      'receipt.apiKeyPlaceholder': 'sk-or-v1-…',
+      'receipt.apiKeyHint': '只儲存在此瀏覽器的 localStorage，不會同步至雲端。',
+      'receipt.missingKey': '請先在設定中加入 OpenRouter API 金鑰，才能掃描收據。',
+      'receipt.scanning': '正在讀取收據…',
+      'receipt.success': '已填入收據資料，請檢查後再新增支出。',
+      'receipt.failed': '收據掃描失敗。請檢查圖片、API 金鑰及網絡連線後再試。',
+      'receipt.invalidFile': '請選擇圖片檔案。',
       'exp.toastAdded': '已新增 {amount} — 剩餘 {remaining}。',
       'exp.toastAddedOn': '已在 {date} 新增 {amount} — 剩餘 {remaining}。',
       'log.title': '支出紀錄',
@@ -2500,6 +2536,14 @@
       'exp.sub': '金额为必填 — 说明可选填。',
       'exp.descPh': '例如：在市场买菜',
       'exp.error': '请输入大于 0 的金额。',
+      'receipt.scanButton': 'AI 扫描收据', 'receipt.apiKeyLabel': 'OpenRouter API 密钥',
+      'receipt.apiKeyPlaceholder': 'sk-or-v1-…',
+      'receipt.apiKeyHint': '仅储存在此浏览器的 localStorage，不会同步至云端。',
+      'receipt.missingKey': '请先在设置中添加 OpenRouter API 密钥，才能扫描收据。',
+      'receipt.scanning': '正在读取收据…',
+      'receipt.success': '已填入收据资料，请检查后再新增支出。',
+      'receipt.failed': '收据扫描失败。请检查图片、API 密钥及网络连接后再试。',
+      'receipt.invalidFile': '请选择图片文件。',
       'exp.toastAdded': '已新增 {amount} — 剩余 {remaining}。',
       'exp.toastAddedOn': '已在 {date} 新增 {amount} — 剩余 {remaining}。',
       'log.title': '支出记录',
@@ -3517,7 +3561,9 @@
     appMain: $('appMain'), viewTitle: $('viewTitle'), viewSubtitle: $('viewSubtitle'),
     settingsThemeBtn: $('settingsThemeBtn'), settingsThemeLabel: $('settingsThemeLabel'),
     settingsExportBtn: $('settingsExportBtn'), settingsPdfBtn: $('settingsPdfBtn'), settingsSampleBtn: $('settingsSampleBtn'),
-    settingsClearBtn: $('settingsClearBtn'),
+    settingsClearBtn: $('settingsClearBtn'), openRouterApiKey: $('openRouterApiKey'),
+    receiptScanButton: $('receiptScanButton'), receiptImageInput: $('receiptImageInput'), receiptScanStatus: $('receiptScanStatus'),
+    dayTxReceiptTools: $('dayTxReceiptTools'), dayTxReceiptScanButton: $('dayTxReceiptScanButton'), dayTxReceiptImageInput: $('dayTxReceiptImageInput'), dayTxReceiptScanStatus: $('dayTxReceiptScanStatus'),
     rolloverEnabled: $('rolloverEnabled'), rolloverMode: $('rolloverMode'), rolloverModeWrap: $('rolloverModeWrap'),
     rolloverTargetGoal: $('rolloverTargetGoal'), rolloverPromptGoal: $('rolloverPromptGoal'),
     savingsTotal: $('savingsTotal'), savingsGoalCount: $('savingsGoalCount'), savingsGoalsList: $('savingsGoalsList'), savingsGoalsEmpty: $('savingsGoalsEmpty'),
@@ -4908,6 +4954,7 @@
     els.dayTxCategory.value = names.indexOf(previous) >= 0 ? previous : (isIncome ? 'Salary' : 'Other');
     if (els.dayTxCustomCategoryWrap) els.dayTxCustomCategoryWrap.classList.toggle('hidden', isIncome || (els.dayTxCategory.value !== 'Other' && els.dayTxCategory.value !== ADD_CUSTOM_CATEGORY));
     if (els.dayTxPaymentWrap) els.dayTxPaymentWrap.classList.toggle('hidden', isIncome);
+    if (els.dayTxReceiptTools) els.dayTxReceiptTools.classList.toggle('hidden', isIncome);
     if (els.dayTxPaymentCustomWrap) els.dayTxPaymentCustomWrap.classList.toggle('hidden', isIncome || !els.dayTxPaymentMethod || els.dayTxPaymentMethod.value !== 'Other');
     if (els.dayTxCategoryLabel) els.dayTxCategoryLabel.textContent = t(isIncome ? 'daytx.source' : 'common.category');
     if (els.dayTxDesc) els.dayTxDesc.placeholder = t(isIncome ? 'daytx.incomeDescPh' : 'day.descPh');
@@ -5121,6 +5168,168 @@
       save(); render();
       showToast(t('inc.resetToast'));
     });
+  });
+
+  /* ============================================================
+     AI RECEIPT SCANNING (OpenRouter)
+  ============================================================ */
+  function receiptScanControls(target) {
+    return target === 'calendar'
+      ? { button: els.dayTxReceiptScanButton, input: els.dayTxReceiptImageInput, status: els.dayTxReceiptScanStatus }
+      : { button: els.receiptScanButton, input: els.receiptImageInput, status: els.receiptScanStatus };
+  }
+  function setReceiptScanStatus(message, isError, target) {
+    var status = receiptScanControls(target).status;
+    if (!status) return;
+    status.textContent = message || '';
+    status.classList.toggle('hidden', !message);
+    status.classList.toggle('error', !!isError);
+  }
+  function receiptImageAsJpegDataUrl(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onerror = function () { reject(new Error('Could not read image')); };
+      reader.onload = function () {
+        var image = new Image();
+        image.onerror = function () { reject(new Error('Unsupported image')); };
+        image.onload = function () {
+          try {
+            var maxEdge = 1600;
+            var scale = Math.min(1, maxEdge / Math.max(image.naturalWidth, image.naturalHeight));
+            var canvas = document.createElement('canvas');
+            canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+            canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+            var ctx = canvas.getContext('2d');
+            if (!ctx) { reject(new Error('Image conversion unavailable')); return; }
+            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL('image/jpeg', .86));
+          } catch (error) { reject(error); }
+        };
+        image.src = String(reader.result || '');
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  function parseReceiptModelContent(content) {
+    if (Array.isArray(content)) content = content.map(function (part) { return typeof part === 'string' ? part : (part && part.text) || ''; }).join('\n');
+    var text = String(content || '').trim();
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
+    var first = text.indexOf('{'), last = text.lastIndexOf('}');
+    if (first >= 0 && last > first) text = text.slice(first, last + 1);
+    var result = JSON.parse(text);
+    if (!result || typeof result !== 'object' || Array.isArray(result)) throw new Error('Receipt response was not a JSON object');
+    return result;
+  }
+  function fillExpenseFromReceipt(result, target) {
+    var isCalendar = target === 'calendar';
+    var amountField = isCalendar ? els.dayTxAmount : els.expAmount;
+    var descriptionField = isCalendar ? els.dayTxDesc : els.expDesc;
+    var categoryField = isCalendar ? els.dayTxCategory : els.expCategory;
+    var categoryCustomField = isCalendar ? els.dayTxCustomCategory : els.expCustomCategory;
+    var categoryCustomWrap = isCalendar ? els.dayTxCustomCategoryWrap : els.expCustomCategoryWrap;
+    var paymentField = isCalendar ? els.dayTxPaymentMethod : els.expPaymentMethod;
+    var paymentCustomField = isCalendar ? els.dayTxPaymentCustom : els.expPaymentCustom;
+    var paymentCustomWrap = isCalendar ? els.dayTxPaymentCustomWrap : els.expPaymentCustomWrap;
+
+    var amountText = String(result.amount == null ? '' : result.amount).replace(/[^0-9.\-]/g, '');
+    var amount = round2(parseFloat(amountText));
+    if (!isFinite(amount) || amount <= 0) throw new Error('Receipt did not contain a valid total');
+    if (amountField) amountField.value = amount.toFixed(2);
+
+    var receiptDate = String(result.date || '').trim();
+    if (!isValidISODate(receiptDate)) receiptDate = toLocalISO(new Date());
+    if (isCalendar) {
+      setDayTxType('expense');
+      dayTxDateISO = receiptDate;
+      selectDate(receiptDate);
+      syncDayTxModal();
+    } else if (els.expDate) els.expDate.value = receiptDate;
+
+    if (descriptionField) descriptionField.value = String(result.description || '').trim().slice(0, 80);
+
+    var categoryName = cleanCategoryName(result.category || 'Other');
+    var existingCategory = expenseCategoryNames().filter(function (name) { return name.toLocaleLowerCase() === categoryName.toLocaleLowerCase(); })[0];
+    if (categoryField) categoryField.value = existingCategory || 'Other';
+    if (categoryCustomField) categoryCustomField.value = existingCategory || !categoryName || categoryName.toLocaleLowerCase() === 'other' ? '' : categoryName;
+    if (categoryCustomWrap) categoryCustomWrap.classList.toggle('hidden', !!existingCategory && existingCategory !== 'Other');
+    if (!isCalendar) updateCustomCategoryField();
+
+    var paymentName = cleanPaymentMethodName(result.paymentMethod || 'Cash');
+    var customPayment = cleanPaymentMethodName(result.customPaymentMethod || '');
+    var matchingMethod = PAYMENT_METHOD_OPTIONS.filter(function (option) { return option.value.toLocaleLowerCase() === paymentName.toLocaleLowerCase(); })[0];
+    if (!paymentName) paymentName = 'Cash';
+    if (paymentField) paymentField.value = matchingMethod ? matchingMethod.value : 'Other';
+    if (paymentCustomField) paymentCustomField.value = matchingMethod ? (matchingMethod.value === 'Other' ? customPayment : '') : paymentName;
+    syncPaymentCustomUI(paymentField, paymentCustomWrap, paymentCustomField, false);
+    clearError(isCalendar ? els.dayTxError : els.expenseError);
+  }
+  async function scanReceiptImage(file, target) {
+    target = target === 'calendar' ? 'calendar' : 'dashboard';
+    var controls = receiptScanControls(target);
+    if (!file) return;
+    if (!/^image\//i.test(file.type || '')) { setReceiptScanStatus(t('receipt.invalidFile'), true, target); return; }
+    var apiKey = String(storage.get(OPENROUTER_API_KEY_KEY) || '').trim();
+    if (!apiKey) { setReceiptScanStatus(t('receipt.missingKey'), true, target); return; }
+    if (controls.button) { controls.button.disabled = true; controls.button.setAttribute('aria-busy', 'true'); }
+    if (controls.button) controls.button.textContent = t('receipt.scanning');
+    setReceiptScanStatus(t('receipt.scanning'), false, target);
+    try {
+      var imageDataUrl = await receiptImageAsJpegDataUrl(file);
+      var categoryChoices = expenseCategoryNames().filter(function (name) { return name !== ADD_CUSTOM_CATEGORY; });
+      var methodChoices = PAYMENT_METHOD_OPTIONS.map(function (option) { return option.value; });
+      var prompt = 'Read this Hong Kong receipt and return only one JSON object, with no markdown or extra text. Use the final amount actually paid (not subtotal), and format date as YYYY-MM-DD. Keys: amount (number), date (string), description (merchant plus short purchase summary), category (choose the closest from ' + JSON.stringify(categoryChoices) + ' or a concise custom category), paymentMethod (choose from ' + JSON.stringify(methodChoices) + ' or use the exact custom payment-method name), customPaymentMethod (optional string when paymentMethod is Other). If a value is not visible, use an empty string for date/description/category/paymentMethod and omit customPaymentMethod.';
+      var response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'nvidia/nemotron-3.5-super-vl:free',
+          messages: [{ role: 'user', content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: imageDataUrl } }
+          ] }],
+          temperature: 0.1
+        })
+      });
+      if (!response.ok) throw new Error('OpenRouter request failed (' + response.status + ')');
+      var data = await response.json();
+      var content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+      if (!content) throw new Error('OpenRouter returned an empty response');
+      fillExpenseFromReceipt(parseReceiptModelContent(content), target);
+      setReceiptScanStatus(t('receipt.success'), false, target);
+      var focusField = target === 'calendar' ? els.dayTxAmount : els.expAmount;
+      if (focusField) focusField.focus();
+    } catch (error) {
+      console.error('OpenRouter receipt scan failed:', error && error.message ? error.message : error);
+      setReceiptScanStatus(t('receipt.failed'), true, target);
+    } finally {
+      if (controls.button) {
+        controls.button.disabled = false;
+        controls.button.removeAttribute('aria-busy');
+        controls.button.textContent = t('receipt.scanButton');
+      }
+      if (controls.input) controls.input.value = '';
+    }
+  }
+  if (els.openRouterApiKey) {
+    els.openRouterApiKey.value = storage.get(OPENROUTER_API_KEY_KEY) || '';
+    els.openRouterApiKey.addEventListener('input', function () {
+      storage.set(OPENROUTER_API_KEY_KEY, String(els.openRouterApiKey.value || '').trim());
+    });
+  }
+  function openReceiptPicker(target) {
+    var controls = receiptScanControls(target);
+    if (!String(storage.get(OPENROUTER_API_KEY_KEY) || '').trim()) { setReceiptScanStatus(t('receipt.missingKey'), true, target); return; }
+    setReceiptScanStatus('', false, target);
+    if (controls.input) controls.input.click();
+  }
+  if (els.receiptScanButton) els.receiptScanButton.addEventListener('click', function () { openReceiptPicker('dashboard'); });
+  if (els.receiptImageInput) els.receiptImageInput.addEventListener('change', function () {
+    if (els.receiptImageInput.files && els.receiptImageInput.files[0]) scanReceiptImage(els.receiptImageInput.files[0], 'dashboard');
+  });
+  if (els.dayTxReceiptScanButton) els.dayTxReceiptScanButton.addEventListener('click', function () { openReceiptPicker('calendar'); });
+  if (els.dayTxReceiptImageInput) els.dayTxReceiptImageInput.addEventListener('change', function () {
+    if (els.dayTxReceiptImageInput.files && els.dayTxReceiptImageInput.files[0]) scanReceiptImage(els.dayTxReceiptImageInput.files[0], 'calendar');
   });
 
   /* ============================================================
@@ -5989,5 +6198,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a586eaeb5a14ae24',t:'MTc5NDMzMzIxNg=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a586eaeb5a14ae24',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>
