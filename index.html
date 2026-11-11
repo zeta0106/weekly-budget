@@ -604,6 +604,7 @@
   .day-add-btn{ background:linear-gradient(135deg,#059669,#10b981 55%,#0ea5e9); box-shadow:0 8px 18px rgba(5,150,105,.22); }
   .day-add-btn:hover{ filter:brightness(1.04); }
   #dayTxModal{ z-index:90; background:rgba(4,47,36,.48); }
+  #authModal{ z-index:110; }
   .transaction-edit-modal{ z-index:100; }
   .transaction-edit-card{ width:min(94vw,460px); }
   .transaction-edit-actions{ display:grid; grid-template-columns:1fr 1fr; gap:.65rem; margin-top:1rem; }
@@ -1058,10 +1059,8 @@
               <button type="button" class="chip" id="settingsPdfBtn" data-i18n="report.downloadBtn">Download PDF Report</button>
             </div>
           </div>
-          <div class="setting-row" style="display:block;">
-            <label class="label" for="openRouterApiKey" data-i18n="receipt.apiKeyLabel">OpenRouter API Key</label>
-            <input class="field" id="openRouterApiKey" type="password" autocomplete="off" spellcheck="false" data-i18n-ph="receipt.apiKeyPlaceholder" placeholder="sk-or-v1-…" />
-            <p class="helper" style="margin-bottom:0;" data-i18n="receipt.apiKeyHint">Stored only in this browser’s localStorage; it is not synced to the cloud.</p>
+          <div class="setting-row">
+            <span><span class="s-label" data-i18n="receipt.serverTitle">AI receipt scanning</span><span class="s-hint" data-i18n="receipt.serverHint">Securely provided after sign-in, with a daily usage limit.</span></span>
           </div>
           <div class="setting-row">
             <span><span class="s-label" data-i18n="set.sample">Sample data</span><span class="s-hint" data-i18n="set.sampleHint">Replace the log with demo transactions</span></span>
@@ -1649,7 +1648,6 @@
   var VIEW_KEY = 'weeklyBudget.view';
   var LANG_KEY = 'weeklyBudget.lang';
   var PERIOD_KEY = 'weeklyBudget.periodMode';
-  var OPENROUTER_API_KEY_KEY = 'weeklyBudget.openrouterApiKey';
 
   // Currency is locked to HKD, always displayed with a clean "$"
   // (e.g. $1,250.00) — no currency codes or doubled labels anywhere.
@@ -1676,6 +1674,7 @@
   // Currency is fixed to HKD ("$" in fmt above). Drop any obsolete
   // currency preference saved by the earlier selector.
   storage.remove('weeklyBudget.currency');
+  storage.remove('weeklyBudget.openrouterApiKey'); // obsolete client-side key; receipt scans now use the server proxy
 
   /* ---------- i18n: language state + dictionary ----------
      UI language only — stored data (category keys, descriptions) is
@@ -1850,13 +1849,14 @@
       'exp.sub': 'Amount is required — description is optional.',
       'exp.descPh': 'e.g. Grocery run at the market',
       'exp.error': 'Please enter an amount greater than 0.',
-      'receipt.scanButton': 'Scan receipt with AI', 'receipt.apiKeyLabel': 'OpenRouter API Key',
-      'receipt.apiKeyPlaceholder': 'sk-or-v1-…',
-      'receipt.apiKeyHint': 'Stored only in this browser’s localStorage; it is not synced to the cloud.',
-      'receipt.missingKey': 'Add your OpenRouter API key in Settings to scan a receipt.',
+      'receipt.scanButton': 'Scan receipt with AI',
+      'receipt.serverTitle': 'AI receipt scanning', 'receipt.serverHint': 'Securely provided after sign-in, with a daily usage limit.',
+      'receipt.authRequired': 'Sign in to your WeeklyBudget account to scan receipts.',
+      'receipt.authUnavailable': 'Receipt scanning is temporarily unavailable. Please try again shortly.',
+      'receipt.rateLimit': 'Daily receipt-scan limit reached. Try again tomorrow.',
       'receipt.scanning': 'Reading receipt…',
       'receipt.success': 'Receipt details filled in. Review them before adding the expense.',
-      'receipt.failed': 'Receipt scan failed. Check the image, API key, and connection, then try again.',
+      'receipt.failed': 'Receipt scan failed. Check the image and connection, then try again.',
       'receipt.invalidFile': 'Please select an image file.',
       'receipt.toastAdded': 'Added {amount} — remaining {remaining}.',
       'exp.toastAddedOn': 'Added {amount} on {date} — remaining {remaining}.',
@@ -2193,13 +2193,14 @@
       'exp.sub': '金額為必填 — 說明可選填。',
       'exp.descPh': '例如：在市場買菜',
       'exp.error': '請輸入大於 0 的金額。',
-      'receipt.scanButton': 'AI 掃描收據', 'receipt.apiKeyLabel': 'OpenRouter API 金鑰',
-      'receipt.apiKeyPlaceholder': 'sk-or-v1-…',
-      'receipt.apiKeyHint': '只儲存在此瀏覽器的 localStorage，不會同步至雲端。',
-      'receipt.missingKey': '請先在設定中加入 OpenRouter API 金鑰，才能掃描收據。',
+      'receipt.scanButton': 'AI 掃描收據',
+      'receipt.serverTitle': 'AI 收據掃描', 'receipt.serverHint': '登入後可安全使用，並設有每日使用上限。',
+      'receipt.authRequired': '請登入 WeeklyBudget 帳戶以掃描收據。',
+      'receipt.authUnavailable': '收據掃描暫時無法使用，請稍後再試。',
+      'receipt.rateLimit': '已達每日收據掃描上限，請明天再試。',
       'receipt.scanning': '正在讀取收據…',
       'receipt.success': '已填入收據資料，請檢查後再新增支出。',
-      'receipt.failed': '收據掃描失敗。請檢查圖片、API 金鑰及網絡連線後再試。',
+      'receipt.failed': '收據掃描失敗。請檢查圖片及網絡連線後再試。',
       'receipt.invalidFile': '請選擇圖片檔案。',
       'exp.toastAdded': '已新增 {amount} — 剩餘 {remaining}。',
       'exp.toastAddedOn': '已在 {date} 新增 {amount} — 剩餘 {remaining}。',
@@ -2536,13 +2537,14 @@
       'exp.sub': '金额为必填 — 说明可选填。',
       'exp.descPh': '例如：在市场买菜',
       'exp.error': '请输入大于 0 的金额。',
-      'receipt.scanButton': 'AI 扫描收据', 'receipt.apiKeyLabel': 'OpenRouter API 密钥',
-      'receipt.apiKeyPlaceholder': 'sk-or-v1-…',
-      'receipt.apiKeyHint': '仅储存在此浏览器的 localStorage，不会同步至云端。',
-      'receipt.missingKey': '请先在设置中添加 OpenRouter API 密钥，才能扫描收据。',
+      'receipt.scanButton': 'AI 扫描收据',
+      'receipt.serverTitle': 'AI 收据扫描', 'receipt.serverHint': '登录后可安全使用，并设有每日使用上限。',
+      'receipt.authRequired': '请登录 WeeklyBudget 账户以扫描收据。',
+      'receipt.authUnavailable': '收据扫描暂时无法使用，请稍后再试。',
+      'receipt.rateLimit': '已达每日收据扫描上限，请明天再试。',
       'receipt.scanning': '正在读取收据…',
       'receipt.success': '已填入收据资料，请检查后再新增支出。',
-      'receipt.failed': '收据扫描失败。请检查图片、API 密钥及网络连接后再试。',
+      'receipt.failed': '收据扫描失败。请检查图片及网络连接后再试。',
       'receipt.invalidFile': '请选择图片文件。',
       'exp.toastAdded': '已新增 {amount} — 剩余 {remaining}。',
       'exp.toastAddedOn': '已在 {date} 新增 {amount} — 剩余 {remaining}。',
@@ -3561,7 +3563,7 @@
     appMain: $('appMain'), viewTitle: $('viewTitle'), viewSubtitle: $('viewSubtitle'),
     settingsThemeBtn: $('settingsThemeBtn'), settingsThemeLabel: $('settingsThemeLabel'),
     settingsExportBtn: $('settingsExportBtn'), settingsPdfBtn: $('settingsPdfBtn'), settingsSampleBtn: $('settingsSampleBtn'),
-    settingsClearBtn: $('settingsClearBtn'), openRouterApiKey: $('openRouterApiKey'),
+    settingsClearBtn: $('settingsClearBtn'),
     receiptScanButton: $('receiptScanButton'), receiptImageInput: $('receiptImageInput'), receiptScanStatus: $('receiptScanStatus'),
     dayTxReceiptTools: $('dayTxReceiptTools'), dayTxReceiptScanButton: $('dayTxReceiptScanButton'), dayTxReceiptImageInput: $('dayTxReceiptImageInput'), dayTxReceiptScanStatus: $('dayTxReceiptScanStatus'),
     rolloverEnabled: $('rolloverEnabled'), rolloverMode: $('rolloverMode'), rolloverModeWrap: $('rolloverModeWrap'),
@@ -5269,39 +5271,53 @@
     var controls = receiptScanControls(target);
     if (!file) return;
     if (!/^image\//i.test(file.type || '')) { setReceiptScanStatus(t('receipt.invalidFile'), true, target); return; }
-    var apiKey = String(storage.get(OPENROUTER_API_KEY_KEY) || '').trim();
-    if (!apiKey) { setReceiptScanStatus(t('receipt.missingKey'), true, target); return; }
     if (controls.button) { controls.button.disabled = true; controls.button.setAttribute('aria-busy', 'true'); }
     if (controls.button) controls.button.textContent = t('receipt.scanning');
     setReceiptScanStatus(t('receipt.scanning'), false, target);
     try {
+      var cloud = cloudApi();
+      if (!cloud || typeof cloud.getIdToken !== 'function') {
+        var authUnavailableError = new Error('Firebase authentication is unavailable.');
+        authUnavailableError.status = 503;
+        throw authUnavailableError;
+      }
+      var authToken = await cloud.getIdToken();
+      if (!authToken) {
+        var authRequiredError = new Error('Sign in before scanning receipts.');
+        authRequiredError.status = 401;
+        throw authRequiredError;
+      }
       var imageDataUrl = await receiptImageAsJpegDataUrl(file);
       var categoryChoices = expenseCategoryNames().filter(function (name) { return name !== ADD_CUSTOM_CATEGORY; });
-      var methodChoices = PAYMENT_METHOD_OPTIONS.map(function (option) { return option.value; });
-      var prompt = 'Read this Hong Kong receipt and return only one JSON object, with no markdown or extra text. Use the final amount actually paid (not subtotal), and format date as YYYY-MM-DD. Keys: amount (number), date (string), description (merchant plus short purchase summary), category (choose the closest from ' + JSON.stringify(categoryChoices) + ' or a concise custom category), paymentMethod (choose from ' + JSON.stringify(methodChoices) + ' or use the exact custom payment-method name), customPaymentMethod (optional string when paymentMethod is Other). If a value is not visible, use an empty string for date/description/category/paymentMethod and omit customPaymentMethod.';
-      var response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      var response = await fetch('/api/receipt-scan', {
         method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'nvidia/nemotron-3.5-super-vl:free',
-          messages: [{ role: 'user', content: [
-            { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: imageDataUrl } }
-          ] }],
-          temperature: 0.1
-        })
+        headers: { 'Authorization': 'Bearer ' + authToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imageDataUrl: imageDataUrl, categories: categoryChoices })
       });
-      if (!response.ok) throw new Error('OpenRouter request failed (' + response.status + ')');
+      if (!response.ok) {
+        var requestError = new Error('Receipt service request failed (' + response.status + ')');
+        requestError.status = response.status;
+        throw requestError;
+      }
       var data = await response.json();
-      var content = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-      if (!content) throw new Error('OpenRouter returned an empty response');
+      var content = data && data.content;
+      if (!content) throw new Error('Receipt service returned an empty response');
       fillExpenseFromReceipt(parseReceiptModelContent(content), target);
       setReceiptScanStatus(t('receipt.success'), false, target);
       var focusField = target === 'calendar' ? els.dayTxAmount : els.expAmount;
       if (focusField) focusField.focus();
     } catch (error) {
-      console.error('OpenRouter receipt scan failed:', error && error.message ? error.message : error);
-      setReceiptScanStatus(t('receipt.failed'), true, target);
+      console.error('Receipt scan failed:', error && error.message ? error.message : error);
+      if (error && error.status === 401) {
+        setReceiptScanStatus(t('receipt.authRequired'), true, target);
+        openAuthModal();
+      } else if (error && error.status === 429) {
+        setReceiptScanStatus(t('receipt.rateLimit'), true, target);
+      } else if (error && error.status === 503) {
+        setReceiptScanStatus(t('receipt.authUnavailable'), true, target);
+      } else {
+        setReceiptScanStatus(t('receipt.failed'), true, target);
+      }
     } finally {
       if (controls.button) {
         controls.button.disabled = false;
@@ -5311,15 +5327,10 @@
       if (controls.input) controls.input.value = '';
     }
   }
-  if (els.openRouterApiKey) {
-    els.openRouterApiKey.value = storage.get(OPENROUTER_API_KEY_KEY) || '';
-    els.openRouterApiKey.addEventListener('input', function () {
-      storage.set(OPENROUTER_API_KEY_KEY, String(els.openRouterApiKey.value || '').trim());
-    });
-  }
   function openReceiptPicker(target) {
     var controls = receiptScanControls(target);
-    if (!String(storage.get(OPENROUTER_API_KEY_KEY) || '').trim()) { setReceiptScanStatus(t('receipt.missingKey'), true, target); return; }
+    var cloud = cloudApi();
+    if (!cloud || typeof cloud.getIdToken !== 'function') { setReceiptScanStatus(t('receipt.authUnavailable'), true, target); return; }
     setReceiptScanStatus('', false, target);
     if (controls.input) controls.input.click();
   }
@@ -6068,6 +6079,7 @@
 
     window.WeeklyBudgetCloud = {
       ready: true,
+      getIdToken: () => auth.currentUser ? auth.currentUser.getIdToken() : Promise.resolve(null),
       signInWithGoogle: () => signInWithPopup(auth, makeGoogleProvider()),
       signInWithGoogleRedirect: () => signInWithRedirect(auth, makeGoogleProvider()),
       signIn: (email, password) => signInWithEmailAndPassword(auth, email, password),
@@ -6198,5 +6210,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-</body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
