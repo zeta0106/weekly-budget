@@ -290,10 +290,10 @@
   .legend-amt{ margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums; }
   .legend-bar-track{ height:6px; border-radius:9999px; background:var(--track); overflow:hidden; margin-top:.35rem; }
   .legend-bar{ height:100%; border-radius:9999px; transition:width .6s ease; }
-  .category-legend-button{ display:block; width:100%; padding:.42rem .45rem; border:1px solid transparent; border-radius:.6rem; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; transition:background .15s ease, border-color .15s ease; }
-  .category-legend-button:hover{ background:var(--bg); border-color:var(--border); }
-  .category-legend-button:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
-  #spendingChart{ cursor:pointer; }
+  .chart-legend-button{ display:block; width:100%; padding:.42rem .45rem; border:1px solid transparent; border-radius:.6rem; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; transition:background .15s ease, border-color .15s ease; }
+  .chart-legend-button:hover{ background:var(--bg); border-color:var(--border); }
+  .chart-legend-button:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
+  #spendingChart, #paymentMethodChart{ cursor:pointer; }
   .category-detail{ margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); }
   .category-detail-heading{ display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem; }
   .category-detail-heading h3{ margin:0; font-size:1rem; font-weight:700; }
@@ -1296,6 +1296,16 @@
         </div>
         <p class="helper hidden" id="paymentChartEmpty" style="text-align:center;" data-i18n="chart.paymentEmpty">No payment-method data for this period yet.</p>
         <ul class="legend" id="paymentChartLegend"></ul>
+        <section class="category-detail hidden" id="paymentMethodDetail" aria-live="polite" aria-labelledby="paymentMethodDetailTitle">
+          <div class="category-detail-heading">
+            <div>
+              <h3 id="paymentMethodDetailTitle"></h3>
+              <p id="paymentMethodDetailSub"></p>
+            </div>
+            <button type="button" class="chip" id="paymentMethodDetailBack" data-i18n="chart.backToChart">Back to chart</button>
+          </div>
+          <div class="category-detail-list" id="paymentMethodExpenseList"></div>
+        </section>
       </section>
 
       <!-- Bonus: quick insights (balances the right column) -->
@@ -1934,6 +1944,10 @@
       'lastWeek.label': 'Last week remaining ({range})',
       'lastWeek.autoNote': 'Auto-sweep is on; eligible leftover funds are transferred to savings.',
       'chart.paymentTitle': 'Spending by Payment Method', 'chart.paymentEmpty': 'No payment-method data for this period yet.',
+      'chart.paymentDetailTitle': 'Expenses paid with {method}',
+      'chart.paymentDetailSub': '{count} expenses · {range}',
+      'chart.paymentDetailEmpty': 'No expenses used this payment method in this period.',
+      'chart.paymentMethodAria': 'View expenses paid with {method}',
       'chart.paymentAria': 'Doughnut chart of spending by payment method', 'chart.paymentCenter': 'TOTAL SPENT',
       'chart.noSpending': 'No spending yet',
       'chart.center': 'TOTAL SPENT',
@@ -2286,6 +2300,10 @@
       'lastWeek.label': '上週剩餘資金（{range}）',
       'lastWeek.autoNote': '自動結餘轉存已開啟；符合條件的上週餘額會轉入儲蓄。',
       'chart.paymentTitle': '支付方式分布', 'chart.paymentEmpty': '此期間尚無付款方式資料。',
+      'chart.paymentDetailTitle': '以{method}付款的支出',
+      'chart.paymentDetailSub': '{count} 筆支出 · {range}',
+      'chart.paymentDetailEmpty': '此期間沒有使用此付款方式的支出。',
+      'chart.paymentMethodAria': '查看以{method}付款的支出',
       'chart.paymentAria': '按付款方式顯示支出的圓環圖', 'chart.paymentCenter': '總支出',
       'chart.noSpending': '尚無支出',
       'chart.center': '總支出',
@@ -2638,6 +2656,10 @@
       'lastWeek.label': '上周剩余资金（{range}）',
       'lastWeek.autoNote': '自动结余转存已开启；符合条件的上周余额会转入储蓄。',
       'chart.paymentTitle': '支付方式分布', 'chart.paymentEmpty': '此期间尚无付款方式数据。',
+      'chart.paymentDetailTitle': '使用{method}支付的支出',
+      'chart.paymentDetailSub': '{count} 笔支出 · {range}',
+      'chart.paymentDetailEmpty': '此期间没有使用此付款方式的支出。',
+      'chart.paymentMethodAria': '查看使用{method}支付的支出',
       'chart.paymentAria': '按付款方式显示支出的圆环图', 'chart.paymentCenter': '总支出',
       'chart.noSpending': '尚无支出',
       'chart.center': '总支出',
@@ -3622,6 +3644,7 @@
     chartCanvas: $('spendingChart'), chartLegend: $('chartLegend'), chartTotal: $('chartTotal'), chartEmpty: $('chartEmpty'),
     categoryDetail: $('categoryDetail'), categoryDetailTitle: $('categoryDetailTitle'), categoryDetailSub: $('categoryDetailSub'), categoryDetailBack: $('categoryDetailBack'), categoryExpenseList: $('categoryExpenseList'),
     paymentChartCanvas: $('paymentMethodChart'), paymentChartSub: $('paymentChartSub'), paymentChartTotal: $('paymentChartTotal'), paymentChartWrap: $('paymentChartWrap'), paymentChartEmpty: $('paymentChartEmpty'), paymentChartLegend: $('paymentChartLegend'),
+    paymentMethodDetail: $('paymentMethodDetail'), paymentMethodDetailTitle: $('paymentMethodDetailTitle'), paymentMethodDetailSub: $('paymentMethodDetailSub'), paymentMethodDetailBack: $('paymentMethodDetailBack'), paymentMethodExpenseList: $('paymentMethodExpenseList'),
     insTopCat: $('insTopCat'), insLargest: $('insLargest'), insAvg: $('insAvg'), insCount: $('insCount'),
     pdfReport: $('pdfReport'),
     toast: $('toast'),
@@ -4428,7 +4451,7 @@
       var name = normalizePaymentMethod(entry && entry.paymentMethod);
       if (!name) return; // legacy transactions with no payment method stay out of the breakdown
       var key = name.toLocaleLowerCase();
-      if (!map[key]) map[key] = { name: paymentMethodLabel(name), total: 0 };
+      if (!map[key]) map[key] = { name: paymentMethodLabel(name), method: name, total: 0 };
       map[key].total += Number(entry.amount) || 0;
     });
     var palette = ['#059669', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#ec4899', '#64748b', '#a855f7'];
@@ -4730,7 +4753,7 @@
     if (!data.length || spent <= 0) { els.chartLegend.innerHTML = ''; return; }
     els.chartLegend.innerHTML = data.map(function (d) {
       var pct = Math.round((d.total / spent) * 100);
-      return '<li><button type="button" class="category-legend-button" data-category-name="' + escapeHtml(d.name) + '" aria-label="' + escapeHtml(t('chart.categoryAria', { category: catLabel(d.name) })) + '" title="' + escapeHtml(t('chart.clickHint')) + '">' +
+      return '<li><button type="button" class="chart-legend-button" data-category-name="' + escapeHtml(d.name) + '" aria-label="' + escapeHtml(t('chart.categoryAria', { category: catLabel(d.name) })) + '" title="' + escapeHtml(t('chart.clickHint')) + '">' +
         '<div class="legend-top"><span class="dot" style="background:' + d.color + '"></span>' +
           '<span class="legend-name">' + escapeHtml(catLabel(d.name)) + '</span>' +
           '<span class="legend-pct">' + pct + '%</span>' +
@@ -4741,38 +4764,54 @@
   }
 
   var selectedCategoryDetail = '';
-  function renderCategoryDetail(snapshot) {
-    if (!els.categoryDetail) return;
-    if (!selectedCategoryDetail) {
-      els.categoryDetail.classList.add('hidden');
+  var selectedPaymentMethodDetail = '';
+  function renderExpenseDetail(kind, selectedName, snapshot, nodes) {
+    if (!nodes || !nodes.section) return;
+    if (!selectedName) {
+      nodes.section.classList.add('hidden');
       return;
     }
+    var isPayment = kind === 'payment';
     var rows = (snapshot && snapshot.expenses || []).filter(function (expense) {
-      return String(expense.category || '') === selectedCategoryDetail;
+      return isPayment
+        ? normalizePaymentMethod(expense.paymentMethod).toLocaleLowerCase() === selectedName.toLocaleLowerCase()
+        : String(expense.category || '') === selectedName;
     }).slice().sort(function (a, b) {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
       return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
     });
-    var label = catLabel(selectedCategoryDetail);
-    els.categoryDetailTitle.textContent = t('chart.categoryTitle', { category: label });
-    els.categoryDetailSub.textContent = t('chart.categorySub', {
+    var label = isPayment ? paymentMethodLabel(selectedName) : catLabel(selectedName);
+    nodes.title.textContent = isPayment
+      ? t('chart.paymentDetailTitle', { method: label })
+      : t('chart.categoryTitle', { category: label });
+    nodes.sub.textContent = t(isPayment ? 'chart.paymentDetailSub' : 'chart.categorySub', {
       count: rows.length,
       range: snapshot && snapshot.rangeLabel ? snapshot.rangeLabel : ''
     });
     if (!rows.length) {
-      els.categoryExpenseList.innerHTML = '<div class="category-detail-empty">' + escapeHtml(t('chart.categoryEmpty')) + '</div>';
+      nodes.list.innerHTML = '<div class="category-detail-empty">' + escapeHtml(t(isPayment ? 'chart.paymentDetailEmpty' : 'chart.categoryEmpty')) + '</div>';
     } else {
-      els.categoryExpenseList.innerHTML = rows.map(function (expense) {
-        var description = String(expense.description || '').trim() || label;
-        var method = paymentMethodLabel(expense.paymentMethod);
+      nodes.list.innerHTML = rows.map(function (expense) {
+        var description = String(expense.description || '').trim() || (expense.category ? catLabel(expense.category) : label);
+        var secondary = isPayment ? catLabel(expense.category || 'Other') : paymentMethodLabel(expense.paymentMethod);
         return '<article class="category-expense-row"><div class="category-expense-copy">' +
           '<strong class="category-expense-description">' + escapeHtml(description) + '</strong>' +
           '<div class="category-expense-meta"><time datetime="' + escapeHtml(expense.date || '') + '">' + escapeHtml(displayDate(expense.date)) + '</time>' +
-          (method ? '<span class="payment-method-badge">' + escapeHtml(method) + '</span>' : '') +
+          (secondary ? '<span class="payment-method-badge">' + escapeHtml(secondary) + '</span>' : '') +
           '</div></div><strong class="category-expense-amount">' + escapeHtml(fmt(Number(expense.amount) || 0)) + '</strong></article>';
       }).join('');
     }
-    els.categoryDetail.classList.remove('hidden');
+    nodes.section.classList.remove('hidden');
+  }
+  function renderCategoryDetail(snapshot) {
+    renderExpenseDetail('category', selectedCategoryDetail, snapshot, {
+      section: els.categoryDetail, title: els.categoryDetailTitle, sub: els.categoryDetailSub, list: els.categoryExpenseList
+    });
+  }
+  function renderPaymentMethodDetail(snapshot) {
+    renderExpenseDetail('payment', selectedPaymentMethodDetail, snapshot, {
+      section: els.paymentMethodDetail, title: els.paymentMethodDetailTitle, sub: els.paymentMethodDetailSub, list: els.paymentMethodExpenseList
+    });
   }
   function openCategoryDetail(category, snapshot) {
     selectedCategoryDetail = String(category || '');
@@ -4783,18 +4822,24 @@
     selectedCategoryDetail = '';
     if (els.categoryDetail) els.categoryDetail.classList.add('hidden');
   }
+  function openPaymentMethodDetail(method, snapshot) {
+    selectedPaymentMethodDetail = normalizePaymentMethod(method);
+    renderPaymentMethodDetail(snapshot || selectedPeriodSnapshot());
+    if (els.paymentMethodDetail) els.paymentMethodDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function closePaymentMethodDetail() {
+    selectedPaymentMethodDetail = '';
+    if (els.paymentMethodDetail) els.paymentMethodDetail.classList.add('hidden');
+  }
 
-  // Fallback doughnut (only used if the Chart.js CDN is unreachable)
-  function drawFallbackChart(data, spent) {
-    var canvas = els.chartCanvas, wrap = canvas.parentElement;
-    canvas.style.cursor = data.length && spent > 0 ? 'pointer' : 'default';
-    canvas.dataset.categoryClickBound = canvas.dataset.categoryClickBound || '';
-    if (canvas.dataset.categoryClickBound !== '1') {
-      canvas.dataset.categoryClickBound = '1';
+  function bindFallbackDoughnutClick(canvas, data, total, onSelect) {
+    if (!canvas) return;
+    if (canvas.dataset.fallbackClickBound !== '1') {
+      canvas.dataset.fallbackClickBound = '1';
       canvas.addEventListener('click', function (event) {
-        var active = canvas._wbCategoryData || [];
-        var total = Number(canvas._wbCategoryTotal) || 0;
-        if (!active.length || total <= 0) return;
+        var active = canvas._wbDoughnutData || [];
+        var activeTotal = Number(canvas._wbDoughnutTotal) || 0;
+        if (!active.length || activeTotal <= 0) return;
         var rect = canvas.getBoundingClientRect();
         var W = rect.width, H = rect.height;
         var x = event.clientX - rect.left, y = event.clientY - rect.top;
@@ -4805,17 +4850,28 @@
         var offset = (angle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
         var cumulative = 0;
         for (var i = 0; i < active.length; i++) {
-          var sweep = (Number(active[i].total) / total) * Math.PI * 2;
+          var sweep = (Number(active[i].total) / activeTotal) * Math.PI * 2;
           if (offset >= cumulative && offset <= cumulative + sweep) {
-            openCategoryDetail(active[i].name, selectedPeriodSnapshot());
+            if (typeof canvas._wbDoughnutSelect === 'function') canvas._wbDoughnutSelect(active[i].method || active[i].name);
             return;
           }
           cumulative += sweep;
         }
       });
     }
-    canvas._wbCategoryData = data;
-    canvas._wbCategoryTotal = spent;
+    canvas.style.cursor = data && data.length && total > 0 ? 'pointer' : 'default';
+    canvas._wbDoughnutData = data || [];
+    canvas._wbDoughnutTotal = Number(total) || 0;
+    canvas._wbDoughnutSelect = onSelect;
+  }
+
+  // Fallback doughnut (only used if the Chart.js CDN is unreachable)
+  function drawFallbackChart(data, spent) {
+    var canvas = els.chartCanvas, wrap = canvas.parentElement;
+    canvas.style.cursor = 'default';
+    bindFallbackDoughnutClick(canvas, data, spent, function (name) {
+      openCategoryDetail(name, selectedPeriodSnapshot());
+    });
     var W = wrap.clientWidth || 300, H = wrap.clientHeight || 260, dpr = window.devicePixelRatio || 1;
     canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     var ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -4897,15 +4953,21 @@
     if (!data.length || total <= 0) { els.paymentChartLegend.innerHTML = ''; return; }
     els.paymentChartLegend.innerHTML = data.map(function (item) {
       var pct = Math.round((item.total / total) * 100);
-      return '<li><div class="legend-top"><span class="dot" style="background:' + item.color + '"></span>' +
-        '<span class="legend-name">' + escapeHtml(item.name) + '</span><span class="legend-pct">' + pct + '%</span>' +
-        '<span class="legend-amt">' + fmt(item.total) + '</span></div>' +
-        '<div class="legend-bar-track"><div class="legend-bar" style="width:' + pct + '%; background:' + item.color + '"></div></div></li>';
+      return '<li><button type="button" class="chart-legend-button" data-payment-method="' + escapeHtml(item.method || item.name) + '" aria-label="' + escapeHtml(t('chart.paymentMethodAria', { method: item.name })) + '" title="' + escapeHtml(t('chart.clickHint')) + '">' +
+        '<div class="legend-top"><span class="dot" style="background:' + item.color + '"></span>' +
+          '<span class="legend-name">' + escapeHtml(item.name) + '</span><span class="legend-pct">' + pct + '%</span>' +
+          '<span class="legend-amt">' + fmt(item.total) + '</span></div>' +
+        '<div class="legend-bar-track"><div class="legend-bar" style="width:' + pct + '%; background:' + item.color + '"></div></div>' +
+      '</button></li>';
     }).join('');
   }
   function drawFallbackPaymentChart(data, total) {
     var canvas = els.paymentChartCanvas, wrap = canvas && canvas.parentElement;
     if (!canvas || !wrap) return;
+    canvas.style.cursor = 'default';
+    bindFallbackDoughnutClick(canvas, data, total, function (name) {
+      openPaymentMethodDetail(name, selectedPeriodSnapshot());
+    });
     var W = wrap.clientWidth || 300, H = wrap.clientHeight || 260, dpr = window.devicePixelRatio || 1;
     canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     var ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -4934,12 +4996,14 @@
     if (els.paymentChartEmpty) els.paymentChartEmpty.classList.toggle('hidden', !empty);
     if (els.paymentChartWrap) els.paymentChartWrap.classList.toggle('hidden', empty);
     renderPaymentMethodLegend(data, total);
+    renderPaymentMethodDetail(snapshot);
     if (empty) {
       if (paymentChartInstance) { paymentChartInstance.destroy(); paymentChartInstance = null; }
       return;
     }
     if (typeof window.Chart === 'undefined') { drawFallbackPaymentChart(data, total); return; }
     if (paymentChartInstance) { paymentChartInstance.destroy(); paymentChartInstance = null; }
+    if (els.paymentChartCanvas) els.paymentChartCanvas.style.cursor = 'pointer';
     paymentChartInstance = new Chart(els.paymentChartCanvas.getContext('2d'), {
       type: 'doughnut',
       data: { labels: data.map(function (item) { return item.name; }), datasets: [{
@@ -4949,6 +5013,11 @@
       }] },
       options: {
         responsive: true, maintainAspectRatio: false, cutout: '68%',
+        onClick: function (event, elements) {
+          if (!elements || !elements.length) return;
+          var index = elements[0].index;
+          if (data[index]) openPaymentMethodDetail(data[index].method || data[index].name, snapshot);
+        },
         animation: { duration: 650, easing: 'easeOutQuart' },
         plugins: {
           legend: { display: false },
@@ -4973,6 +5042,11 @@
     if (button) openCategoryDetail(button.getAttribute('data-category-name'), selectedPeriodSnapshot());
   });
   if (els.categoryDetailBack) els.categoryDetailBack.addEventListener('click', closeCategoryDetail);
+  if (els.paymentChartLegend) els.paymentChartLegend.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-payment-method]');
+    if (button) openPaymentMethodDetail(button.getAttribute('data-payment-method'), selectedPeriodSnapshot());
+  });
+  if (els.paymentMethodDetailBack) els.paymentMethodDetailBack.addEventListener('click', closePaymentMethodDetail);
 
   /* ---------- Calendar (Sunday -> Saturday month grid) ---------- */
   function incomesOn(iso) { return incomeEntries().filter(function (e) { return e.date === iso; }); }
@@ -6376,5 +6450,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a597ca83dc6a04c4',t:'MTc5NDUxMDE0Nw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a597ca83dc6a04c4',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
