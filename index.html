@@ -290,6 +290,30 @@
   .legend-amt{ margin-left:auto; font-weight:700; font-variant-numeric:tabular-nums; }
   .legend-bar-track{ height:6px; border-radius:9999px; background:var(--track); overflow:hidden; margin-top:.35rem; }
   .legend-bar{ height:100%; border-radius:9999px; transition:width .6s ease; }
+  .category-legend-button{ display:block; width:100%; padding:.42rem .45rem; border:1px solid transparent; border-radius:.6rem; background:transparent; color:inherit; text-align:left; font:inherit; cursor:pointer; transition:background .15s ease, border-color .15s ease; }
+  .category-legend-button:hover{ background:var(--bg); border-color:var(--border); }
+  .category-legend-button:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
+  #spendingChart{ cursor:pointer; }
+  .category-detail{ margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border); }
+  .category-detail-heading{ display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem; }
+  .category-detail-heading h3{ margin:0; font-size:1rem; font-weight:700; }
+  .category-detail-heading p{ margin:.25rem 0 0; font-size:.8rem; color:var(--muted); }
+  .category-detail-list{ display:grid; gap:.1rem; margin-top:.65rem; }
+  .category-expense-row{ display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.72rem .15rem; border-bottom:1px solid var(--border); }
+  .category-expense-copy{ min-width:0; }
+  .category-expense-description{ display:block; overflow-wrap:anywhere; font-weight:650; }
+  .category-expense-meta{ display:flex; flex-wrap:wrap; align-items:center; gap:.35rem; margin-top:.2rem; color:var(--muted); font-size:.76rem; }
+  .category-expense-amount{ flex:none; font-weight:750; font-variant-numeric:tabular-nums; }
+  .category-detail-empty{ padding:1rem .25rem; color:var(--muted); text-align:center; font-size:.86rem; }
+  .last-week-summary{ display:flex; align-items:center; justify-content:space-between; gap:.8rem; margin-top:.75rem; padding:.65rem .75rem; border:1px solid var(--border); border-radius:.65rem; background:var(--bg); font-size:.82rem; }
+  .last-week-summary-label{ color:var(--muted); }
+  .last-week-summary-amount{ font-weight:750; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .last-week-auto-note{ margin:.75rem 0 0; padding:.65rem .75rem; border-left:3px solid #10b981; border-radius:.4rem; background:var(--brand-green-soft); color:var(--muted); font-size:.8rem; line-height:1.45; }
+  @media(max-width:520px){
+    .category-detail-heading{ align-items:flex-start; flex-direction:column; }
+    .category-expense-row{ align-items:flex-start; }
+    .last-week-summary{ align-items:flex-start; flex-direction:column; gap:.2rem; }
+  }
 
   .insight-row{ display:flex; justify-content:space-between; align-items:baseline; gap:1rem; padding:.65rem 0; border-bottom:1px solid var(--border); font-size:.88rem; }
   .insight-row:last-child{ border-bottom:none; }
@@ -971,6 +995,11 @@
 
         <p class="remaining-amount" id="remainingAmount">$0.00</p>
         <p class="card-sub" id="remainingHint" style="margin-top:0;">Set your weekly income to get started.</p>
+        <div class="last-week-summary" id="lastWeekSummary" aria-live="polite">
+          <span class="last-week-summary-label" id="lastWeekLabel"></span>
+          <strong class="last-week-summary-amount" id="lastWeekAmount">$0.00</strong>
+        </div>
+        <p class="last-week-auto-note hidden" id="lastWeekAutoNote" data-i18n="lastWeek.autoNote">Auto-sweep is on; eligible leftover funds are transferred to savings.</p>
 
         <div style="margin-top:1.1rem;">
           <div class="progress-track" role="progressbar" aria-label="Percent of income spent" data-i18n-aria="rem.progressAria" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="spentProgressTrack">
@@ -1242,6 +1271,16 @@
         <p class="helper hidden" id="chartEmpty" style="text-align:center;" data-i18n="chart.empty">Nothing to chart yet — add an expense and your breakdown will appear here.</p>
 
         <ul class="legend" id="chartLegend"></ul>
+        <section class="category-detail hidden" id="categoryDetail" aria-live="polite" aria-labelledby="categoryDetailTitle">
+          <div class="category-detail-heading">
+            <div>
+              <h3 id="categoryDetailTitle"></h3>
+              <p id="categoryDetailSub"></p>
+            </div>
+            <button type="button" class="chip" id="categoryDetailBack" data-i18n="chart.backToChart">Back to chart</button>
+          </div>
+          <div class="category-detail-list" id="categoryExpenseList"></div>
+        </section>
       </section>
 
       <section class="card view-card" data-view="charts" aria-labelledby="paymentChartTitle">
@@ -1886,6 +1925,14 @@
       'chart.sub': 'By category',
       'chart.aria': 'Doughnut chart of spending by category',
       'chart.empty': 'Nothing to chart yet — add an expense and your breakdown will appear here.',
+      'chart.clickHint': 'Select a category to see its expenses.',
+      'chart.backToChart': 'Back to chart',
+      'chart.categoryTitle': 'Expenses — {category}',
+      'chart.categorySub': '{count} expenses · {range}',
+      'chart.categoryEmpty': 'No expenses in this category for this period.',
+      'chart.categoryAria': 'View expenses for {category}',
+      'lastWeek.label': 'Last week remaining ({range})',
+      'lastWeek.autoNote': 'Auto-sweep is on; eligible leftover funds are transferred to savings.',
       'chart.paymentTitle': 'Spending by Payment Method', 'chart.paymentEmpty': 'No payment-method data for this period yet.',
       'chart.paymentAria': 'Doughnut chart of spending by payment method', 'chart.paymentCenter': 'TOTAL SPENT',
       'chart.noSpending': 'No spending yet',
@@ -2230,6 +2277,14 @@
       'chart.sub': '按類別',
       'chart.aria': '按類別顯示支出的圓環圖',
       'chart.empty': '尚無資料可顯示 — 新增支出後，分佈圖會顯示在這裡。',
+      'chart.clickHint': '選擇類別以查看相關支出。',
+      'chart.backToChart': '返回圖表',
+      'chart.categoryTitle': '支出 — {category}',
+      'chart.categorySub': '{count} 筆支出 · {range}',
+      'chart.categoryEmpty': '此期間此類別尚無支出。',
+      'chart.categoryAria': '查看{category}的支出',
+      'lastWeek.label': '上週剩餘資金（{range}）',
+      'lastWeek.autoNote': '自動結餘轉存已開啟；符合條件的上週餘額會轉入儲蓄。',
       'chart.paymentTitle': '支付方式分布', 'chart.paymentEmpty': '此期間尚無付款方式資料。',
       'chart.paymentAria': '按付款方式顯示支出的圓環圖', 'chart.paymentCenter': '總支出',
       'chart.noSpending': '尚無支出',
@@ -2574,6 +2629,14 @@
       'chart.sub': '按类别',
       'chart.aria': '按类别显示支出的圆环图',
       'chart.empty': '尚无数据可显示 — 新增支出后，分布图会显示在这里。',
+      'chart.clickHint': '选择类别以查看相关支出。',
+      'chart.backToChart': '返回图表',
+      'chart.categoryTitle': '支出 — {category}',
+      'chart.categorySub': '{count} 笔支出 · {range}',
+      'chart.categoryEmpty': '此期间此类别暂无支出。',
+      'chart.categoryAria': '查看{category}的支出',
+      'lastWeek.label': '上周剩余资金（{range}）',
+      'lastWeek.autoNote': '自动结余转存已开启；符合条件的上周余额会转入储蓄。',
       'chart.paymentTitle': '支付方式分布', 'chart.paymentEmpty': '此期间尚无付款方式数据。',
       'chart.paymentAria': '按付款方式显示支出的圆环图', 'chart.paymentCenter': '总支出',
       'chart.noSpending': '尚无支出',
@@ -3542,6 +3605,7 @@
     iconSun: $('iconSun'), iconMoon: $('iconMoon'),
     remainingTitle: $('remainingTitle'), periodRangeLabel: $('periodRangeLabel'),
     remainingAmount: $('remainingAmount'), remainingHint: $('remainingHint'), statusPill: $('statusPill'),
+    lastWeekSummary: $('lastWeekSummary'), lastWeekLabel: $('lastWeekLabel'), lastWeekAmount: $('lastWeekAmount'), lastWeekAutoNote: $('lastWeekAutoNote'),
     spentProgress: $('spentProgress'), spentProgressTrack: $('spentProgressTrack'),
     progressSpentLabel: $('progressSpentLabel'), progressPct: $('progressPct'),
     statIncome: $('statIncome'), statSpent: $('statSpent'),
@@ -3556,6 +3620,7 @@
     logCount: $('logCount'), logTotal: $('logTotal'), clearBtn: $('clearBtn'), exportBtn: $('exportBtn'), pdfExportBtn: $('pdfExportBtn'),
     chartTitle: $('chartTitle'), chartSub: $('chartSub'), insightsTitle: $('insightsTitle'),
     chartCanvas: $('spendingChart'), chartLegend: $('chartLegend'), chartTotal: $('chartTotal'), chartEmpty: $('chartEmpty'),
+    categoryDetail: $('categoryDetail'), categoryDetailTitle: $('categoryDetailTitle'), categoryDetailSub: $('categoryDetailSub'), categoryDetailBack: $('categoryDetailBack'), categoryExpenseList: $('categoryExpenseList'),
     paymentChartCanvas: $('paymentMethodChart'), paymentChartSub: $('paymentChartSub'), paymentChartTotal: $('paymentChartTotal'), paymentChartWrap: $('paymentChartWrap'), paymentChartEmpty: $('paymentChartEmpty'), paymentChartLegend: $('paymentChartLegend'),
     insTopCat: $('insTopCat'), insLargest: $('insLargest'), insAvg: $('insAvg'), insCount: $('insCount'),
     pdfReport: $('pdfReport'),
@@ -4397,7 +4462,23 @@
     els.statusPill.style.color = fg;
   }
 
+  function renderLastWeekBalance() {
+    var autoSweep = !!(state.savings && state.savings.rollover && state.savings.rollover.enabled);
+    if (els.lastWeekSummary) els.lastWeekSummary.classList.toggle('hidden', autoSweep);
+    if (els.lastWeekAutoNote) els.lastWeekAutoNote.classList.toggle('hidden', !autoSweep);
+    if (autoSweep) return;
+
+    var range = previousPeriodRange('weekly');
+    var previousWeek = snapshotForRange(range);
+    if (els.lastWeekLabel) els.lastWeekLabel.textContent = t('lastWeek.label', { range: periodRangeText(range) });
+    if (els.lastWeekAmount) {
+      els.lastWeekAmount.textContent = fmt(previousWeek.remaining);
+      els.lastWeekAmount.style.color = previousWeek.remaining < 0 ? '#ef4444' : '#059669';
+    }
+  }
+
   function renderSummary(snapshot) {
+    renderLastWeekBalance();
     if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
     var income = snapshot.income, spent = snapshot.spent, rem = snapshot.remaining;
     var monthly = snapshot.mode === 'monthly';
@@ -4649,19 +4730,92 @@
     if (!data.length || spent <= 0) { els.chartLegend.innerHTML = ''; return; }
     els.chartLegend.innerHTML = data.map(function (d) {
       var pct = Math.round((d.total / spent) * 100);
-      return '<li>' +
+      return '<li><button type="button" class="category-legend-button" data-category-name="' + escapeHtml(d.name) + '" aria-label="' + escapeHtml(t('chart.categoryAria', { category: catLabel(d.name) })) + '" title="' + escapeHtml(t('chart.clickHint')) + '">' +
         '<div class="legend-top"><span class="dot" style="background:' + d.color + '"></span>' +
           '<span class="legend-name">' + escapeHtml(catLabel(d.name)) + '</span>' +
           '<span class="legend-pct">' + pct + '%</span>' +
           '<span class="legend-amt">' + fmt(d.total) + '</span></div>' +
         '<div class="legend-bar-track"><div class="legend-bar" style="width:' + pct + '%; background:' + d.color + '"></div></div>' +
-      '</li>';
+      '</button></li>';
     }).join('');
+  }
+
+  var selectedCategoryDetail = '';
+  function renderCategoryDetail(snapshot) {
+    if (!els.categoryDetail) return;
+    if (!selectedCategoryDetail) {
+      els.categoryDetail.classList.add('hidden');
+      return;
+    }
+    var rows = (snapshot && snapshot.expenses || []).filter(function (expense) {
+      return String(expense.category || '') === selectedCategoryDetail;
+    }).slice().sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+    });
+    var label = catLabel(selectedCategoryDetail);
+    els.categoryDetailTitle.textContent = t('chart.categoryTitle', { category: label });
+    els.categoryDetailSub.textContent = t('chart.categorySub', {
+      count: rows.length,
+      range: snapshot && snapshot.rangeLabel ? snapshot.rangeLabel : ''
+    });
+    if (!rows.length) {
+      els.categoryExpenseList.innerHTML = '<div class="category-detail-empty">' + escapeHtml(t('chart.categoryEmpty')) + '</div>';
+    } else {
+      els.categoryExpenseList.innerHTML = rows.map(function (expense) {
+        var description = String(expense.description || '').trim() || label;
+        var method = paymentMethodLabel(expense.paymentMethod);
+        return '<article class="category-expense-row"><div class="category-expense-copy">' +
+          '<strong class="category-expense-description">' + escapeHtml(description) + '</strong>' +
+          '<div class="category-expense-meta"><time datetime="' + escapeHtml(expense.date || '') + '">' + escapeHtml(displayDate(expense.date)) + '</time>' +
+          (method ? '<span class="payment-method-badge">' + escapeHtml(method) + '</span>' : '') +
+          '</div></div><strong class="category-expense-amount">' + escapeHtml(fmt(Number(expense.amount) || 0)) + '</strong></article>';
+      }).join('');
+    }
+    els.categoryDetail.classList.remove('hidden');
+  }
+  function openCategoryDetail(category, snapshot) {
+    selectedCategoryDetail = String(category || '');
+    renderCategoryDetail(snapshot || selectedPeriodSnapshot());
+    if (els.categoryDetail) els.categoryDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function closeCategoryDetail() {
+    selectedCategoryDetail = '';
+    if (els.categoryDetail) els.categoryDetail.classList.add('hidden');
   }
 
   // Fallback doughnut (only used if the Chart.js CDN is unreachable)
   function drawFallbackChart(data, spent) {
     var canvas = els.chartCanvas, wrap = canvas.parentElement;
+    canvas.style.cursor = data.length && spent > 0 ? 'pointer' : 'default';
+    canvas.dataset.categoryClickBound = canvas.dataset.categoryClickBound || '';
+    if (canvas.dataset.categoryClickBound !== '1') {
+      canvas.dataset.categoryClickBound = '1';
+      canvas.addEventListener('click', function (event) {
+        var active = canvas._wbCategoryData || [];
+        var total = Number(canvas._wbCategoryTotal) || 0;
+        if (!active.length || total <= 0) return;
+        var rect = canvas.getBoundingClientRect();
+        var W = rect.width, H = rect.height;
+        var x = event.clientX - rect.left, y = event.clientY - rect.top;
+        var cx = W / 2, cy = H / 2, radius = Math.min(W, H) / 2 - 22;
+        var distance = Math.sqrt(Math.pow(x - cx, 2) + Math.pow(y - cy, 2));
+        if (distance < radius - 18 || distance > radius + 18) return;
+        var angle = Math.atan2(y - cy, x - cx);
+        var offset = (angle + Math.PI / 2 + Math.PI * 2) % (Math.PI * 2);
+        var cumulative = 0;
+        for (var i = 0; i < active.length; i++) {
+          var sweep = (Number(active[i].total) / total) * Math.PI * 2;
+          if (offset >= cumulative && offset <= cumulative + sweep) {
+            openCategoryDetail(active[i].name, selectedPeriodSnapshot());
+            return;
+          }
+          cumulative += sweep;
+        }
+      });
+    }
+    canvas._wbCategoryData = data;
+    canvas._wbCategoryTotal = spent;
     var W = wrap.clientWidth || 300, H = wrap.clientHeight || 260, dpr = window.devicePixelRatio || 1;
     canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     var ctx = canvas.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -4694,10 +4848,12 @@
     if (els.chartSub) els.chartSub.textContent = t('chart.subPeriod', { range: snapshot.rangeLabel });
     els.chartEmpty.classList.toggle('hidden', spent > 0);
     renderLegend(data, spent);
+    renderCategoryDetail(snapshot);
 
     if (typeof window.Chart === 'undefined') { drawFallbackChart(data, spent); return; }
 
     if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    els.chartCanvas.style.cursor = !data.length || spent <= 0 ? 'default' : 'pointer';
     var empty = !data.length || spent <= 0;
     chartInstance = new Chart(els.chartCanvas.getContext('2d'), {
       type: 'doughnut',
@@ -4712,6 +4868,11 @@
       },
       options: {
         responsive: true, maintainAspectRatio: false, cutout: '68%',
+        onClick: function (event, elements) {
+          if (!elements || !elements.length || empty) return;
+          var index = elements[0].index;
+          if (data[index]) openCategoryDetail(data[index].name, snapshot);
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
@@ -4807,6 +4968,11 @@
     renderChart(snapshot);
     renderPaymentMethodChart(snapshot);
   }
+  if (els.chartLegend) els.chartLegend.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-category-name]');
+    if (button) openCategoryDetail(button.getAttribute('data-category-name'), selectedPeriodSnapshot());
+  });
+  if (els.categoryDetailBack) els.categoryDetailBack.addEventListener('click', closeCategoryDetail);
 
   /* ---------- Calendar (Sunday -> Saturday month grid) ---------- */
   function incomesOn(iso) { return incomeEntries().filter(function (e) { return e.date === iso; }); }
