@@ -1978,6 +1978,7 @@
       'chart.incomeAria': 'Doughnut chart of income by source',
       'chart.incomeEmpty': 'No income-source data for this period yet.',
       'chart.incomeCenter': 'TOTAL INCOME',
+      'chart.incomeSavingsWithdrawal': 'Savings Withdrawal',
       'chart.incomeDetailTitle': 'Income — {source}',
       'chart.incomeDetailSub': '{count} transactions · {range}',
       'chart.incomeDetailEmpty': 'No income transactions from this source in this period.',
@@ -2343,6 +2344,7 @@
       'chart.incomeAria': '按來源顯示收入的圓環圖',
       'chart.incomeEmpty': '此期間尚無收入來源資料。',
       'chart.incomeCenter': '總收入',
+      'chart.incomeSavingsWithdrawal': '儲蓄提款',
       'chart.incomeDetailTitle': '收入 — {source}',
       'chart.incomeDetailSub': '{count} 筆交易 · {range}',
       'chart.incomeDetailEmpty': '此期間此來源尚無收入交易。',
@@ -2708,6 +2710,7 @@
       'chart.incomeAria': '按来源显示收入的圆环图',
       'chart.incomeEmpty': '此期间暂无收入来源数据。',
       'chart.incomeCenter': '总收入',
+      'chart.incomeSavingsWithdrawal': '储蓄取款',
       'chart.incomeDetailTitle': '收入 — {source}',
       'chart.incomeDetailSub': '{count} 笔交易 · {range}',
       'chart.incomeDetailEmpty': '此期间此来源暂无收入交易。',
@@ -4516,11 +4519,19 @@
     }
     return rows;
   }
+  var SAVINGS_WITHDRAWAL_CHART_SOURCE = 'Savings Withdrawal';
+  function incomeChartSource(entry) {
+    if (entry && entry.kind === 'savings-withdrawal') return SAVINGS_WITHDRAWAL_CHART_SOURCE;
+    return INCOME_SOURCE_I18N[entry && entry.source] ? entry.source : 'Other Income';
+  }
+  function incomeChartSourceLabel(source) {
+    return source === SAVINGS_WITHDRAWAL_CHART_SOURCE ? t('chart.incomeSavingsWithdrawal') : incomeSourceLabel(source);
+  }
   function aggregateIncomeBySource(rows) {
     var map = Object.create(null);
     (Array.isArray(rows) ? rows : []).forEach(function (entry) {
-      var source = INCOME_SOURCE_I18N[entry && entry.source] ? entry.source : 'Other Income';
-      if (!map[source]) map[source] = { source: source, name: incomeSourceLabel(source), total: 0 };
+      var source = incomeChartSource(entry);
+      if (!map[source]) map[source] = { source: source, name: incomeChartSourceLabel(source), total: 0 };
       map[source].total += Number(entry.amount) || 0;
     });
     var palette = ['#059669', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1'];
@@ -5128,12 +5139,12 @@
       return;
     }
     var rows = incomeEntriesForRange(snapshot.range).filter(function (entry) {
-      return (INCOME_SOURCE_I18N[entry.source] ? entry.source : 'Other Income') === selectedIncomeSourceDetail;
+      return incomeChartSource(entry) === selectedIncomeSourceDetail;
     }).slice().sort(function (a, b) {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
       return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
     });
-    var sourceLabel = incomeSourceLabel(selectedIncomeSourceDetail);
+    var sourceLabel = incomeChartSourceLabel(selectedIncomeSourceDetail);
     els.incomeSourceDetailTitle.textContent = t('chart.incomeDetailTitle', { source: sourceLabel });
     els.incomeSourceDetailSub.textContent = t('chart.incomeDetailSub', { count: rows.length, range: snapshot.rangeLabel });
     els.incomeSourceDetailList.innerHTML = rows.length
@@ -5142,7 +5153,7 @@
     els.incomeSourceDetail.classList.remove('hidden');
   }
   function openIncomeSourceDetail(source, snapshot) {
-    selectedIncomeSourceDetail = INCOME_SOURCE_I18N[source] ? source : 'Other Income';
+    selectedIncomeSourceDetail = source === SAVINGS_WITHDRAWAL_CHART_SOURCE || INCOME_SOURCE_I18N[source] ? source : 'Other Income';
     renderIncomeSourceDetail(snapshot || selectedPeriodSnapshot());
     if (els.incomeSourceDetail) els.incomeSourceDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -5316,7 +5327,10 @@
     var incomeSub = (isWeeklyBudgetEntry || isMonthlyBudgetEntry) && !(entry.description && entry.description.trim())
       ? t('day.incomeCat')
       : (incomeSourceLabel(entry.source) + ' · ' + t('day.income'));
-    if (includeDate) incomeSub = displayDate(entry.date) + ' · ' + incomeSub;
+    if (includeDate) {
+      if (entry.kind === 'savings-withdrawal') incomeSub = t('chart.incomeSavingsWithdrawal');
+      incomeSub = displayDate(entry.date) + ' · ' + incomeSub;
+    }
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
     var editButton = '<button type="button" class="icon-btn edit-btn tx-edit-btn" data-edit-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('txedit.editAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('txedit.editAria', { name: incomeLabel })) + '">' + pencilSvg + '</button>';
     var deleteButton = '<button type="button" class="icon-btn tx-delete-btn" data-delete-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
@@ -6640,5 +6654,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5b7e9710c7206a5',t:'MTc5NDg0Njk1OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5b7e9710c7206a5',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
