@@ -1870,6 +1870,7 @@
       'hint.overMonthly': 'You are {amount} over budget this month.',
       'chart.titleMonthly': 'Monthly Spending Breakdown',
       'chart.subPeriod': '{range} · By category',
+      'chart.netSavingsNote': 'Savings Transfers are net of this period’s withdrawals.',
       'ins.titleMonthly': 'Monthly Insights',
       'view.charts.subMonthly': "See where this month's money is going.",
       'status.getStarted': 'Get started',
@@ -1977,6 +1978,7 @@
       'chart.incomeSubPeriod': '{range} · By source',
       'chart.incomeAria': 'Doughnut chart of income by source',
       'chart.incomeEmpty': 'No income-source data for this period yet.',
+      'chart.incomeExcludeSavingsNote': 'Savings withdrawals offset Savings Transfers; they are not counted as income here.',
       'chart.incomeCenter': 'TOTAL INCOME',
       'chart.incomeSavingsWithdrawal': 'Savings Withdrawal',
       'chart.incomeDetailTitle': 'Income — {source}',
@@ -2236,6 +2238,7 @@
       'hint.overMonthly': '你本月已超支 {amount}。',
       'chart.titleMonthly': '每月支出分佈',
       'chart.subPeriod': '{range} · 按類別',
+      'chart.netSavingsNote': '「儲蓄轉帳」已扣除本期提款。',
       'ins.titleMonthly': '每月概覽',
       'view.charts.subMonthly': '查看你本月的金錢流向。',
       'status.getStarted': '開始設定',
@@ -2343,6 +2346,7 @@
       'chart.incomeSubPeriod': '{range} · 按來源',
       'chart.incomeAria': '按來源顯示收入的圓環圖',
       'chart.incomeEmpty': '此期間尚無收入來源資料。',
+      'chart.incomeExcludeSavingsNote': '儲蓄提款已抵銷「儲蓄轉帳」，不會在此重複計作收入。',
       'chart.incomeCenter': '總收入',
       'chart.incomeSavingsWithdrawal': '儲蓄提款',
       'chart.incomeDetailTitle': '收入 — {source}',
@@ -2602,6 +2606,7 @@
       'hint.overMonthly': '你本月已超支 {amount}。',
       'chart.titleMonthly': '每月支出分布',
       'chart.subPeriod': '{range} · 按类别',
+      'chart.netSavingsNote': '“储蓄转账”已扣除本期取款。',
       'ins.titleMonthly': '每月概览',
       'view.charts.subMonthly': '查看你本月的金钱流向。',
       'status.getStarted': '开始设置',
@@ -2709,6 +2714,7 @@
       'chart.incomeSubPeriod': '{range} · 按来源',
       'chart.incomeAria': '按来源显示收入的圆环图',
       'chart.incomeEmpty': '此期间暂无收入来源数据。',
+      'chart.incomeExcludeSavingsNote': '储蓄取款已抵销“储蓄转账”，不会在此重复计作收入。',
       'chart.incomeCenter': '总收入',
       'chart.incomeSavingsWithdrawal': '储蓄取款',
       'chart.incomeDetailTitle': '收入 — {source}',
@@ -3087,7 +3093,7 @@
     return round2((Array.isArray(rows) ? rows : []).reduce(function (sum, e) { return sum + Number(e.amount); }, 0));
   }
   function totalIncome() {
-    var rows = incomeEntries();
+    var rows = incomeEntries().filter(function (entry) { return entry.kind !== 'savings-withdrawal'; });
     return rows.length ? sumIncomeEntries(rows) : round2(state.income);
   }
 
@@ -3233,7 +3239,7 @@
   }
 
   function totalSpent() { return round2(state.expenses.reduce(function (sum, e) { return sum + Number(e.amount); }, 0)); }
-  function remaining()  { return round2(totalIncome() - totalSpent()); }
+  function remaining()  { return snapshotForRange(currentPeriodRange(periodMode)).remaining; }
 
   /* ---------- Weekly / Monthly period snapshots ----------
      Weekly = Monday-Sunday containing today.
@@ -3269,7 +3275,7 @@
     var rows = incomeEntries();
     if (rows.length) {
       return sumIncomeEntries(rows.filter(function (e) {
-        return isValidISODate(e.date) && e.date >= range.startISO && e.date <= range.endISO;
+        return e.kind !== 'savings-withdrawal' && isValidISODate(e.date) && e.date >= range.startISO && e.date <= range.endISO;
       }));
     }
     if (!(round2(state.income) > 0)) return 0;
@@ -3288,12 +3294,23 @@
   function sumExpenses(rows) {
     return round2(rows.reduce(function (sum, e) { return sum + Number(e.amount); }, 0));
   }
+  function spentForRange(range, expenseRows) {
+    var rows = Array.isArray(expenseRows) ? expenseRows : expensesForRange(range);
+    var grossSpent = sumExpenses(rows);
+    var savingsDeposits = sumExpenses(rows.filter(function (entry) { return entry.category === 'Savings Transfer'; }));
+    var savingsWithdrawals = sumIncomeEntries(incomeEntries().filter(function (entry) {
+      return entry.kind === 'savings-withdrawal' && isValidISODate(entry.date) &&
+        entry.date >= range.startISO && entry.date <= range.endISO;
+    }));
+    var netSavingsTransfer = Math.max(0, round2(savingsDeposits - savingsWithdrawals));
+    return round2(grossSpent - savingsDeposits + netSavingsTransfer);
+  }
   function snapshotForRange(range) {
     var rows = expensesForRange(range);
-    // Transaction-based source of truth: Dashboard totals use the same dated
-    // income entries as the Calendar, never a separate static budget scalar.
+    // Internal savings withdrawals offset same-period Savings Transfer deposits,
+    // rather than inflating income or changing any other spending category.
     var income = incomeForRange(range);
-    var spent = sumExpenses(rows);
+    var spent = spentForRange(range, rows);
     return { range: range, expenses: rows, income: income, spent: spent, remaining: round2(income - spent) };
   }
   function periodRangeText(range) {
@@ -3510,13 +3527,7 @@
     return null;
   }
   function transactionBalanceForRange(range) {
-    var incomeRows = incomeEntries().filter(function (entry) {
-      return isValidISODate(entry.date) && entry.date >= range.startISO && entry.date <= range.endISO;
-    });
-    var expenseRows = expensesForRange(range);
-    var income = sumIncomeEntries(incomeRows);
-    var spent = sumExpenses(expenseRows);
-    var snapshot = { range: range, expenses: expenseRows, income: income, spent: spent, remaining: round2(income - spent) };
+    var snapshot = snapshotForRange(range);
     return { range: range, snapshot: snapshot, amount: Math.max(0, round2(snapshot.remaining)) };
   }
   function previousPeriodBalance(mode, referenceDate) {
@@ -4498,13 +4509,22 @@
     }
   };
 
-  function aggregateByCategory(expenses) {
+  function aggregateByCategory(expenses, savingsWithdrawals) {
     var rows = Array.isArray(expenses) ? expenses : state.expenses;
-    var map = {};
+    var map = Object.create(null);
     rows.forEach(function (e) { map[e.category] = (map[e.category] || 0) + Number(e.amount); });
-    return Object.keys(map).map(function (name) {
+    var withdrawalTotal = round2((Array.isArray(savingsWithdrawals) ? savingsWithdrawals : []).reduce(function (sum, entry) {
+      return sum + (Number(entry.amount) || 0);
+    }, 0));
+    if (withdrawalTotal > 0) {
+      map['Savings Transfer'] = Math.max(0, round2((Number(map['Savings Transfer']) || 0) - withdrawalTotal));
+    }
+    return Object.keys(map).filter(function (name) { return Number(map[name]) > 0; }).map(function (name) {
       return { name: name, total: round2(map[name]), color: catColor(name) };
     }).sort(function (a, b) { return b.total - a.total; });
+  }
+  function savingsWithdrawalsForRange(range) {
+    return incomeEntriesForRange(range).filter(function (entry) { return entry.kind === 'savings-withdrawal'; });
   }
   function incomeEntriesForRange(range) {
     var rows = incomeEntries().filter(function (entry) {
@@ -4519,19 +4539,12 @@
     }
     return rows;
   }
-  var SAVINGS_WITHDRAWAL_CHART_SOURCE = 'Savings Withdrawal';
-  function incomeChartSource(entry) {
-    if (entry && entry.kind === 'savings-withdrawal') return SAVINGS_WITHDRAWAL_CHART_SOURCE;
-    return INCOME_SOURCE_I18N[entry && entry.source] ? entry.source : 'Other Income';
-  }
-  function incomeChartSourceLabel(source) {
-    return source === SAVINGS_WITHDRAWAL_CHART_SOURCE ? t('chart.incomeSavingsWithdrawal') : incomeSourceLabel(source);
-  }
   function aggregateIncomeBySource(rows) {
     var map = Object.create(null);
     (Array.isArray(rows) ? rows : []).forEach(function (entry) {
-      var source = incomeChartSource(entry);
-      if (!map[source]) map[source] = { source: source, name: incomeChartSourceLabel(source), total: 0 };
+      if (entry && entry.kind === 'savings-withdrawal') return;
+      var source = INCOME_SOURCE_I18N[entry && entry.source] ? entry.source : 'Other Income';
+      if (!map[source]) map[source] = { source: source, name: incomeSourceLabel(source), total: 0 };
       map[source].total += Number(entry.amount) || 0;
     });
     var palette = ['#059669', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1'];
@@ -4872,7 +4885,13 @@
       return isPayment
         ? normalizePaymentMethod(expense.paymentMethod).toLocaleLowerCase() === selectedName.toLocaleLowerCase()
         : String(expense.category || '') === selectedName;
-    }).slice().sort(function (a, b) {
+    });
+    if (!isPayment && selectedName === 'Savings Transfer' && snapshot && snapshot.range) {
+      rows = rows.concat(savingsWithdrawalsForRange(snapshot.range).map(function (entry) {
+        return Object.assign({}, entry, { category: 'Savings Transfer', kind: 'savings-withdrawal' });
+      }));
+    }
+    rows = rows.slice().sort(function (a, b) {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
       return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
     });
@@ -4889,12 +4908,16 @@
     } else {
       nodes.list.innerHTML = rows.map(function (expense) {
         var description = String(expense.description || '').trim() || (expense.category ? catLabel(expense.category) : label);
-        var secondary = isPayment ? catLabel(expense.category || 'Other') : paymentMethodLabel(expense.paymentMethod);
+        var isSavingsWithdrawal = expense.kind === 'savings-withdrawal';
+        var secondary = isPayment ? catLabel(expense.category || 'Other')
+          : (isSavingsWithdrawal ? t('chart.incomeSavingsWithdrawal') : paymentMethodLabel(expense.paymentMethod));
+        var amountPrefix = isSavingsWithdrawal ? '−' : '';
+        var amountColor = isSavingsWithdrawal ? '#dc2626' : 'inherit';
         return '<article class="category-expense-row"><div class="category-expense-copy">' +
           '<strong class="category-expense-description">' + escapeHtml(description) + '</strong>' +
           '<div class="category-expense-meta"><time datetime="' + escapeHtml(expense.date || '') + '">' + escapeHtml(displayDate(expense.date)) + '</time>' +
           (secondary ? '<span class="payment-method-badge">' + escapeHtml(secondary) + '</span>' : '') +
-          '</div></div><strong class="category-expense-amount">' + escapeHtml(fmt(Number(expense.amount) || 0)) + '</strong></article>';
+          '</div></div><strong class="category-expense-amount" style="color:' + amountColor + '">' + amountPrefix + escapeHtml(fmt(Number(expense.amount) || 0)) + '</strong></article>';
       }).join('');
     }
     nodes.section.classList.remove('hidden');
@@ -4994,10 +5017,15 @@
 
   function renderChart(snapshot) {
     if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
-    var spent = snapshot.spent;
-    var data = aggregateByCategory(snapshot.expenses);
+    var savingsWithdrawals = savingsWithdrawalsForRange(snapshot.range);
+    var data = aggregateByCategory(snapshot.expenses, savingsWithdrawals);
+    var spent = round2(data.reduce(function (sum, item) { return sum + item.total; }, 0));
+    if (els.chartTotal) els.chartTotal.textContent = fmt(spent);
     if (els.chartTitle) els.chartTitle.textContent = t(snapshot.mode === 'monthly' ? 'chart.titleMonthly' : 'chart.title');
-    if (els.chartSub) els.chartSub.textContent = t('chart.subPeriod', { range: snapshot.rangeLabel });
+    if (els.chartSub) {
+      els.chartSub.textContent = t('chart.subPeriod', { range: snapshot.rangeLabel }) +
+        (savingsWithdrawals.length ? ' · ' + t('chart.netSavingsNote') : '');
+    }
     els.chartEmpty.classList.toggle('hidden', spent > 0);
     renderLegend(data, spent);
     renderCategoryDetail(snapshot);
@@ -5139,12 +5167,13 @@
       return;
     }
     var rows = incomeEntriesForRange(snapshot.range).filter(function (entry) {
-      return incomeChartSource(entry) === selectedIncomeSourceDetail;
+      return entry.kind !== 'savings-withdrawal' &&
+        (INCOME_SOURCE_I18N[entry.source] ? entry.source : 'Other Income') === selectedIncomeSourceDetail;
     }).slice().sort(function (a, b) {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
       return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
     });
-    var sourceLabel = incomeChartSourceLabel(selectedIncomeSourceDetail);
+    var sourceLabel = incomeSourceLabel(selectedIncomeSourceDetail);
     els.incomeSourceDetailTitle.textContent = t('chart.incomeDetailTitle', { source: sourceLabel });
     els.incomeSourceDetailSub.textContent = t('chart.incomeDetailSub', { count: rows.length, range: snapshot.rangeLabel });
     els.incomeSourceDetailList.innerHTML = rows.length
@@ -5153,7 +5182,7 @@
     els.incomeSourceDetail.classList.remove('hidden');
   }
   function openIncomeSourceDetail(source, snapshot) {
-    selectedIncomeSourceDetail = source === SAVINGS_WITHDRAWAL_CHART_SOURCE || INCOME_SOURCE_I18N[source] ? source : 'Other Income';
+    selectedIncomeSourceDetail = INCOME_SOURCE_I18N[source] ? source : 'Other Income';
     renderIncomeSourceDetail(snapshot || selectedPeriodSnapshot());
     if (els.incomeSourceDetail) els.incomeSourceDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -5176,11 +5205,14 @@
   }
   function renderIncomeChart(snapshot) {
     if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
-    var incomeRows = incomeEntriesForRange(snapshot.range);
+    var periodIncomeRows = incomeEntriesForRange(snapshot.range);
+    var savingsWithdrawals = periodIncomeRows.filter(function (entry) { return entry.kind === 'savings-withdrawal'; });
+    var incomeRows = periodIncomeRows.filter(function (entry) { return entry.kind !== 'savings-withdrawal'; });
     var data = aggregateIncomeBySource(incomeRows);
     var total = round2(data.reduce(function (sum, item) { return sum + item.total; }, 0));
     var empty = !data.length || total <= 0;
-    if (els.incomeChartSub) els.incomeChartSub.textContent = t('chart.incomeSubPeriod', { range: snapshot.rangeLabel });
+    if (els.incomeChartSub) els.incomeChartSub.textContent = t('chart.incomeSubPeriod', { range: snapshot.rangeLabel }) +
+      (savingsWithdrawals.length ? ' · ' + t('chart.incomeExcludeSavingsNote') : '');
     if (els.incomeChartTotal) els.incomeChartTotal.textContent = fmt(total);
     if (els.incomeChartEmpty) els.incomeChartEmpty.classList.toggle('hidden', !empty);
     if (els.incomeChartWrap) els.incomeChartWrap.classList.toggle('hidden', empty);
@@ -5248,9 +5280,14 @@
 
   /* ---------- Calendar (Sunday -> Saturday month grid) ---------- */
   function incomesOn(iso) { return incomeEntries().filter(function (e) { return e.date === iso; }); }
+  function signedIncomeTotal(rows) {
+    // Calendar treats a savings withdrawal as restored cash for the day.
+    // Period budgets still exclude it in incomeForRange; only Calendar day totals use this.
+    return sumIncomeEntries(rows);
+  }
   function incomeOn(iso) {
     var rows = incomesOn(iso);
-    if (rows.length) return sumIncomeEntries(rows);
+    if (rows.length) return signedIncomeTotal(rows);
     return (state.income > 0 && state.incomeDate === iso) ? round2(state.income) : 0;
   }
   function expensesOn(iso) { return state.expenses.filter(function (e) { return e.date === iso; }); }
@@ -5260,7 +5297,6 @@
     var y = calendarCursor.getFullYear(), m = calendarCursor.getMonth();
     els.calTitle.textContent = calendarCursor.toLocaleDateString(LOCALE(), { month: 'long', year: 'numeric' });
 
-    var monthKey = y + '-' + String(m + 1).padStart(2, '0');
     var byDate = {};
     state.expenses.forEach(function (e) {
       if (!byDate[e.date]) byDate[e.date] = { total: 0, count: 0, incomeTotal: 0, incomeCount: 0 };
@@ -5270,9 +5306,10 @@
       if (!byDate[e.date]) byDate[e.date] = { total: 0, count: 0, incomeTotal: 0, incomeCount: 0 };
       byDate[e.date].incomeTotal += Number(e.amount); byDate[e.date].incomeCount += 1;
     });
-    var monthExpenses = round2(state.expenses.reduce(function (s, e) { return e.date.slice(0, 7) === monthKey ? s + Number(e.amount) : s; }, 0));
     var monthRange = makePeriodRange(new Date(y, m, 1), new Date(y, m + 1, 0), 'monthly');
-    var monthIncome = incomeForRange(monthRange);
+    var monthSnapshot = snapshotForRange(monthRange);
+    var monthIncome = monthSnapshot.income;
+    var monthExpenses = monthSnapshot.spent;
     els.calMonthIncome.textContent = fmt(monthIncome);
     els.calMonthExpenses.textContent = fmt(monthExpenses);
     var net = round2(monthIncome - monthExpenses);
@@ -5289,13 +5326,14 @@
       var inc = incomeOn(iso);
       var day = byDate[iso] || { total: 0, count: 0, incomeTotal: 0, incomeCount: 0 };
       var cls = 'cal-cell' + (d.getMonth() !== m ? ' is-other' : '') + (iso === todayISO ? ' is-today' : '') + (iso === selectedDateISO ? ' is-selected' : '');
+      var incomePrefix = inc < 0 ? '−' : '+';
       var label = d.toLocaleDateString(LOCALE(), { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) +
-        (inc ? ', ' + t('cal.wordIncome') + ' ' + fmt(inc) : '') + (day.total ? ', ' + t('cal.wordExpenses') + ' ' + fmt(day.total) : '') +
+        (inc ? ', ' + t('cal.wordIncome') + ' ' + (inc < 0 ? '−' : '') + fmt(Math.abs(inc)) : '') + (day.total ? ', ' + t('cal.wordExpenses') + ' ' + fmt(day.total) : '') +
         '. ' + t('cal.addTxAria') + '.';
       cells.push(
         '<button type="button" class="' + cls + '" data-cal-date="' + iso + '" aria-label="' + escapeHtml(label) + '" aria-pressed="' + (iso === selectedDateISO) + '" aria-haspopup="dialog">' +
           '<span class="cal-daynum">' + d.getDate() + (iso === todayISO ? '<span class="cal-today-dot" title="' + escapeHtml(t('date.today')) + '"></span>' : '') + '</span><span class="cal-add" aria-hidden="true">+</span>' +
-          (inc ? '<span class="cal-pill income">+' + fmtShort(inc) + '</span>' : '') +
+          (inc ? '<span class="cal-pill income">' + incomePrefix + fmtShort(Math.abs(inc)) + '</span>' : '') +
           (day.total ? '<span class="cal-pill expense">-' + fmtShort(day.total) + '</span>' : '') +
           ((day.count + day.incomeCount) > 1 ? '<span class="cal-count">' + t('cal.itemsMany', { n: day.count + day.incomeCount }) + '</span>' : '') +
         '</button>'
@@ -5307,7 +5345,7 @@
   function dayTransactionData(iso) {
     var expenseRows = expensesOn(iso).slice().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
     var incomeRows = incomesOn(iso).slice().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); });
-    var incomeTotal = sumIncomeEntries(incomeRows);
+    var incomeTotal = signedIncomeTotal(incomeRows);
     var expenseTotal = sumExpenses(expenseRows);
     return {
       expenseRows: expenseRows,
@@ -5324,13 +5362,12 @@
     var incomeLabel = entry.description && entry.description.trim()
       ? entry.description
       : (isWeeklyBudgetEntry ? t('day.incomeName') : (isMonthlyBudgetEntry ? t('rem.incomeMonthly') : incomeSourceLabel(entry.source)));
-    var incomeSub = (isWeeklyBudgetEntry || isMonthlyBudgetEntry) && !(entry.description && entry.description.trim())
-      ? t('day.incomeCat')
-      : (incomeSourceLabel(entry.source) + ' · ' + t('day.income'));
-    if (includeDate) {
-      if (entry.kind === 'savings-withdrawal') incomeSub = t('chart.incomeSavingsWithdrawal');
-      incomeSub = displayDate(entry.date) + ' · ' + incomeSub;
-    }
+    var incomeSub = entry.kind === 'savings-withdrawal'
+      ? t('chart.incomeSavingsWithdrawal')
+      : ((isWeeklyBudgetEntry || isMonthlyBudgetEntry) && !(entry.description && entry.description.trim())
+        ? t('day.incomeCat')
+        : (incomeSourceLabel(entry.source) + ' · ' + t('day.income')));
+    if (includeDate) incomeSub = displayDate(entry.date) + ' · ' + incomeSub;
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
     var editButton = '<button type="button" class="icon-btn edit-btn tx-edit-btn" data-edit-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('txedit.editAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('txedit.editAria', { name: incomeLabel })) + '">' + pencilSvg + '</button>';
     var deleteButton = '<button type="button" class="icon-btn tx-delete-btn" data-delete-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
@@ -5365,7 +5402,7 @@
 
     els.dayTitle.textContent = d.toLocaleDateString(LOCALE(), { weekday: 'long', month: 'long', day: 'numeric' });
     els.daySub.textContent = displayDate(selectedDateISO) + ' · ' + selectedDateISO;
-    els.dayIncome.textContent = inc ? '+' + fmt(inc) : fmt(0);
+    els.dayIncome.textContent = inc > 0 ? '+' + fmt(inc) : fmt(inc);
     els.dayExpenses.textContent = spent ? '-' + fmt(spent) : fmt(0);
     els.dayNet.textContent = fmt(net);
     els.dayNet.style.color = net < 0 ? '#dc2626' : '#059669';
@@ -5421,7 +5458,7 @@
     var incomeTotal = dayData.incomeTotal;
     var expenseTotal = dayData.expenseTotal;
     var netTotal = dayData.netTotal;
-    if (els.dayTxIncomeTotal) els.dayTxIncomeTotal.textContent = incomeTotal ? '+' + fmt(incomeTotal) : fmt(0);
+    if (els.dayTxIncomeTotal) els.dayTxIncomeTotal.textContent = incomeTotal > 0 ? '+' + fmt(incomeTotal) : fmt(incomeTotal);
     if (els.dayTxExpenseTotal) els.dayTxExpenseTotal.textContent = expenseTotal ? '-' + fmt(expenseTotal) : fmt(0);
     if (els.dayTxNetTotal) {
       els.dayTxNetTotal.textContent = fmt(netTotal);
@@ -5488,7 +5525,7 @@
     if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
     var rows = snapshot.expenses;
     var spent = snapshot.spent;
-    var data = aggregateByCategory(rows);
+    var data = aggregateByCategory(rows, savingsWithdrawalsForRange(snapshot.range));
     var count = rows.length;
     if (els.insightsTitle) els.insightsTitle.textContent = t(snapshot.mode === 'monthly' ? 'ins.titleMonthly' : 'ins.title');
     els.insCount.textContent = String(count);
@@ -6654,5 +6691,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5b7e9710c7206a5',t:'MTc5NDg0Njk1OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5b7e9710c7206a5',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
