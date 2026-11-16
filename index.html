@@ -305,6 +305,10 @@
   .category-expense-meta{ display:flex; flex-wrap:wrap; align-items:center; gap:.35rem; margin-top:.2rem; color:var(--muted); font-size:.76rem; }
   .category-expense-amount{ flex:none; font-weight:750; font-variant-numeric:tabular-nums; }
   .category-detail-empty{ padding:1rem .25rem; color:var(--muted); text-align:center; font-size:.86rem; }
+  .income-chart-transaction-list{ margin:.65rem 0 0; padding:0; list-style:none; }
+  .income-chart-transaction-list .tx-row{ gap:.4rem; font-size:.8rem; }
+  .income-chart-transaction-list .tx-name{ white-space:normal; }
+  .income-chart-transaction-list .tx-row-actions .icon-btn{ width:34px; height:34px; border-color:var(--border); }
   .last-week-summary{ display:flex; align-items:center; justify-content:space-between; gap:.8rem; margin-top:.75rem; padding:.65rem .75rem; border:1px solid var(--border); border-radius:.65rem; background:var(--bg); font-size:.82rem; }
   .last-week-summary-label{ color:var(--muted); }
   .last-week-summary-amount{ font-weight:750; font-variant-numeric:tabular-nums; white-space:nowrap; }
@@ -1308,6 +1312,31 @@
         </section>
       </section>
 
+      <section class="card view-card" data-view="charts" aria-labelledby="incomeChartTitle">
+        <div class="row between wrap-flex" style="gap:.5rem;">
+          <div>
+            <h2 class="card-title" id="incomeChartTitle" data-i18n="chart.incomeTitle">Income Breakdown</h2>
+            <p class="card-sub" id="incomeChartSub" data-i18n="chart.incomeSub">By source</p>
+          </div>
+          <span class="pill" id="incomeChartTotal" style="background:var(--bg); border:1px solid var(--border); color:var(--text);">$0.00</span>
+        </div>
+        <div class="chart-wrap" id="incomeChartWrap" style="margin-top:1rem;">
+          <canvas id="incomeChartCanvas" aria-label="Doughnut chart of income by source" data-i18n-aria="chart.incomeAria" role="img"></canvas>
+        </div>
+        <p class="helper hidden" id="incomeChartEmpty" style="text-align:center;" data-i18n="chart.incomeEmpty">No income-source data for this period yet.</p>
+        <ul class="legend" id="incomeChartLegend"></ul>
+        <section class="category-detail hidden" id="incomeSourceDetail" aria-live="polite" aria-labelledby="incomeSourceDetailTitle">
+          <div class="category-detail-heading">
+            <div>
+              <h3 id="incomeSourceDetailTitle"></h3>
+              <p id="incomeSourceDetailSub"></p>
+            </div>
+            <button type="button" class="chip" id="incomeSourceDetailBack" data-i18n="chart.backToChart">Back to chart</button>
+          </div>
+          <ul class="income-chart-transaction-list tx-list" id="incomeSourceDetailList"></ul>
+        </section>
+      </section>
+
       <!-- Bonus: quick insights (balances the right column) -->
       <section class="card view-card" data-view="charts" aria-labelledby="insightsTitle">
         <h2 class="card-title" id="insightsTitle" data-i18n="ins.title">Weekly Insights</h2>
@@ -1944,6 +1973,15 @@
       'lastWeek.label': 'Last week remaining ({range})',
       'lastWeek.autoNote': 'Auto-sweep is on; eligible leftover funds are transferred to savings.',
       'chart.paymentTitle': 'Spending by Payment Method', 'chart.paymentEmpty': 'No payment-method data for this period yet.',
+      'chart.incomeTitle': 'Income Breakdown', 'chart.incomeSub': 'By source',
+      'chart.incomeSubPeriod': '{range} · By source',
+      'chart.incomeAria': 'Doughnut chart of income by source',
+      'chart.incomeEmpty': 'No income-source data for this period yet.',
+      'chart.incomeCenter': 'TOTAL INCOME',
+      'chart.incomeDetailTitle': 'Income — {source}',
+      'chart.incomeDetailSub': '{count} transactions · {range}',
+      'chart.incomeDetailEmpty': 'No income transactions from this source in this period.',
+      'chart.incomeSourceAria': 'View income transactions from {source}',
       'chart.paymentDetailTitle': 'Expenses paid with {method}',
       'chart.paymentDetailSub': '{count} expenses · {range}',
       'chart.paymentDetailEmpty': 'No expenses used this payment method in this period.',
@@ -2300,6 +2338,15 @@
       'lastWeek.label': '上週剩餘資金（{range}）',
       'lastWeek.autoNote': '自動結餘轉存已開啟；符合條件的上週餘額會轉入儲蓄。',
       'chart.paymentTitle': '支付方式分布', 'chart.paymentEmpty': '此期間尚無付款方式資料。',
+      'chart.incomeTitle': '收入分佈', 'chart.incomeSub': '按來源',
+      'chart.incomeSubPeriod': '{range} · 按來源',
+      'chart.incomeAria': '按來源顯示收入的圓環圖',
+      'chart.incomeEmpty': '此期間尚無收入來源資料。',
+      'chart.incomeCenter': '總收入',
+      'chart.incomeDetailTitle': '收入 — {source}',
+      'chart.incomeDetailSub': '{count} 筆交易 · {range}',
+      'chart.incomeDetailEmpty': '此期間此來源尚無收入交易。',
+      'chart.incomeSourceAria': '查看來自{source}的收入交易',
       'chart.paymentDetailTitle': '以{method}付款的支出',
       'chart.paymentDetailSub': '{count} 筆支出 · {range}',
       'chart.paymentDetailEmpty': '此期間沒有使用此付款方式的支出。',
@@ -2656,6 +2703,15 @@
       'lastWeek.label': '上周剩余资金（{range}）',
       'lastWeek.autoNote': '自动结余转存已开启；符合条件的上周余额会转入储蓄。',
       'chart.paymentTitle': '支付方式分布', 'chart.paymentEmpty': '此期间尚无付款方式数据。',
+      'chart.incomeTitle': '收入分布', 'chart.incomeSub': '按来源',
+      'chart.incomeSubPeriod': '{range} · 按来源',
+      'chart.incomeAria': '按来源显示收入的圆环图',
+      'chart.incomeEmpty': '此期间暂无收入来源数据。',
+      'chart.incomeCenter': '总收入',
+      'chart.incomeDetailTitle': '收入 — {source}',
+      'chart.incomeDetailSub': '{count} 笔交易 · {range}',
+      'chart.incomeDetailEmpty': '此期间此来源暂无收入交易。',
+      'chart.incomeSourceAria': '查看来自{source}的收入交易',
       'chart.paymentDetailTitle': '使用{method}支付的支出',
       'chart.paymentDetailSub': '{count} 笔支出 · {range}',
       'chart.paymentDetailEmpty': '此期间没有使用此付款方式的支出。',
@@ -3645,6 +3701,8 @@
     categoryDetail: $('categoryDetail'), categoryDetailTitle: $('categoryDetailTitle'), categoryDetailSub: $('categoryDetailSub'), categoryDetailBack: $('categoryDetailBack'), categoryExpenseList: $('categoryExpenseList'),
     paymentChartCanvas: $('paymentMethodChart'), paymentChartSub: $('paymentChartSub'), paymentChartTotal: $('paymentChartTotal'), paymentChartWrap: $('paymentChartWrap'), paymentChartEmpty: $('paymentChartEmpty'), paymentChartLegend: $('paymentChartLegend'),
     paymentMethodDetail: $('paymentMethodDetail'), paymentMethodDetailTitle: $('paymentMethodDetailTitle'), paymentMethodDetailSub: $('paymentMethodDetailSub'), paymentMethodDetailBack: $('paymentMethodDetailBack'), paymentMethodExpenseList: $('paymentMethodExpenseList'),
+    incomeChartCanvas: $('incomeChartCanvas'), incomeChartWrap: $('incomeChartWrap'), incomeChartSub: $('incomeChartSub'), incomeChartTotal: $('incomeChartTotal'), incomeChartEmpty: $('incomeChartEmpty'), incomeChartLegend: $('incomeChartLegend'),
+    incomeSourceDetail: $('incomeSourceDetail'), incomeSourceDetailTitle: $('incomeSourceDetailTitle'), incomeSourceDetailSub: $('incomeSourceDetailSub'), incomeSourceDetailBack: $('incomeSourceDetailBack'), incomeSourceDetailList: $('incomeSourceDetailList'),
     insTopCat: $('insTopCat'), insLargest: $('insLargest'), insAvg: $('insAvg'), insCount: $('insCount'),
     pdfReport: $('pdfReport'),
     toast: $('toast'),
@@ -4416,6 +4474,7 @@
   ============================================================ */
   var chartInstance = null;
   var paymentChartInstance = null;
+  var incomeChartInstance = null;
 
   // Chart.js plugin: draws "Total spent" in the doughnut centre.
   var centerTextPlugin = {
@@ -4443,6 +4502,32 @@
     return Object.keys(map).map(function (name) {
       return { name: name, total: round2(map[name]), color: catColor(name) };
     }).sort(function (a, b) { return b.total - a.total; });
+  }
+  function incomeEntriesForRange(range) {
+    var rows = incomeEntries().filter(function (entry) {
+      return isValidISODate(entry.date) && entry.date >= range.startISO && entry.date <= range.endISO;
+    });
+    // Keep the chart in sync with the legacy scalar fallback used by incomeForRange.
+    if (!rows.length && !incomeEntries().length && round2(state.income) > 0) {
+      var fallbackDate = isValidISODate(state.incomeDate) ? state.incomeDate : toLocalISO(new Date());
+      if (fallbackDate >= range.startISO && fallbackDate <= range.endISO) {
+        rows.push({ id: PRIMARY_INCOME_ID, amount: round2(state.income), description: '', source: 'Other Income', date: fallbackDate, createdAt: 0 });
+      }
+    }
+    return rows;
+  }
+  function aggregateIncomeBySource(rows) {
+    var map = Object.create(null);
+    (Array.isArray(rows) ? rows : []).forEach(function (entry) {
+      var source = INCOME_SOURCE_I18N[entry && entry.source] ? entry.source : 'Other Income';
+      if (!map[source]) map[source] = { source: source, name: incomeSourceLabel(source), total: 0 };
+      map[source].total += Number(entry.amount) || 0;
+    });
+    var palette = ['#059669', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1'];
+    return Object.keys(map).map(function (source) { return map[source]; })
+      .map(function (item) { item.total = round2(item.total); return item; })
+      .sort(function (a, b) { return b.total - a.total; })
+      .map(function (item, index) { item.color = palette[index % palette.length]; return item; });
   }
   function aggregateByPaymentMethod(expenses) {
     var rows = Array.isArray(expenses) ? expenses : state.expenses;
@@ -4852,7 +4937,7 @@
         for (var i = 0; i < active.length; i++) {
           var sweep = (Number(active[i].total) / activeTotal) * Math.PI * 2;
           if (offset >= cumulative && offset <= cumulative + sweep) {
-            if (typeof canvas._wbDoughnutSelect === 'function') canvas._wbDoughnutSelect(active[i].method || active[i].name);
+            if (typeof canvas._wbDoughnutSelect === 'function') canvas._wbDoughnutSelect(active[i].source || active[i].method || active[i].name);
             return;
           }
           cumulative += sweep;
@@ -4961,12 +5046,15 @@
       '</button></li>';
     }).join('');
   }
-  function drawFallbackPaymentChart(data, total) {
-    var canvas = els.paymentChartCanvas, wrap = canvas && canvas.parentElement;
+  function drawFallbackPaymentChart(data, total, chartKind) {
+    chartKind = chartKind || 'payment';
+    var canvas = chartKind === 'income' ? els.incomeChartCanvas : els.paymentChartCanvas;
+    var wrap = chartKind === 'income' ? (canvas && canvas.parentElement) : els.paymentChartCanvas && els.paymentChartCanvas.parentElement;
     if (!canvas || !wrap) return;
     canvas.style.cursor = 'default';
     bindFallbackDoughnutClick(canvas, data, total, function (name) {
-      openPaymentMethodDetail(name, selectedPeriodSnapshot());
+      if (chartKind === 'income') openIncomeSourceDetail(name, selectedPeriodSnapshot());
+      else openPaymentMethodDetail(name, selectedPeriodSnapshot());
     });
     var W = wrap.clientWidth || 300, H = wrap.clientHeight || 260, dpr = window.devicePixelRatio || 1;
     canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
@@ -4982,7 +5070,7 @@
     });
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = isDark() ? '#94a3b8' : '#64748b'; ctx.font = '600 10px Inter, system-ui, sans-serif';
-    ctx.fillText(t('chart.paymentCenter'), cx, cy - 13);
+    ctx.fillText(t(chartKind === 'income' ? 'chart.incomeCenter' : 'chart.paymentCenter'), cx, cy - 13);
     ctx.fillStyle = isDark() ? '#f1f5f9' : '#0f172a'; ctx.font = '800 20px Inter, system-ui, sans-serif';
     ctx.fillText(fmt(total), cx, cy + 11);
   }
@@ -5032,10 +5120,104 @@
       plugins: [centerTextPlugin]
     });
   }
+  var selectedIncomeSourceDetail = '';
+  function renderIncomeSourceDetail(snapshot) {
+    if (!els.incomeSourceDetail) return;
+    if (!selectedIncomeSourceDetail) {
+      els.incomeSourceDetail.classList.add('hidden');
+      return;
+    }
+    var rows = incomeEntriesForRange(snapshot.range).filter(function (entry) {
+      return (INCOME_SOURCE_I18N[entry.source] ? entry.source : 'Other Income') === selectedIncomeSourceDetail;
+    }).slice().sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+      return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+    });
+    var sourceLabel = incomeSourceLabel(selectedIncomeSourceDetail);
+    els.incomeSourceDetailTitle.textContent = t('chart.incomeDetailTitle', { source: sourceLabel });
+    els.incomeSourceDetailSub.textContent = t('chart.incomeDetailSub', { count: rows.length, range: snapshot.rangeLabel });
+    els.incomeSourceDetailList.innerHTML = rows.length
+      ? rows.map(function (entry) { return incomeTransactionRow(entry, true, true); }).join('')
+      : '<li class="category-detail-empty">' + escapeHtml(t('chart.incomeDetailEmpty')) + '</li>';
+    els.incomeSourceDetail.classList.remove('hidden');
+  }
+  function openIncomeSourceDetail(source, snapshot) {
+    selectedIncomeSourceDetail = INCOME_SOURCE_I18N[source] ? source : 'Other Income';
+    renderIncomeSourceDetail(snapshot || selectedPeriodSnapshot());
+    if (els.incomeSourceDetail) els.incomeSourceDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function closeIncomeSourceDetail() {
+    selectedIncomeSourceDetail = '';
+    if (els.incomeSourceDetail) els.incomeSourceDetail.classList.add('hidden');
+  }
+  function renderIncomeLegend(data, total) {
+    if (!els.incomeChartLegend) return;
+    if (!data.length || total <= 0) { els.incomeChartLegend.innerHTML = ''; return; }
+    els.incomeChartLegend.innerHTML = data.map(function (item) {
+      var pct = Math.round((item.total / total) * 100);
+      return '<li><button type="button" class="chart-legend-button" data-income-source="' + escapeHtml(item.source) + '" aria-label="' + escapeHtml(t('chart.incomeSourceAria', { source: item.name })) + '" title="' + escapeHtml(t('chart.clickHint')) + '">' +
+        '<div class="legend-top"><span class="dot" style="background:' + item.color + '"></span>' +
+          '<span class="legend-name">' + escapeHtml(item.name) + '</span><span class="legend-pct">' + pct + '%</span>' +
+          '<span class="legend-amt">' + fmt(item.total) + '</span></div>' +
+        '<div class="legend-bar-track"><div class="legend-bar" style="width:' + pct + '%; background:' + item.color + '"></div></div>' +
+      '</button></li>';
+    }).join('');
+  }
+  function renderIncomeChart(snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
+    var incomeRows = incomeEntriesForRange(snapshot.range);
+    var data = aggregateIncomeBySource(incomeRows);
+    var total = round2(data.reduce(function (sum, item) { return sum + item.total; }, 0));
+    var empty = !data.length || total <= 0;
+    if (els.incomeChartSub) els.incomeChartSub.textContent = t('chart.incomeSubPeriod', { range: snapshot.rangeLabel });
+    if (els.incomeChartTotal) els.incomeChartTotal.textContent = fmt(total);
+    if (els.incomeChartEmpty) els.incomeChartEmpty.classList.toggle('hidden', !empty);
+    if (els.incomeChartWrap) els.incomeChartWrap.classList.toggle('hidden', empty);
+    renderIncomeLegend(data, total);
+    renderIncomeSourceDetail(snapshot);
+    if (empty) {
+      if (incomeChartInstance) { incomeChartInstance.destroy(); incomeChartInstance = null; }
+      return;
+    }
+    if (typeof window.Chart === 'undefined') {
+      drawFallbackPaymentChart(data, total, 'income');
+      return;
+    }
+    if (incomeChartInstance) { incomeChartInstance.destroy(); incomeChartInstance = null; }
+    if (els.incomeChartCanvas) els.incomeChartCanvas.style.cursor = 'pointer';
+    incomeChartInstance = new Chart(els.incomeChartCanvas.getContext('2d'), {
+      type: 'doughnut',
+      data: { labels: data.map(function (item) { return item.name; }), datasets: [{
+        data: data.map(function (item) { return item.total; }),
+        backgroundColor: data.map(function (item) { return item.color; }),
+        borderColor: isDark() ? '#0f172a' : '#ffffff', borderWidth: 3, hoverOffset: 8
+      }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '68%',
+        onClick: function (event, elements) {
+          if (!elements || !elements.length) return;
+          var index = elements[0].index;
+          if (data[index]) openIncomeSourceDetail(data[index].source, snapshot);
+        },
+        animation: { duration: 650, easing: 'easeOutQuart' },
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function (ctx) {
+            var amount = Number(ctx.parsed) || 0;
+            var pct = total > 0 ? Math.round((amount / total) * 100) : 0;
+            return ' ' + ctx.label + ': ' + fmt(amount) + ' (' + pct + '%)';
+          } } },
+          wbCenterText: { display: true, amountText: fmt(total), labelText: t('chart.incomeCenter') }
+        }
+      },
+      plugins: [centerTextPlugin]
+    });
+  }
   function renderCharts(snapshot) {
     if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
     renderChart(snapshot);
     renderPaymentMethodChart(snapshot);
+    renderIncomeChart(snapshot);
   }
   if (els.chartLegend) els.chartLegend.addEventListener('click', function (event) {
     var button = event.target.closest('[data-category-name]');
@@ -5047,6 +5229,11 @@
     if (button) openPaymentMethodDetail(button.getAttribute('data-payment-method'), selectedPeriodSnapshot());
   });
   if (els.paymentMethodDetailBack) els.paymentMethodDetailBack.addEventListener('click', closePaymentMethodDetail);
+  if (els.incomeChartLegend) els.incomeChartLegend.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-income-source]');
+    if (button) openIncomeSourceDetail(button.getAttribute('data-income-source'), selectedPeriodSnapshot());
+  });
+  if (els.incomeSourceDetailBack) els.incomeSourceDetailBack.addEventListener('click', closeIncomeSourceDetail);
 
   /* ---------- Calendar (Sunday -> Saturday month grid) ---------- */
   function incomesOn(iso) { return incomeEntries().filter(function (e) { return e.date === iso; }); }
@@ -5120,7 +5307,7 @@
       count: expenseRows.length + incomeRows.length
     };
   }
-  function incomeTransactionRow(entry, detailed) {
+  function incomeTransactionRow(entry, detailed, includeDate) {
     var isWeeklyBudgetEntry = String(entry.id) === PRIMARY_INCOME_ID;
     var isMonthlyBudgetEntry = String(entry.id) === MONTHLY_BUDGET_INCOME_ID;
     var incomeLabel = entry.description && entry.description.trim()
@@ -5129,6 +5316,7 @@
     var incomeSub = (isWeeklyBudgetEntry || isMonthlyBudgetEntry) && !(entry.description && entry.description.trim())
       ? t('day.incomeCat')
       : (incomeSourceLabel(entry.source) + ' · ' + t('day.income'));
+    if (includeDate) incomeSub = displayDate(entry.date) + ' · ' + incomeSub;
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
     var editButton = '<button type="button" class="icon-btn edit-btn tx-edit-btn" data-edit-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('txedit.editAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('txedit.editAria', { name: incomeLabel })) + '">' + pencilSvg + '</button>';
     var deleteButton = '<button type="button" class="icon-btn tx-delete-btn" data-delete-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
@@ -5695,9 +5883,11 @@
     if (incomeBtn) {
       var incomeFromModal = !!(incomeBtn.closest && incomeBtn.closest('#dayTxModal'));
       var incomeFromCalendar = incomeFromModal || !!(incomeBtn.closest && incomeBtn.closest('#dayTxList'));
+      var incomeFromChart = !!(incomeBtn.closest && incomeBtn.closest('#incomeSourceDetailList'));
+      var incomeFromAllowedDetail = incomeFromCalendar || incomeFromChart;
       var incomeId = incomeBtn.getAttribute('data-delete-income-id');
       var removedIncome = incomeEntries().filter(function (e) { return String(e.id) === incomeId; })[0];
-      if (removedIncome && removedIncome.kind === 'savings-withdrawal' && !incomeFromCalendar) return;
+      if (removedIncome && removedIncome.kind === 'savings-withdrawal' && !incomeFromAllowedDetail) return;
       if (removedIncome && removedIncome.kind === 'savings-withdrawal') removeLinkedSavingsMovement(removedIncome, 'income');
       state.incomes = incomeEntries().filter(function (e) { return String(e.id) !== incomeId; });
       if (String(incomeId) === PRIMARY_INCOME_ID) { state.budgets.weekly = 0; state.budgets.weeklyConfigured = true; }
@@ -6450,5 +6640,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a597ca83dc6a04c4',t:'MTc5NDUxMDE0Nw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a597ca83dc6a04c4',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
