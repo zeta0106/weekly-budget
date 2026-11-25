@@ -527,13 +527,14 @@
   @media (max-width:460px){ .savings-summary-actions{ grid-template-columns:1fr; } .savings-action-helper{ min-height:0; margin-bottom:.4rem; } }
 
   /* Calendar */
-  .cal-summary{ display:grid; grid-template-columns:repeat(3,1fr); gap:.75rem; margin-top:1rem; }
-  .cal-nav{ display:flex; align-items:center; gap:.45rem; }
-  .cal-weekdays{ display:grid; grid-template-columns:repeat(7,1fr); gap:.5rem; margin:1.1rem 0 .5rem; }
-  .cal-weekdays span{ text-align:center; font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
-  .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:.5rem; }
+  .cal-summary{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.75rem; margin-top:1rem; min-width:0; }
+  .cal-nav{ display:flex; align-items:center; gap:.45rem; flex:none; }
+  .cal-weekdays{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:.5rem; margin:1.1rem 0 .5rem; min-width:0; }
+  .cal-weekdays span{ min-width:0; text-align:center; font-size:.7rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .cal-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:.5rem; min-width:0; width:100%; }
   .cal-cell{
     position:relative;
+    min-width:0; overflow:hidden;
     appearance:none; font-family:inherit; text-align:left; cursor:pointer;
     background:var(--field); color:var(--text);
     border:1px solid var(--border); border-radius:.65rem;
@@ -596,13 +597,20 @@
   .nav-btn.active{ background:#059669; color:#fff; box-shadow:0 4px 12px rgba(5,150,105,.4); }
 
   @media (max-width:640px){
-    .calendar-card{ padding:1rem; }
-    .cal-grid, .cal-weekdays{ gap:.3rem; }
-    .cal-cell{ min-height:74px; padding:.35rem; border-radius:.5rem; }
+    [data-active-view="calendar"] .calendar-layout{ grid-template-columns:minmax(0,1fr); min-width:0; }
+    .calendar-card{ width:100%; min-width:0; max-width:100%; padding:1rem; }
+    .calendar-card > .row.between.wrap-flex{ flex-wrap:nowrap; align-items:center; min-width:0; }
+    .calendar-card > .row.between.wrap-flex > div:first-child{ min-width:0; flex:1 1 auto; }
+    .calendar-card .cal-nav{ gap:.3rem; }
+    .cal-grid, .cal-weekdays{ grid-template-columns:repeat(7,minmax(0,1fr)); gap:.3rem; min-width:0; }
+    .cal-cell{ min-width:0; min-height:74px; overflow:hidden; padding:.35rem; border-radius:.5rem; }
     .cal-daynum{ font-size:.78rem; }
-    .cal-pill{ font-size:.56rem; padding:.1rem .3rem; }
+    .cal-cell .cal-pill{ display:block; width:max-content; min-width:0; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:9px; line-height:1.15; padding:1px 3px; letter-spacing:-.025em; }
     .cal-count{ display:none; }
-    .cal-summary{ gap:.45rem; }
+    .cal-summary{ grid-template-columns:repeat(3,minmax(0,1fr)); gap:.45rem; min-width:0; width:100%; }
+    .cal-summary .stat-box{ min-width:0; max-width:100%; overflow:hidden; padding:.55rem .4rem; }
+    .cal-summary .stat-label{ overflow-wrap:anywhere; letter-spacing:0; }
+    .cal-summary .stat-value{ min-width:0; overflow-wrap:anywhere; font-size:clamp(.72rem,3.5vw,.92rem); }
     .nav-btn{ font-size:.6rem; }
   }
 
@@ -7137,5 +7145,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a601f0cd0fe190d1',t:'MTc5NTYyMzIwNQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a601f0cd0fe190d1',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
