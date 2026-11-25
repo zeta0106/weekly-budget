@@ -310,6 +310,10 @@
   .category-expense-description{ display:block; overflow-wrap:anywhere; font-weight:650; }
   .category-expense-meta{ display:flex; flex-wrap:wrap; align-items:center; gap:.35rem; margin-top:.2rem; color:var(--muted); font-size:.76rem; }
   .category-expense-amount{ flex:none; font-weight:750; font-variant-numeric:tabular-nums; }
+  .chart-row-right{ display:flex; align-items:center; justify-content:flex-end; gap:.3rem; flex:none; flex-wrap:wrap; }
+  .chart-row-right .icon-btn { width:38px; height:38px; border-color:var(--border); }
+  .category-partial-note { color:var(--muted); font-size:.73rem; line-height:1.35; margin-top:.3rem; }
+  @media(max-width:420px) { .category-expense-row { gap:.4rem; } .chart-row-right { max-width:105px; } }
   .category-detail-empty{ padding:1rem .25rem; color:var(--muted); text-align:center; font-size:.86rem; }
   .income-chart-transaction-list{ margin:.65rem 0 0; padding:0; list-style:none; }
   .income-chart-transaction-list .tx-row{ gap:.4rem; font-size:.8rem; }
@@ -1391,7 +1395,7 @@
             </div>
             <div class="category-detail-actions">
               <button type="button" class="chip" id="categoryDetailBack" data-i18n="chart.backToChart">Back to chart</button>
-              <div class="category-detail-sort hidden" id="categoryExpenseSortControls" role="group" aria-label="Sort category expenses" data-i18n-aria="chart.sortControlsAria">
+              <div class="category-detail-sort" id="categoryExpenseSortControls" role="group" aria-label="Sort category expenses" data-i18n-aria="chart.sortControlsAria">
                 <button type="button" class="category-sort-button active" id="categorySortDate" aria-pressed="true" aria-label="Sort by date, newest first">
                   <span id="categorySortDateLabel">Date ↓</span>
                 </button>
@@ -1424,7 +1428,13 @@
               <h3 id="paymentMethodDetailTitle"></h3>
               <p id="paymentMethodDetailSub"></p>
             </div>
-            <button type="button" class="chip" id="paymentMethodDetailBack" data-i18n="chart.backToChart">Back to chart</button>
+            <div class="category-detail-actions">
+              <button type="button" class="chip" id="paymentMethodDetailBack" data-i18n="chart.backToChart">Back to chart</button>
+              <div class="category-detail-sort" id="paymentMethodSortControls" role="group" data-i18n-aria="chart.sortControlsAria" aria-label="Sort transactions">
+                <button type="button" class="category-sort-button active" id="paymentMethodSortDate" aria-pressed="true"><span id="paymentMethodSortDateLabel">Date ↓</span></button>
+                <button type="button" class="category-sort-button" id="paymentMethodSortAmount" aria-pressed="false"><span id="paymentMethodSortAmountLabel">Amount</span></button>
+              </div>
+            </div>
           </div>
           <div class="category-detail-list" id="paymentMethodExpenseList"></div>
         </section>
@@ -1449,7 +1459,13 @@
               <h3 id="incomeSourceDetailTitle"></h3>
               <p id="incomeSourceDetailSub"></p>
             </div>
-            <button type="button" class="chip" id="incomeSourceDetailBack" data-i18n="chart.backToChart">Back to chart</button>
+            <div class="category-detail-actions">
+              <button type="button" class="chip" id="incomeSourceDetailBack" data-i18n="chart.backToChart">Back to chart</button>
+              <div class="category-detail-sort" id="incomeSourceSortControls" role="group" data-i18n-aria="chart.sortControlsAria" aria-label="Sort transactions">
+                <button type="button" class="category-sort-button active" id="incomeSourceSortDate" aria-pressed="true"><span id="incomeSourceSortDateLabel">Date ↓</span></button>
+                <button type="button" class="category-sort-button" id="incomeSourceSortAmount" aria-pressed="false"><span id="incomeSourceSortAmountLabel">Amount</span></button>
+              </div>
+            </div>
           </div>
           <ul class="income-chart-transaction-list tx-list" id="incomeSourceDetailList"></ul>
         </section>
@@ -1835,6 +1851,7 @@
           <input class="field" id="transactionEditPaymentCustom" type="text" maxlength="40" data-i18n-ph="pay.customPlaceholder" autocomplete="off" />
         </div>
       </div>
+      <p class="helper hidden" id="transactionEditSavingsNote" data-i18n="chart.editSavingsNote">This edits the full savings transaction, including any portion shown in another chart.</p>
       <p class="form-error hidden" id="transactionEditError" role="alert"></p>
       <div class="transaction-edit-actions">
         <button type="button" class="btn-secondary" id="transactionEditCancel" data-i18n="common.cancel">Cancel</button>
@@ -3025,6 +3042,10 @@
     return s;
   }
   Object.assign(TRANSLATIONS.en, {
+    'chart.editSavingsNote': 'This edits the full savings transaction, including any portion shown in another chart.',
+    'chart.savingsDeleteConfirm': 'Delete this entire savings transaction? This also changes your savings balance and updates all views. This cannot be undone.',
+    'chart.savingsDeleteInsufficient': 'Cannot delete this deposit because its savings have already been withdrawn. Adjust or remove the withdrawal first.',
+    'chart.savingsPartialNote': 'Part of a savings transaction; actions affect the full transaction.',
     'dashboard.addExpense': '+ Add Expense', 'dashboard.more': 'Budget details',
     'dashboard.recent': 'Recent expenses', 'dashboard.allTime': 'Total spent · all time',
     'dashboard.seeAll': 'See all expenses', 'dashboard.showLess': 'Show recent expenses',
@@ -3035,6 +3056,10 @@
     'dashboard.confirm': 'Confirm', 'dashboard.syncProblem': 'Google sign-in is unavailable on this site. Try email sign-in or contact the site owner.'
   });
   Object.assign(TRANSLATIONS['zh-Hant'], {
+    'chart.editSavingsNote': '此操作會編輯整筆儲蓄交易，包括在其他圖表顯示的部分。',
+    'chart.savingsDeleteConfirm': '刪除整筆儲蓄交易？儲蓄餘額及所有頁面都會更新，此操作無法復原。',
+    'chart.savingsDeleteInsufficient': '無法刪除此存款，因為部分儲蓄已經提取。請先調整或刪除提款。',
+    'chart.savingsPartialNote': '此為儲蓄交易的部分金額；操作會影響整筆交易。',
     'dashboard.addExpense': '＋新增支出', 'dashboard.more': '預算詳情', 'dashboard.recent': '最近支出',
     'dashboard.allTime': '支出總額 · 所有時間', 'dashboard.seeAll': '查看所有支出', 'dashboard.showLess': '只顯示最近支出',
     'dashboard.empty': '新增第一筆支出，或載入示範資料。', 'dashboard.deleteConfirm': '刪除此交易？此操作無法復原。',
@@ -3042,6 +3067,10 @@
     'dashboard.confirm': '確認', 'dashboard.syncProblem': '此網站暫時無法使用 Google 登入。請嘗試電郵登入或聯絡網站管理員。'
   });
   Object.assign(TRANSLATIONS['zh-Hans'], {
+    'chart.editSavingsNote': '此操作会编辑整笔储蓄交易，包括在其他图表显示的部分。',
+    'chart.savingsDeleteConfirm': '删除整笔储蓄交易？储蓄余额及所有页面都会更新，此操作无法撤销。',
+    'chart.savingsDeleteInsufficient': '无法删除此存款，因为部分储蓄已经提取。请先调整或删除提款。',
+    'chart.savingsPartialNote': '此为储蓄交易的部分金额；操作会影响整笔交易。',
     'dashboard.addExpense': '＋新增支出', 'dashboard.more': '预算详情', 'dashboard.recent': '最近支出',
     'dashboard.allTime': '支出总额 · 所有时间', 'dashboard.seeAll': '查看所有支出', 'dashboard.showLess': '只显示最近支出',
     'dashboard.empty': '新增第一笔支出，或载入示范数据。', 'dashboard.deleteConfirm': '删除此交易？此操作无法撤销。',
@@ -4437,7 +4466,7 @@
     return JSON.stringify({
       i: n.income, d: n.incomeDate, b: n.budgets, c: n.categories, s: n.savings, l: n.lang, th: n.theme, ct: n.chartColorTheme,
       inc: n.incomes.map(function (e) { return [e.id, e.amount, e.description, e.source, e.date, e.createdAt, e.kind, e.savingsGoalId, e.savingsTransactionId]; }),
-      e: n.expenses.map(function (e) { return [e.id, e.amount, e.description, e.category, e.date, e.createdAt, e.kind, e.savingsGoalId, e.savingsTransactionId]; })
+      e: n.expenses.map(function (e) { return [e.id, e.amount, e.description, e.category, e.paymentMethod, e.date, e.createdAt, e.kind, e.savingsGoalId, e.savingsTransactionId]; })
     });
   }
   function isMeaningfulRemote(data) {
@@ -5159,6 +5188,8 @@
     syncPaymentCustomUI(els.transactionEditPaymentMethod, els.transactionEditPaymentCustomWrap, els.transactionEditPaymentCustom, false);
     if (els.transactionEditPaymentWrap) els.transactionEditPaymentWrap.classList.toggle('hidden', isIncome);
     if (els.transactionEditError) clearError(els.transactionEditError);
+    var savingsNote = document.getElementById('transactionEditSavingsNote');
+    if (savingsNote) savingsNote.classList.toggle('hidden', entry.kind !== 'savings-transfer' && entry.kind !== 'savings-withdrawal');
     updateTransactionEditCategoryUI(false);
     transactionEditPreviousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -5284,15 +5315,14 @@
 
   var selectedCategoryDetail = '';
   var selectedPaymentMethodDetail = '';
-  var categoryExpenseSortBy = 'date';
-  var categoryExpenseSortDirection = 'desc';
-  function compareCategoryExpenses(a, b) {
+  var chartSort = { category: { by:'date', direction:'desc' }, payment: { by:'date', direction:'desc' }, income: { by:'date', direction:'desc' } };
+  function compareChartRows(a, b, sort, isIncome) {
     var result = 0;
-    if (categoryExpenseSortBy === 'amount') {
+    if (sort.by === 'amount') {
       var amountA = Number(a.amount) || 0;
       var amountB = Number(b.amount) || 0;
-      if (a.kind === 'savings-withdrawal' || a.kind === 'savings-withdrawal-offset') amountA = -amountA;
-      if (b.kind === 'savings-withdrawal' || b.kind === 'savings-withdrawal-offset') amountB = -amountB;
+      if (!isIncome && (a.kind === 'savings-withdrawal' || a.kind === 'savings-withdrawal-offset')) amountA = -amountA;
+      if (!isIncome && (b.kind === 'savings-withdrawal' || b.kind === 'savings-withdrawal-offset')) amountB = -amountB;
       result = amountA - amountB;
     } else {
       var dateA = new Date(a.date || '').getTime();
@@ -5302,28 +5332,26 @@
       result = dateA - dateB;
       if (!result) result = (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0);
     }
-    if (result) return categoryExpenseSortDirection === 'desc' ? -result : result;
+    if (result) return sort.direction === 'desc' ? -result : result;
     // Keep equal-value rows stable and recent-first without adding name sorting.
     return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
   }
-  function syncCategorySortControls(nodes, count) {
+  function syncChartSortControls(nodes, sort) {
     if (!nodes || !nodes.sortControls) return;
-    var visible = count >= 3;
-    nodes.sortControls.classList.toggle('hidden', !visible);
-    if (!visible) return;
-    var dateActive = categoryExpenseSortBy === 'date';
-    var amountActive = categoryExpenseSortBy === 'amount';
-    if (nodes.sortDateLabel) nodes.sortDateLabel.textContent = t('chart.sortDate') + (dateActive ? (categoryExpenseSortDirection === 'desc' ? ' ↓' : ' ↑') : '');
-    if (nodes.sortAmountLabel) nodes.sortAmountLabel.textContent = t('chart.sortAmount') + (amountActive ? (categoryExpenseSortDirection === 'desc' ? ' ↓' : ' ↑') : '');
+    nodes.sortControls.classList.remove('hidden');
+    var dateActive = sort.by === 'date';
+    var amountActive = sort.by === 'amount';
+    if (nodes.sortDateLabel) nodes.sortDateLabel.textContent = t('chart.sortDate') + (dateActive ? (sort.direction === 'desc' ? ' ↓' : ' ↑') : '');
+    if (nodes.sortAmountLabel) nodes.sortAmountLabel.textContent = t('chart.sortAmount') + (amountActive ? (sort.direction === 'desc' ? ' ↓' : ' ↑') : '');
     if (nodes.sortDate) {
       nodes.sortDate.classList.toggle('active', dateActive);
       nodes.sortDate.setAttribute('aria-pressed', String(dateActive));
-      nodes.sortDate.setAttribute('aria-label', t(dateActive && categoryExpenseSortDirection === 'asc' ? 'chart.sortDateAscAria' : 'chart.sortDateDescAria'));
+      nodes.sortDate.setAttribute('aria-label', t(dateActive && sort.direction === 'asc' ? 'chart.sortDateAscAria' : 'chart.sortDateDescAria'));
     }
     if (nodes.sortAmount) {
       nodes.sortAmount.classList.toggle('active', amountActive);
       nodes.sortAmount.setAttribute('aria-pressed', String(amountActive));
-      nodes.sortAmount.setAttribute('aria-label', t(amountActive && categoryExpenseSortDirection === 'asc' ? 'chart.sortAmountAscAria' : 'chart.sortAmountDescAria'));
+      nodes.sortAmount.setAttribute('aria-label', t(amountActive && sort.direction === 'asc' ? 'chart.sortAmountAscAria' : 'chart.sortAmountDescAria'));
     }
   }
   function renderExpenseDetail(kind, selectedName, snapshot, nodes) {
@@ -5343,16 +5371,8 @@
         return Object.assign({}, entry, { category: 'Savings Transfer', kind: 'savings-withdrawal-offset' });
       }));
     }
-    rows = rows.slice();
-    if (kind === 'category') {
-      rows.sort(compareCategoryExpenses);
-      syncCategorySortControls(nodes, rows.length);
-    } else {
-      rows.sort(function (a, b) {
-        if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-        return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
-      });
-    }
+    rows = rows.slice().sort(function (a, b) { return compareChartRows(a, b, chartSort[kind], false); });
+    syncChartSortControls(nodes, chartSort[kind]);
     var label = isPayment ? paymentMethodLabel(selectedName) : catLabel(selectedName);
     nodes.title.textContent = isPayment
       ? t('chart.paymentDetailTitle', { method: label })
@@ -5372,11 +5392,16 @@
             : (isSavingsWithdrawal ? t('chart.incomeSavingsWithdrawal') : paymentMethodLabel(expense.paymentMethod)));
         var amountPrefix = isSavingsWithdrawal ? '−' : '';
         var amountColor = isSavingsWithdrawal ? '#dc2626' : 'inherit';
+        var type = isSavingsWithdrawal ? 'income' : 'expense';
+        var editAttr = isSavingsWithdrawal ? 'data-edit-income-id' : 'data-edit-expense-id';
+        var deleteAttr = isSavingsWithdrawal ? 'data-delete-income-id' : 'data-delete-id';
+        var edit = '<button type="button" class="icon-btn edit-btn" ' + editAttr + '="' + escapeHtml(expense.id) + '" aria-label="' + escapeHtml(t('txedit.editAria', {name:description})) + '" title="' + escapeHtml(t('txedit.editAria', {name:description})) + '">' + pencilSvg + '</button>';
+        var remove = '<button type="button" class="icon-btn" ' + deleteAttr + '="' + escapeHtml(expense.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', {name:description})) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + '</button>';
         return '<article class="category-expense-row"><div class="category-expense-copy">' +
           '<strong class="category-expense-description">' + escapeHtml(description) + '</strong>' +
           '<div class="category-expense-meta"><span class="dot" style="background:' + catColor(expense.category || 'Other') + '" aria-hidden="true"></span><time datetime="' + escapeHtml(expense.date || '') + '">' + escapeHtml(displayDate(expense.date)) + '</time>' +
           (secondary ? '<span class="payment-method-badge">' + escapeHtml(secondary) + '</span>' : '') +
-          '</div></div><strong class="category-expense-amount" style="color:' + amountColor + '">' + amountPrefix + escapeHtml(fmt(Number(expense.amount) || 0)) + '</strong></article>';
+          '</div>' + (isSavingsWithdrawal ? '<div class="category-partial-note">' + escapeHtml(t('chart.savingsPartialNote')) + '</div>' : '') + '</div><div class="chart-row-right"><strong class="category-expense-amount" style="color:' + amountColor + '">' + amountPrefix + escapeHtml(fmt(Number(expense.amount) || 0)) + '</strong><span class="tx-row-actions">' + edit + remove + '</span></div></article>';
       }).join('');
     }
     nodes.section.classList.remove('hidden');
@@ -5390,25 +5415,25 @@
   }
   function renderPaymentMethodDetail(snapshot) {
     renderExpenseDetail('payment', selectedPaymentMethodDetail, snapshot, {
-      section: els.paymentMethodDetail, title: els.paymentMethodDetailTitle, sub: els.paymentMethodDetailSub, list: els.paymentMethodExpenseList
+      section: els.paymentMethodDetail, title: els.paymentMethodDetailTitle, sub: els.paymentMethodDetailSub, list: els.paymentMethodExpenseList,
+      sortControls: document.getElementById('paymentMethodSortControls'), sortDate: document.getElementById('paymentMethodSortDate'), sortAmount: document.getElementById('paymentMethodSortAmount'),
+      sortDateLabel: document.getElementById('paymentMethodSortDateLabel'), sortAmountLabel: document.getElementById('paymentMethodSortAmountLabel')
     });
   }
   function openCategoryDetail(category, snapshot) {
     selectedCategoryDetail = String(category || '');
-    categoryExpenseSortBy = 'date';
-    categoryExpenseSortDirection = 'desc';
+    chartSort.category = { by:'date', direction:'desc' };
     renderCategoryDetail(snapshot || chartPeriodSnapshot());
     if (els.categoryDetail) els.categoryDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
-  function setCategoryExpenseSort(sortBy) {
-    if (sortBy !== 'date' && sortBy !== 'amount') return;
-    if (categoryExpenseSortBy === sortBy) {
-      categoryExpenseSortDirection = categoryExpenseSortDirection === 'desc' ? 'asc' : 'desc';
-    } else {
-      categoryExpenseSortBy = sortBy;
-      categoryExpenseSortDirection = 'desc';
-    }
-    renderCategoryDetail(chartPeriodSnapshot());
+  function setChartSort(kind, by) {
+    if (!chartSort[kind] || (by !== 'date' && by !== 'amount')) return;
+    var sort = chartSort[kind];
+    if (sort.by === by) sort.direction = sort.direction === 'desc' ? 'asc' : 'desc';
+    else { sort.by = by; sort.direction = 'desc'; }
+    if (kind === 'category') renderCategoryDetail(chartPeriodSnapshot());
+    else if (kind === 'payment') renderPaymentMethodDetail(chartPeriodSnapshot());
+    else renderIncomeSourceDetail(chartPeriodSnapshot());
   }
   function closeCategoryDetail() {
     selectedCategoryDetail = '';
@@ -5416,6 +5441,7 @@
   }
   function openPaymentMethodDetail(method, snapshot) {
     selectedPaymentMethodDetail = normalizePaymentMethod(method);
+    chartSort.payment = { by:'date', direction:'desc' };
     renderPaymentMethodDetail(snapshot || chartPeriodSnapshot());
     if (els.paymentMethodDetail) els.paymentMethodDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -5644,20 +5670,22 @@
       : incomeEntriesForRange(snapshot.range).filter(function (entry) {
           return entry.kind !== 'savings-withdrawal' &&
             (INCOME_SOURCE_I18N[entry.source] ? entry.source : 'Other Income') === selectedIncomeSourceDetail;
-        })).slice().sort(function (a, b) {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
-    });
+        })).slice().sort(function (a, b) { return compareChartRows(a, b, chartSort.income, true); });
+    syncChartSortControls({
+      sortControls: document.getElementById('incomeSourceSortControls'), sortDate: document.getElementById('incomeSourceSortDate'), sortAmount: document.getElementById('incomeSourceSortAmount'),
+      sortDateLabel: document.getElementById('incomeSourceSortDateLabel'), sortAmountLabel: document.getElementById('incomeSourceSortAmountLabel')
+    }, chartSort.income);
     var sourceLabel = incomeSourceLabel(selectedIncomeSourceDetail);
     els.incomeSourceDetailTitle.textContent = t('chart.incomeDetailTitle', { source: sourceLabel });
     els.incomeSourceDetailSub.textContent = t('chart.incomeDetailSub', { count: rows.length, range: snapshot.rangeLabel });
     els.incomeSourceDetailList.innerHTML = rows.length
-      ? rows.map(function (entry) { return incomeTransactionRow(entry, true, true); }).join('')
+      ? rows.map(function (entry) { return incomeTransactionRow(entry, false, true); }).join('')
       : '<li class="category-detail-empty">' + escapeHtml(t('chart.incomeDetailEmpty')) + '</li>';
     els.incomeSourceDetail.classList.remove('hidden');
   }
   function openIncomeSourceDetail(source, snapshot) {
     selectedIncomeSourceDetail = (INCOME_SOURCE_I18N[source] || source === 'Savings Withdrawal') ? source : 'Other Income';
+    chartSort.income = { by:'date', direction:'desc' };
     renderIncomeSourceDetail(snapshot || chartPeriodSnapshot());
     if (els.incomeSourceDetail) els.incomeSourceDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
@@ -5744,18 +5772,22 @@
     if (button) openCategoryDetail(button.getAttribute('data-category-name'), chartPeriodSnapshot());
   });
   if (els.categoryDetailBack) els.categoryDetailBack.addEventListener('click', closeCategoryDetail);
-  if (els.categorySortDate) els.categorySortDate.addEventListener('click', function () { setCategoryExpenseSort('date'); });
-  if (els.categorySortAmount) els.categorySortAmount.addEventListener('click', function () { setCategoryExpenseSort('amount'); });
+  if (els.categorySortDate) els.categorySortDate.addEventListener('click', function () { setChartSort('category', 'date'); });
+  if (els.categorySortAmount) els.categorySortAmount.addEventListener('click', function () { setChartSort('category', 'amount'); });
   if (els.paymentChartLegend) els.paymentChartLegend.addEventListener('click', function (event) {
     var button = event.target.closest('[data-payment-method]');
     if (button) openPaymentMethodDetail(button.getAttribute('data-payment-method'), chartPeriodSnapshot());
   });
   if (els.paymentMethodDetailBack) els.paymentMethodDetailBack.addEventListener('click', closePaymentMethodDetail);
+  document.getElementById('paymentMethodSortDate').addEventListener('click', function () { setChartSort('payment', 'date'); });
+  document.getElementById('paymentMethodSortAmount').addEventListener('click', function () { setChartSort('payment', 'amount'); });
   if (els.incomeChartLegend) els.incomeChartLegend.addEventListener('click', function (event) {
     var button = event.target.closest('[data-income-source]');
     if (button) openIncomeSourceDetail(button.getAttribute('data-income-source'), chartPeriodSnapshot());
   });
   if (els.incomeSourceDetailBack) els.incomeSourceDetailBack.addEventListener('click', closeIncomeSourceDetail);
+  document.getElementById('incomeSourceSortDate').addEventListener('click', function () { setChartSort('income', 'date'); });
+  document.getElementById('incomeSourceSortAmount').addEventListener('click', function () { setChartSort('income', 'amount'); });
 
   /* ---------- Calendar (Sunday -> Saturday month grid) ---------- */
   function incomesOn(iso) { return incomeEntries().filter(function (e) { return e.date === iso; }); }
@@ -5879,6 +5911,7 @@
           ? t('day.incomeCat')
           : (incomeSourceLabel(entry.source) + ' · ' + t('day.income'))));
     if (includeDate) incomeSub = displayDate(entry.date) + ' · ' + incomeSub;
+    if (includeDate && isSavingsWithdrawal) incomeSub += ' · ' + t('chart.savingsPartialNote');
     var deleteLabel = detailed ? '<span class="tx-delete-label">' + escapeHtml(t('common.delete')) + '</span>' : '';
     var editButton = entry.hideActions ? '' : '<button type="button" class="icon-btn edit-btn tx-edit-btn" data-edit-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('txedit.editAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('txedit.editAria', { name: incomeLabel })) + '">' + pencilSvg + '</button>';
     var deleteButton = entry.hideActions ? '' : '<button type="button" class="icon-btn tx-delete-btn" data-delete-income-id="' + escapeHtml(entry.id) + '" aria-label="' + escapeHtml(t('log.deleteAria', { name: incomeLabel })) + '" title="' + escapeHtml(t('common.delete')) + '">' + trashSvg + deleteLabel + '</button>';
@@ -6441,6 +6474,33 @@
   refreshExpenseCategoryOptions('Other');
   updateCustomCategoryField();
 
+  function markDeletedRecord(key) {
+    var savings = state.savings || (state.savings = normalizeSavings({}));
+    savings.deletedRecords = Array.isArray(savings.deletedRecords) ? savings.deletedRecords : [];
+    if (!savings.deletedRecords.includes(key)) savings.deletedRecords.push(key);
+    savings.deletedRecords = savings.deletedRecords.slice(-5000);
+  }
+  function canRemoveSavingsDeposit(entry) {
+    var savings = state.savings || (state.savings = normalizeSavings(state));
+    var goal = (savings.goals || []).find(function (g) { return String(g.id) === String(entry.savingsGoalId || ''); });
+    var tx = (savings.transactions || []).find(function (x) { return String(x.id) === String(entry.savingsTransactionId || ''); });
+    if (!tx) tx = (savings.transactions || []).filter(function (x) {
+      return String(x.goalId) === String(entry.savingsGoalId || '') && x.type === 'deposit' && round2(x.amount) === round2(entry.amount) && x.date === entry.date && x.source === 'manual';
+    }).sort(function(a,b) { return Math.abs((Number(a.createdAt)||0)-(Number(entry.createdAt)||0)) - Math.abs((Number(b.createdAt)||0)-(Number(entry.createdAt)||0)); })[0];
+    if (!goal || !tx) { showToast(t('txedit.linkMissing')); return false; }
+    if (round2(goal.balance) < round2(tx.amount)) { showToast(t('chart.savingsDeleteInsufficient')); return false; }
+    return true;
+  }
+  function canRemoveSavingsWithdrawal(entry) {
+    var savings = state.savings || (state.savings = normalizeSavings(state));
+    var goal = (savings.goals || []).find(function (g) { return String(g.id) === String(entry.savingsGoalId || ''); });
+    var tx = (savings.transactions || []).find(function (x) { return String(x.id) === String(entry.savingsTransactionId || ''); });
+    if (!tx) tx = (savings.transactions || []).filter(function (x) {
+      return String(x.goalId) === String(entry.savingsGoalId || '') && x.type === 'withdraw' && round2(x.amount) === round2(entry.amount) && x.date === entry.date && x.source === 'manual';
+    }).sort(function(a,b) { return Math.abs((Number(a.createdAt)||0)-(Number(entry.createdAt)||0)) - Math.abs((Number(b.createdAt)||0)-(Number(entry.createdAt)||0)); })[0];
+    if (!goal || !tx) { showToast(t('txedit.linkMissing')); return false; }
+    return true;
+  }
   function removeLinkedSavingsMovement(entry, recordType) {
     if (!entry || (entry.kind !== 'savings-transfer' && entry.kind !== 'savings-withdrawal')) return;
     var savings = state.savings || (state.savings = normalizeSavings(state));
@@ -6484,13 +6544,15 @@
     if (incomeBtn) {
       var incomeFromModal = !!(incomeBtn.closest && incomeBtn.closest('#dayTxModal'));
       var incomeFromCalendar = incomeFromModal || !!(incomeBtn.closest && incomeBtn.closest('#dayTxList'));
-      var incomeFromChart = !!(incomeBtn.closest && incomeBtn.closest('#incomeSourceDetailList'));
+      var incomeFromChart = !!(incomeBtn.closest && (incomeBtn.closest('#incomeSourceDetailList') || incomeBtn.closest('#categoryExpenseList')));
       var incomeFromAllowedDetail = incomeFromCalendar || incomeFromChart;
       var incomeId = incomeBtn.getAttribute('data-delete-income-id');
       var removedIncome = incomeEntries().filter(function (e) { return String(e.id) === incomeId; })[0];
       if (removedIncome && removedIncome.kind === 'savings-withdrawal' && !incomeFromAllowedDetail) return;
-      if (removedIncome && !await confirmDestructive(t('dashboard.deleteConfirm'))) return;
+      if (removedIncome && removedIncome.kind === 'savings-withdrawal' && !canRemoveSavingsWithdrawal(removedIncome)) return;
+      if (removedIncome && !await confirmDestructive(t(removedIncome.kind === 'savings-withdrawal' ? 'chart.savingsDeleteConfirm' : 'dashboard.deleteConfirm'))) return;
       if (removedIncome && removedIncome.kind === 'savings-withdrawal') removeLinkedSavingsMovement(removedIncome, 'income');
+      else if (removedIncome && incomeId !== PRIMARY_INCOME_ID && incomeId !== MONTHLY_BUDGET_INCOME_ID) markDeletedRecord('income:' + incomeId);
       state.incomes = incomeEntries().filter(function (e) { return String(e.id) !== incomeId; });
       if (String(incomeId) === PRIMARY_INCOME_ID) { state.budgets.weekly = 0; state.budgets.weeklyConfigured = true; }
       if (String(incomeId) === MONTHLY_BUDGET_INCOME_ID) { state.budgets.monthly = 0; state.budgets.monthlyConfigured = true; }
@@ -6508,12 +6570,14 @@
     var btn = ev.target.closest('[data-delete-id]');
     if (!btn) return;
     var expenseFromModal = !!(btn.closest && btn.closest('#dayTxModal'));
-    var expenseFromCalendar = expenseFromModal || !!(btn.closest && btn.closest('#dayTxList'));
+    var expenseFromCalendar = expenseFromModal || !!(btn.closest && (btn.closest('#dayTxList') || btn.closest('#categoryExpenseList') || btn.closest('#paymentMethodExpenseList')));
     var id = btn.getAttribute('data-delete-id');
     var removed = state.expenses.filter(function (e) { return String(e.id) === id; })[0];
     if (removed && removed.kind === 'savings-transfer' && !expenseFromCalendar) return;
-    if (removed && !await confirmDestructive(t('dashboard.deleteConfirm'))) return;
+    if (removed && removed.kind === 'savings-transfer' && !canRemoveSavingsDeposit(removed)) return;
+    if (removed && !await confirmDestructive(t(removed.kind === 'savings-transfer' ? 'chart.savingsDeleteConfirm' : 'dashboard.deleteConfirm'))) return;
     if (removed && removed.kind === 'savings-transfer') removeLinkedSavingsMovement(removed, 'expense');
+    else if (removed) markDeletedRecord('expense:' + id);
     state.expenses = state.expenses.filter(function (e) { return String(e.id) !== id; });
     state.demoSeed = false;
     save(); render();
@@ -7260,5 +7324,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a6027c1f1e8d08b4',t:'MTc5NTYyODkxMg=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a6027c1f1e8d08b4',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a602a9cb08e7f1c6',t:'MTc5NTYzMDc4Mw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a602a9cb08e7f1c6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
