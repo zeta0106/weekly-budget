@@ -298,6 +298,12 @@
   .category-detail-heading{ display:flex; align-items:flex-start; justify-content:space-between; gap:.75rem; }
   .category-detail-heading h3{ margin:0; font-size:1rem; font-weight:700; }
   .category-detail-heading p{ margin:.25rem 0 0; font-size:.8rem; color:var(--muted); }
+  .category-detail-actions{ display:flex; align-items:center; justify-content:flex-end; gap:.5rem; flex:none; }
+  .category-detail-sort{ display:inline-flex; align-items:center; gap:.12rem; padding:.16rem; border:1px solid var(--border); border-radius:9999px; background:var(--bg); }
+  .category-sort-button{ min-height:32px; border:1px solid transparent; border-radius:9999px; padding:.32rem .58rem; background:transparent; color:var(--text); cursor:pointer; font-family:inherit; font-size:.76rem; font-weight:700; line-height:1.1; white-space:nowrap; transition:background .15s ease,color .15s ease,box-shadow .15s ease; }
+  .category-sort-button:hover{ background:var(--row-hover); }
+  .category-sort-button.active{ background:#059669; color:#fff; box-shadow:0 2px 7px rgba(5,150,105,.22); }
+  .category-sort-button:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
   .category-detail-list{ display:grid; gap:.1rem; margin-top:.65rem; }
   .category-expense-row{ display:flex; align-items:center; justify-content:space-between; gap:1rem; padding:.72rem .15rem; border-bottom:1px solid var(--border); }
   .category-expense-copy{ min-width:0; }
@@ -315,6 +321,9 @@
   .last-week-auto-note{ margin:.75rem 0 0; padding:.65rem .75rem; border-left:3px solid #10b981; border-radius:.4rem; background:var(--brand-green-soft); color:var(--muted); font-size:.8rem; line-height:1.45; }
   @media(max-width:520px){
     .category-detail-heading{ align-items:flex-start; flex-direction:column; }
+    .category-detail-actions{ width:100%; justify-content:space-between; }
+    .category-detail-sort{ margin-left:auto; }
+    .category-sort-button{ padding-inline:.48rem; }
     .category-expense-row{ align-items:flex-start; }
     .last-week-summary{ align-items:flex-start; flex-direction:column; gap:.2rem; }
   }
@@ -369,6 +378,17 @@
     letter-spacing:.11em; text-transform:uppercase;
   }
   .period-range{ color:var(--text); font-size:.9rem; font-weight:700; }
+  .chart-period-navigation{ display:none; align-items:center; gap:.5rem; }
+  [data-active-view="charts"] #periodRangeLabel{ display:none; }
+  [data-active-view="charts"] .chart-period-navigation{ display:flex; }
+  .chart-period-capsule{ display:flex; align-items:center; min-width:0; background:var(--card); border:1px solid var(--border); border-radius:9999px; box-shadow:0 2px 8px rgba(15,23,42,.08); }
+  .chart-period-arrow{ display:inline-flex; align-items:center; justify-content:center; flex:none; width:40px; height:40px; padding:0; border:0; border-radius:9999px; background:transparent; color:var(--text); cursor:pointer; }
+  .chart-period-arrow:hover{ background:var(--row-hover); color:#059669; }
+  .chart-period-arrow:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
+  .chart-period-arrow svg{ width:17px; height:17px; }
+  .chart-period-label{ min-width:190px; padding:0 .3rem; color:var(--text); text-align:center; font-size:.9rem; font-weight:800; white-space:nowrap; }
+  .chart-period-current{ display:inline-flex; align-items:center; justify-content:center; min-height:36px; padding:.42rem .8rem; border:1px solid rgba(16,185,129,.22); border-radius:9999px; background:var(--brand-green-soft); color:#047857; font-family:inherit; font-size:.78rem; font-weight:800; white-space:nowrap; pointer-events:none; cursor:default; }
+  html.dark .chart-period-current{ color:#6ee7b7; }
   .period-toggle{
     position:relative; isolation:isolate; display:inline-grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0; flex:none;
     padding:.25rem; background:var(--card); border:1px solid var(--border);
@@ -392,6 +412,12 @@
   .period-btn.active{ background:transparent; color:#fff; box-shadow:none; }
   @media (max-width:640px){
     .period-bar{ flex-direction:column; align-items:stretch; gap:.65rem; }
+    .period-copy{ width:100%; }
+    .chart-period-navigation{ width:100%; }
+    .chart-period-capsule{ flex:1; }
+    .chart-period-label{ flex:1; min-width:0; font-size:.84rem; }
+    .chart-period-arrow{ width:38px; }
+    .chart-period-current{ flex:none; }
     .period-toggle{ width:100%; }
     .period-btn{ min-height:44px; }
     .stat-compare{ font-size:.66rem; }
@@ -437,6 +463,20 @@
   .setting-row:last-of-type{ border-bottom:none; }
   .setting-row .s-label{ font-weight:600; }
   .setting-row .s-hint{ display:block; color:var(--muted); font-size:.76rem; font-weight:500; margin-top:.15rem; }
+  .chart-theme-setting-row{ display:block; }
+  .chart-theme-heading{ margin-bottom:.65rem; }
+  .chart-theme-options{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.55rem; }
+  .chart-theme-option{ display:block; width:100%; min-width:0; padding:.65rem .7rem; border:1px solid var(--border); border-radius:.75rem; background:var(--card); color:var(--text); text-align:left; font:inherit; cursor:pointer; transition:border-color .15s ease,box-shadow .15s ease,background .15s ease; }
+  .chart-theme-option:hover{ border-color:rgba(5,150,105,.55); background:var(--bg); }
+  .chart-theme-option.active{ padding:calc(.65rem - 1px) calc(.7rem - 1px); border:2px solid #059669; box-shadow:0 0 0 2px rgba(5,150,105,.08); }
+  .chart-theme-option:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
+  .chart-theme-option-heading{ display:flex; align-items:center; justify-content:space-between; gap:.4rem; font-size:.8rem; font-weight:750; }
+  .chart-theme-name{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .chart-theme-check{ visibility:hidden; color:#059669; font-weight:900; }
+  .chart-theme-option.active .chart-theme-check{ visibility:visible; }
+  .chart-theme-swatches{ display:flex; align-items:center; gap:.24rem; margin-top:.55rem; }
+  .chart-theme-swatches i{ display:block; width:12px; height:12px; flex:none; border:1px solid rgba(15,23,42,.08); border-radius:50%; }
+  html.dark .chart-theme-swatches i{ border-color:rgba(255,255,255,.18); }
   .rollover-switch{ position:relative; display:inline-flex; flex:none; cursor:pointer; }
   .rollover-switch input{ position:absolute; opacity:0; width:1px; height:1px; }
   .rollover-switch-track{ width:48px; height:28px; border-radius:999px; background:#cbd5e1; transition:background .18s ease; }
@@ -977,6 +1017,18 @@
     <div class="period-copy">
       <span class="period-kicker" data-i18n="period.label">Budget period</span>
       <span class="period-range" id="periodRangeLabel"></span>
+      <div class="chart-period-navigation" id="chartPeriodNavigation" role="group" aria-label="Navigate chart period" data-i18n-aria="period.navigationAria">
+        <div class="chart-period-capsule">
+          <button type="button" class="chart-period-arrow" id="chartPeriodPrevious" aria-label="Previous week" title="Previous week">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
+          </button>
+          <span class="chart-period-label" id="chartPeriodRangeLabel"></span>
+          <button type="button" class="chart-period-arrow" id="chartPeriodNext" aria-label="Next week" title="Next week">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+          </button>
+        </div>
+        <span class="chart-period-current hidden" id="chartPeriodCurrent" role="status" aria-live="polite">This week</span>
+      </div>
     </div>
     <div class="period-toggle" role="group" aria-label="Choose weekly or monthly budget period" data-i18n-aria="period.aria" data-active-mode="weekly">
       <span class="period-toggle-pill transition-transform duration-300 ease-out translate-x-0" aria-hidden="true"></span>
@@ -1084,6 +1136,30 @@
           <div class="setting-row">
             <span><span class="s-label" data-i18n="set.appearance">Appearance</span><span class="s-hint" id="settingsThemeLabel">Light mode is on</span></span>
             <button type="button" class="chip" id="settingsThemeBtn" data-i18n="set.themeBtn">Toggle theme</button>
+          </div>
+          <div class="setting-row chart-theme-setting-row">
+            <div class="chart-theme-heading">
+              <span class="s-label" data-i18n="set.chartTheme">Chart Color Theme</span>
+              <span class="s-hint" data-i18n="set.chartThemeHint">Choose a palette for charts and category colors.</span>
+            </div>
+            <div class="chart-theme-options" id="chartColorThemeOptions" role="group" aria-label="Chart Color Theme" data-i18n-aria="set.chartTheme">
+              <button type="button" class="chart-theme-option active" data-chart-theme="classic-vibrant" aria-pressed="true" data-i18n-aria="set.chartThemeClassic">
+                <span class="chart-theme-option-heading"><span class="chart-theme-name" data-i18n="set.chartThemeClassic">Classic Vibrant</span><span class="chart-theme-check" aria-hidden="true">✓</span></span>
+                <span class="chart-theme-swatches" aria-hidden="true"><i style="background:#10B981"></i><i style="background:#F59E0B"></i><i style="background:#22C55E"></i><i style="background:#A855F7"></i><i style="background:#3B82F6"></i><i style="background:#EC4899"></i><i style="background:#14B8A6"></i><i style="background:#F97316"></i></span>
+              </button>
+              <button type="button" class="chart-theme-option" data-chart-theme="soft-pastel" aria-pressed="false" data-i18n-aria="set.chartThemePastel">
+                <span class="chart-theme-option-heading"><span class="chart-theme-name" data-i18n="set.chartThemePastel">Soft Pastel</span><span class="chart-theme-check" aria-hidden="true">✓</span></span>
+                <span class="chart-theme-swatches" aria-hidden="true"><i style="background:#6EE7B7"></i><i style="background:#FDBA74"></i><i style="background:#93C5FD"></i><i style="background:#D8B4FE"></i><i style="background:#F9A8D4"></i><i style="background:#FDE047"></i><i style="background:#5EEAD4"></i><i style="background:#FCA5A5"></i></span>
+              </button>
+              <button type="button" class="chart-theme-option" data-chart-theme="earthy-morandi" aria-pressed="false" data-i18n-aria="set.chartThemeMorandi">
+                <span class="chart-theme-option-heading"><span class="chart-theme-name" data-i18n="set.chartThemeMorandi">Earthy Morandi</span><span class="chart-theme-check" aria-hidden="true">✓</span></span>
+                <span class="chart-theme-swatches" aria-hidden="true"><i style="background:#5F8D7B"></i><i style="background:#D99B66"></i><i style="background:#7A9EB1"></i><i style="background:#B5838D"></i><i style="background:#9C89B8"></i><i style="background:#C8A98E"></i><i style="background:#6D8A96"></i><i style="background:#D4A373"></i></span>
+              </button>
+              <button type="button" class="chart-theme-option" data-chart-theme="ocean-coral" aria-pressed="false" data-i18n-aria="set.chartThemeOcean">
+                <span class="chart-theme-option-heading"><span class="chart-theme-name" data-i18n="set.chartThemeOcean">Ocean &amp; Coral</span><span class="chart-theme-check" aria-hidden="true">✓</span></span>
+                <span class="chart-theme-swatches" aria-hidden="true"><i style="background:#0D9488"></i><i style="background:#F43F5E"></i><i style="background:#0284C7"></i><i style="background:#FB923C"></i><i style="background:#6366F1"></i><i style="background:#14B8A6"></i><i style="background:#E11D48"></i><i style="background:#38BDF8"></i></span>
+              </button>
+            </div>
           </div>
           <div class="setting-row">
             <span><span class="s-label" data-i18n="set.export">Exports &amp; reports</span><span class="s-hint" data-i18n="set.exportHint">Download a CSV file or a formatted PDF summary</span></span>
@@ -1281,7 +1357,17 @@
               <h3 id="categoryDetailTitle"></h3>
               <p id="categoryDetailSub"></p>
             </div>
-            <button type="button" class="chip" id="categoryDetailBack" data-i18n="chart.backToChart">Back to chart</button>
+            <div class="category-detail-actions">
+              <button type="button" class="chip" id="categoryDetailBack" data-i18n="chart.backToChart">Back to chart</button>
+              <div class="category-detail-sort hidden" id="categoryExpenseSortControls" role="group" aria-label="Sort category expenses" data-i18n-aria="chart.sortControlsAria">
+                <button type="button" class="category-sort-button active" id="categorySortDate" aria-pressed="true" aria-label="Sort by date, newest first">
+                  <span id="categorySortDateLabel">Date ↓</span>
+                </button>
+                <button type="button" class="category-sort-button" id="categorySortAmount" aria-pressed="false" aria-label="Sort by amount">
+                  <span id="categorySortAmountLabel">Amount</span>
+                </button>
+              </div>
+            </div>
           </div>
           <div class="category-detail-list" id="categoryExpenseList"></div>
         </section>
@@ -1726,6 +1812,7 @@
   var VIEW_KEY = 'weeklyBudget.view';
   var LANG_KEY = 'weeklyBudget.lang';
   var PERIOD_KEY = 'weeklyBudget.periodMode';
+  var CHART_COLOR_THEME_KEY = 'weeklyBudget.chartColorTheme';
 
   // Currency is locked to HKD, always displayed with a clean "$"
   // (e.g. $1,250.00) — no currency codes or doubled labels anywhere.
@@ -1851,6 +1938,8 @@
       'period.aria': 'Choose weekly or monthly budget period',
       'period.weekly': 'Weekly',
       'period.monthly': 'Monthly',
+      'period.navigationAria': 'Navigate chart period', 'period.previousWeek': 'Previous week', 'period.nextWeek': 'Next week',
+      'period.previousMonth': 'Previous month', 'period.nextMonth': 'Next month', 'period.currentWeek': 'This week', 'period.currentMonth': 'This month',
       'budget.titleWeekly': 'Add Weekly Budget', 'budget.titleMonthly': 'Add Monthly Budget',
       'budget.subWeekly': 'Set your starting budget for this week.', 'budget.subMonthly': 'Set your budget for the selected month.',
       'budget.labelWeekly': 'Weekly budget amount', 'budget.labelMonthly': 'Monthly budget amount',
@@ -1898,6 +1987,8 @@
       'set.title': 'Data & Preferences',
       'set.sub': 'Everything is saved automatically in this browser.',
       'set.appearance': 'Appearance',
+      'set.chartTheme': 'Chart Color Theme', 'set.chartThemeHint': 'Choose colors for charts, legends, and categories.',
+      'set.chartThemeClassic': 'Classic Vibrant', 'set.chartThemePastel': 'Soft Pastel', 'set.chartThemeMorandi': 'Earthy Morandi', 'set.chartThemeOcean': 'Ocean & Coral',
       'set.themeBtn': 'Toggle theme',
       'set.export': 'Exports & reports',
       'set.exportHint': 'Download a CSV file or a formatted PDF summary',
@@ -1967,6 +2058,9 @@
       'chart.empty': 'Nothing to chart yet — add an expense and your breakdown will appear here.',
       'chart.clickHint': 'Select a category to see its expenses.',
       'chart.backToChart': 'Back to chart',
+      'chart.sortDate': 'Date', 'chart.sortAmount': 'Amount', 'chart.sortControlsAria': 'Sort category expenses',
+      'chart.sortDateDescAria': 'Sort by date, newest first', 'chart.sortDateAscAria': 'Sort by date, oldest first',
+      'chart.sortAmountDescAria': 'Sort by amount, high to low', 'chart.sortAmountAscAria': 'Sort by amount, low to high',
       'chart.categoryTitle': 'Expenses — {category}',
       'chart.categorySub': '{count} expenses · {range}',
       'chart.categoryEmpty': 'No expenses in this category for this period.',
@@ -2219,6 +2313,8 @@
       'period.aria': '選擇每週或每月預算期間',
       'period.weekly': '每週',
       'period.monthly': '每月',
+      'period.navigationAria': '切換圖表期間', 'period.previousWeek': '上週', 'period.nextWeek': '下週',
+      'period.previousMonth': '上月', 'period.nextMonth': '下月', 'period.currentWeek': '本週', 'period.currentMonth': '本月',
       'budget.titleWeekly': '新增每週預算', 'budget.titleMonthly': '新增每月預算',
       'budget.subWeekly': '設定本週的起始預算。', 'budget.subMonthly': '設定所選月份的預算。',
       'budget.labelWeekly': '每週預算金額', 'budget.labelMonthly': '每月預算金額',
@@ -2266,6 +2362,8 @@
       'set.title': '資料與偏好設定',
       'set.sub': '所有資料都會自動儲存在此瀏覽器。',
       'set.appearance': '外觀',
+      'set.chartTheme': '圖表配色主題', 'set.chartThemeHint': '選擇圖表、圖例及類別的配色。',
+      'set.chartThemeClassic': '經典鮮明', 'set.chartThemePastel': '柔和馬卡龍', 'set.chartThemeMorandi': '莫蘭迪奶茶', 'set.chartThemeOcean': '海洋珊瑚',
       'set.themeBtn': '切換主題',
       'set.export': '匯出與報告',
       'set.exportHint': '下載 CSV 檔案或格式化的 PDF 摘要',
@@ -2335,6 +2433,9 @@
       'chart.empty': '尚無資料可顯示 — 新增支出後，分佈圖會顯示在這裡。',
       'chart.clickHint': '選擇類別以查看相關支出。',
       'chart.backToChart': '返回圖表',
+      'chart.sortDate': '時間', 'chart.sortAmount': '金額', 'chart.sortControlsAria': '排序分類支出',
+      'chart.sortDateDescAria': '按日期排序，最新在前', 'chart.sortDateAscAria': '按日期排序，最舊在前',
+      'chart.sortAmountDescAria': '按金額排序，由高至低', 'chart.sortAmountAscAria': '按金額排序，由低至高',
       'chart.categoryTitle': '支出 — {category}',
       'chart.categorySub': '{count} 筆支出 · {range}',
       'chart.categoryEmpty': '此期間此類別尚無支出。',
@@ -2587,6 +2688,8 @@
       'period.aria': '选择每周或每月预算期间',
       'period.weekly': '每周',
       'period.monthly': '每月',
+      'period.navigationAria': '切换图表期间', 'period.previousWeek': '上周', 'period.nextWeek': '下周',
+      'period.previousMonth': '上月', 'period.nextMonth': '下月', 'period.currentWeek': '本周', 'period.currentMonth': '本月',
       'budget.titleWeekly': '新增每周预算', 'budget.titleMonthly': '新增每月预算',
       'budget.subWeekly': '设置本周的起始预算。', 'budget.subMonthly': '设置所选月份的预算。',
       'budget.labelWeekly': '每周预算金额', 'budget.labelMonthly': '每月预算金额',
@@ -2634,6 +2737,8 @@
       'set.title': '数据与偏好设置',
       'set.sub': '所有数据都会自动保存在此浏览器。',
       'set.appearance': '外观',
+      'set.chartTheme': '图表配色主题', 'set.chartThemeHint': '选择图表、图例及类别的配色。',
+      'set.chartThemeClassic': '经典鲜明', 'set.chartThemePastel': '柔和马卡龙', 'set.chartThemeMorandi': '莫兰迪奶茶', 'set.chartThemeOcean': '海洋珊瑚',
       'set.themeBtn': '切换主题',
       'set.export': '导出与报告',
       'set.exportHint': '下载 CSV 文件或格式化的 PDF 摘要',
@@ -2703,6 +2808,9 @@
       'chart.empty': '尚无数据可显示 — 新增支出后，分布图会显示在这里。',
       'chart.clickHint': '选择类别以查看相关支出。',
       'chart.backToChart': '返回图表',
+      'chart.sortDate': '时间', 'chart.sortAmount': '金额', 'chart.sortControlsAria': '排序分类支出',
+      'chart.sortDateDescAria': '按日期排序，最新在前', 'chart.sortDateAscAria': '按日期排序，最早在前',
+      'chart.sortAmountDescAria': '按金额排序，从高到低', 'chart.sortAmountAscAria': '按金额排序，从低到高',
       'chart.categoryTitle': '支出 — {category}',
       'chart.categorySub': '{count} 笔支出 · {range}',
       'chart.categoryEmpty': '此期间此类别暂无支出。',
@@ -2958,22 +3066,127 @@
   }
 
   var CATEGORIES = [
-    { name: 'Food & Dining',     color: '#f59e0b' },
-    { name: 'Groceries',         color: '#22c55e' },
-    { name: 'Transport',         color: '#3b82f6' },
-    { name: 'Bills & Utilities', color: '#a855f7' },
-    { name: 'Shopping',          color: '#ec4899' },
-    { name: 'Entertainment',     color: '#06b6d4' },
-    { name: 'Health',            color: '#ef4444' },
-    { name: 'Savings Transfer',  color: '#8b5cf6' },
-    { name: 'Other',             color: '#64748b' }
+    { name: 'Food & Dining' }, { name: 'Groceries' }, { name: 'Transport' },
+    { name: 'Bills & Utilities' }, { name: 'Shopping' }, { name: 'Entertainment' },
+    { name: 'Health' }, { name: 'Savings Transfer' }, { name: 'Other' }
   ];
-  var CUSTOM_CATEGORY_COLORS = ['#8b5cf6','#0ea5e9','#14b8a6','#f97316','#d946ef','#84cc16','#e11d48','#6366f1'];
-  function catColor(name) {
-    for (var i = 0; i < CATEGORIES.length; i++) if (CATEGORIES[i].name === name) return CATEGORIES[i].color;
-    var hash = 0, value = String(name || '');
+  var DEFAULT_CHART_COLOR_THEME = 'classic-vibrant';
+  var CHART_COLOR_PALETTES = {
+    'classic-vibrant': {
+      nameKey: 'set.chartThemeClassic',
+      colors: ['#10B981', '#F59E0B', '#22C55E', '#A855F7', '#3B82F6', '#EC4899', '#14B8A6', '#F97316']
+    },
+    'soft-pastel': {
+      nameKey: 'set.chartThemePastel',
+      colors: ['#6EE7B7', '#FDBA74', '#93C5FD', '#D8B4FE', '#F9A8D4', '#FDE047', '#5EEAD4', '#FCA5A5']
+    },
+    'earthy-morandi': {
+      nameKey: 'set.chartThemeMorandi',
+      colors: ['#5F8D7B', '#D99B66', '#7A9EB1', '#B5838D', '#9C89B8', '#C8A98E', '#6D8A96', '#D4A373']
+    },
+    'ocean-coral': {
+      nameKey: 'set.chartThemeOcean',
+      colors: ['#0D9488', '#F43F5E', '#0284C7', '#FB923C', '#6366F1', '#14B8A6', '#E11D48', '#38BDF8']
+    }
+  };
+  function normalizeChartColorTheme(theme) {
+    return Object.prototype.hasOwnProperty.call(CHART_COLOR_PALETTES, String(theme || '')) ? String(theme) : DEFAULT_CHART_COLOR_THEME;
+  }
+  var chartColorTheme = normalizeChartColorTheme(storage.get(CHART_COLOR_THEME_KEY));
+  function activeChartPaletteColors() {
+    return CHART_COLOR_PALETTES[chartColorTheme].colors;
+  }
+  function clampColorChannel(value, min, max) { return Math.max(min, Math.min(max, value)); }
+  function hexToHsl(hex) {
+    var value = String(hex || '').replace('#', '');
+    if (value.length === 3) value = value.split('').map(function (ch) { return ch + ch; }).join('');
+    var r = parseInt(value.slice(0, 2), 16) / 255;
+    var g = parseInt(value.slice(2, 4), 16) / 255;
+    var b = parseInt(value.slice(4, 6), 16) / 255;
+    var max = Math.max(r, g, b), min = Math.min(r, g, b), h = 0, s = 0;
+    var l = (max + min) / 2;
+    if (max !== min) {
+      var delta = max - min;
+      s = l > .5 ? delta / (2 - max - min) : delta / (max + min);
+      if (max === r) h = (g - b) / delta + (g < b ? 6 : 0);
+      else if (max === g) h = (b - r) / delta + 2;
+      else h = (r - g) / delta + 4;
+      h *= 60;
+    }
+    return { h: h, s: s, l: l };
+  }
+  function hslToHex(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    s = clampColorChannel(s, 0, 1); l = clampColorChannel(l, 0, 1);
+    var c = (1 - Math.abs(2 * l - 1)) * s;
+    var x = c * (1 - Math.abs((h / 60) % 2 - 1));
+    var m = l - c / 2, r = 0, g = 0, b = 0;
+    if (h < 60) { r = c; g = x; }
+    else if (h < 120) { r = x; g = c; }
+    else if (h < 180) { g = c; b = x; }
+    else if (h < 240) { g = x; b = c; }
+    else if (h < 300) { r = x; b = c; }
+    else { r = c; b = x; }
+    return '#' + [r, g, b].map(function (channel) {
+      return Math.round((channel + m) * 255).toString(16).padStart(2, '0');
+    }).join('').toUpperCase();
+  }
+  function getCategoryColor(categoryName, paletteColors, index) {
+    var colors = Array.isArray(paletteColors) && paletteColors.length ? paletteColors : CHART_COLOR_PALETTES[DEFAULT_CHART_COLOR_THEME].colors;
+    var safeIndex = isFinite(Number(index)) ? Math.max(0, Math.floor(Number(index))) : 0;
+    var baseColor = colors[safeIndex % colors.length];
+    var cycle = Math.floor(safeIndex / colors.length);
+    if (!cycle) return baseColor;
+    // Rotate hue and gently alternate lightness/saturation on palette wraps so
+    // custom categories remain distinguishable without a fixed color limit.
+    var nameHash = 0, normalizedName = String(categoryName || '').toLocaleLowerCase();
+    for (var n = 0; n < normalizedName.length; n++) nameHash = (nameHash * 31 + normalizedName.charCodeAt(n)) >>> 0;
+    var hsl = hexToHsl(baseColor);
+    var direction = cycle % 2 ? 1 : -1;
+    var step = Math.ceil(cycle / 2);
+    var lightShift = direction * Math.min(.19, .085 + (step - 1) * .025);
+    var satShift = direction * Math.min(.12, .035 + (step - 1) * .012);
+    var nameHueOffset = (nameHash % 7) - 3;
+    return hslToHex(hsl.h + cycle * 13 + nameHueOffset, hsl.s + satShift, hsl.l + lightShift);
+  }
+  function stableSeriesColorIndex(name, knownNames) {
+    var value = String(name || '').toLocaleLowerCase();
+    var names = Array.isArray(knownNames) ? knownNames : [];
+    for (var i = 0; i < names.length; i++) if (String(names[i]).toLocaleLowerCase() === value) return i;
+    var hash = 0;
     for (var j = 0; j < value.length; j++) hash = (hash * 31 + value.charCodeAt(j)) >>> 0;
-    return CUSTOM_CATEGORY_COLORS[hash % CUSTOM_CATEGORY_COLORS.length];
+    return names.length + hash;
+  }
+  function categoryPaletteIndex(categoryName) {
+    var value = String(categoryName || '').toLocaleLowerCase();
+    for (var i = 0; i < CATEGORIES.length; i++) if (CATEGORIES[i].name.toLocaleLowerCase() === value) return i;
+    var custom = state && Array.isArray(state.categories) ? state.categories : [];
+    for (var j = 0; j < custom.length; j++) if (String(custom[j]).toLocaleLowerCase() === value) return CATEGORIES.length + j;
+    return CATEGORIES.length + custom.length + stableSeriesColorIndex(value, []);
+  }
+  function catColor(name) {
+    return getCategoryColor(name, activeChartPaletteColors(), categoryPaletteIndex(name));
+  }
+  function syncChartColorThemeControls() {
+    var options = document.querySelectorAll('[data-chart-theme]');
+    Array.prototype.forEach.call(options, function (button) {
+      var selected = button.getAttribute('data-chart-theme') === chartColorTheme;
+      button.classList.toggle('active', selected);
+      button.setAttribute('aria-pressed', selected ? 'true' : 'false');
+      var theme = CHART_COLOR_PALETTES[button.getAttribute('data-chart-theme')];
+      button.setAttribute('aria-label', theme ? t(theme.nameKey) : '');
+    });
+    var group = $('chartColorThemeOptions');
+    if (group) group.setAttribute('aria-label', t('set.chartTheme'));
+  }
+  function setChartColorTheme(theme) {
+    var next = normalizeChartColorTheme(theme);
+    if (next === chartColorTheme) return;
+    chartColorTheme = next;
+    storage.set(CHART_COLOR_THEME_KEY, chartColorTheme);
+    syncChartColorThemeControls();
+    scheduleCloudSave();
+    render();
   }
 
   function uid() {
@@ -3251,6 +3464,7 @@
      period containing its stored income date (the same convention
      already used by the Calendar's monthly income summary). */
   var periodMode = storage.get(PERIOD_KEY) === 'monthly' ? 'monthly' : 'weekly';
+  var chartPeriodOffset = 0;
 
   function makePeriodRange(start, end, mode) {
     return { mode: mode, start: start, end: end, startISO: toLocalISO(start), endISO: toLocalISO(end) };
@@ -3398,6 +3612,53 @@
       });
     }
     return snapshot;
+  }
+  function chartPeriodRange() {
+    var currentRange = currentPeriodRange(periodMode);
+    if (periodMode === 'monthly') {
+      var monthStart = new Date(currentRange.start.getFullYear(), currentRange.start.getMonth() + chartPeriodOffset, 1);
+      return makePeriodRange(monthStart, new Date(monthStart.getFullYear(), monthStart.getMonth() + 1, 0), 'monthly');
+    }
+    var weekStart = new Date(currentRange.start.getFullYear(), currentRange.start.getMonth(), currentRange.start.getDate() + chartPeriodOffset * 7);
+    return makePeriodRange(weekStart, new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate() + 6), 'weekly');
+  }
+  function chartPeriodDisplayLabel(range) {
+    if (range.mode === 'monthly') {
+      return range.start.toLocaleDateString(LOCALE(), { year: 'numeric', month: 'long' });
+    }
+    return periodRangeText(range);
+  }
+  function chartPeriodSnapshot() {
+    var range = chartPeriodRange();
+    var snapshot = snapshotForRange(range);
+    snapshot.mode = periodMode;
+    snapshot.rangeLabel = chartPeriodDisplayLabel(range);
+    snapshot.daysLeft = daysLeftInRange(range);
+    return snapshot;
+  }
+  function syncChartPeriodControls(snapshot) {
+    if (!snapshot) snapshot = chartPeriodSnapshot();
+    if (els.chartPeriodRangeLabel) els.chartPeriodRangeLabel.textContent = chartPeriodDisplayLabel(snapshot.range);
+    var monthly = periodMode === 'monthly';
+    var previousKey = monthly ? 'period.previousMonth' : 'period.previousWeek';
+    var nextKey = monthly ? 'period.nextMonth' : 'period.nextWeek';
+    var currentKey = monthly ? 'period.currentMonth' : 'period.currentWeek';
+    if (els.chartPeriodPrevious) {
+      els.chartPeriodPrevious.setAttribute('aria-label', t(previousKey));
+      els.chartPeriodPrevious.setAttribute('title', t(previousKey));
+    }
+    if (els.chartPeriodNext) {
+      els.chartPeriodNext.setAttribute('aria-label', t(nextKey));
+      els.chartPeriodNext.setAttribute('title', t(nextKey));
+    }
+    if (els.chartPeriodCurrent) {
+      els.chartPeriodCurrent.textContent = t(currentKey);
+      els.chartPeriodCurrent.classList.toggle('hidden', chartPeriodOffset !== 0);
+    }
+  }
+  function shiftChartPeriod(delta) {
+    chartPeriodOffset += Number(delta) || 0;
+    render();
   }
   function fmtSigned(n) {
     var v = round2(n);
@@ -3747,6 +4008,7 @@
     syncNowBtn: $('syncNowBtn'), signOutBtn: $('signOutBtn'),
     iconSun: $('iconSun'), iconMoon: $('iconMoon'),
     remainingTitle: $('remainingTitle'), periodRangeLabel: $('periodRangeLabel'),
+    chartPeriodNavigation: $('chartPeriodNavigation'), chartPeriodRangeLabel: $('chartPeriodRangeLabel'), chartPeriodPrevious: $('chartPeriodPrevious'), chartPeriodNext: $('chartPeriodNext'), chartPeriodCurrent: $('chartPeriodCurrent'),
     remainingAmount: $('remainingAmount'), remainingHint: $('remainingHint'), statusPill: $('statusPill'),
     lastWeekSummary: $('lastWeekSummary'), lastWeekLabel: $('lastWeekLabel'), lastWeekAmount: $('lastWeekAmount'), lastWeekAutoNote: $('lastWeekAutoNote'),
     spentProgress: $('spentProgress'), spentProgressTrack: $('spentProgressTrack'),
@@ -3764,6 +4026,7 @@
     chartTitle: $('chartTitle'), chartSub: $('chartSub'), insightsTitle: $('insightsTitle'),
     chartCanvas: $('spendingChart'), chartLegend: $('chartLegend'), chartTotal: $('chartTotal'), chartEmpty: $('chartEmpty'),
     categoryDetail: $('categoryDetail'), categoryDetailTitle: $('categoryDetailTitle'), categoryDetailSub: $('categoryDetailSub'), categoryDetailBack: $('categoryDetailBack'), categoryExpenseList: $('categoryExpenseList'),
+    categoryExpenseSortControls: $('categoryExpenseSortControls'), categorySortDate: $('categorySortDate'), categorySortAmount: $('categorySortAmount'), categorySortDateLabel: $('categorySortDateLabel'), categorySortAmountLabel: $('categorySortAmountLabel'),
     paymentChartCanvas: $('paymentMethodChart'), paymentChartSub: $('paymentChartSub'), paymentChartTotal: $('paymentChartTotal'), paymentChartWrap: $('paymentChartWrap'), paymentChartEmpty: $('paymentChartEmpty'), paymentChartLegend: $('paymentChartLegend'),
     paymentMethodDetail: $('paymentMethodDetail'), paymentMethodDetailTitle: $('paymentMethodDetailTitle'), paymentMethodDetailSub: $('paymentMethodDetailSub'), paymentMethodDetailBack: $('paymentMethodDetailBack'), paymentMethodExpenseList: $('paymentMethodExpenseList'),
     incomeChartCanvas: $('incomeChartCanvas'), incomeChartWrap: $('incomeChartWrap'), incomeChartSub: $('incomeChartSub'), incomeChartTotal: $('incomeChartTotal'), incomeChartEmpty: $('incomeChartEmpty'), incomeChartLegend: $('incomeChartLegend'),
@@ -3772,7 +4035,7 @@
     pdfReport: $('pdfReport'),
     toast: $('toast'),
     appMain: $('appMain'), viewTitle: $('viewTitle'), viewSubtitle: $('viewSubtitle'),
-    settingsThemeBtn: $('settingsThemeBtn'), settingsThemeLabel: $('settingsThemeLabel'),
+    settingsThemeBtn: $('settingsThemeBtn'), settingsThemeLabel: $('settingsThemeLabel'), chartColorThemeOptions: $('chartColorThemeOptions'),
     settingsExportBtn: $('settingsExportBtn'), settingsPdfBtn: $('settingsPdfBtn'), settingsSampleBtn: $('settingsSampleBtn'),
     settingsClearBtn: $('settingsClearBtn'),
     receiptScanButton: $('receiptScanButton'), receiptImageInput: $('receiptImageInput'), receiptScanStatus: $('receiptScanStatus'),
@@ -3823,7 +4086,7 @@
     document.documentElement.classList.toggle('dark', dark);
     storage.set(THEME_KEY, dark ? 'dark' : 'light');
     syncThemeButton();
-    renderCharts(selectedPeriodSnapshot()); // refresh both chart themes
+    renderCharts(chartPeriodSnapshot()); // refresh both chart themes
     scheduleCloudSave(); // theme is a synced preference
   });
 
@@ -3865,6 +4128,7 @@
     });
 
     syncThemeButton();
+    syncChartColorThemeControls();
     els.weekLabel.textContent = weekRangeLabel();
     var currentView = els.appMain.dataset.activeView || 'dashboard';
     if (typeof VIEW_META !== 'undefined' && VIEW_META[currentView]) {
@@ -3969,6 +4233,7 @@
   }
   function setPeriodMode(mode) {
     if (mode !== 'weekly' && mode !== 'monthly') return;
+    chartPeriodOffset = 0;
     periodMode = mode;
     storage.set(PERIOD_KEY, mode);
     render();
@@ -4009,7 +4274,7 @@
     syncPeriodControls();
     if (!initial) window.scrollTo({ top: 0, behavior: 'smooth' });
     // Canvas-based content must be (re)drawn once its view is visible.
-    if (name === 'charts') requestAnimationFrame(function () { renderCharts(selectedPeriodSnapshot()); });
+    if (name === 'charts') requestAnimationFrame(function () { renderCharts(chartPeriodSnapshot()); });
     if (name === 'calendar') requestAnimationFrame(function () { renderCalendar(); renderDayDetail(); });
   }
 
@@ -4019,6 +4284,8 @@
   document.querySelectorAll('[data-period-mode]').forEach(function (btn) {
     btn.addEventListener('click', function () { setPeriodMode(btn.getAttribute('data-period-mode')); });
   });
+  if (els.chartPeriodPrevious) els.chartPeriodPrevious.addEventListener('click', function () { shiftChartPeriod(-1); });
+  if (els.chartPeriodNext) els.chartPeriodNext.addEventListener('click', function () { shiftChartPeriod(1); });
   document.querySelectorAll('[data-goto-view]').forEach(function (btn) {
     btn.addEventListener('click', function () { switchView(btn.getAttribute('data-goto-view')); });
   });
@@ -4056,7 +4323,8 @@
       expenses: state.expenses,
       savings: normalizeSavings(state),
       lang: currentLang,
-      theme: isDark() ? 'dark' : 'light'
+      theme: isDark() ? 'dark' : 'light',
+      chartColorTheme: chartColorTheme
     };
   }
   function sanitizeExpense(e) {
@@ -4093,25 +4361,26 @@
       expenses: normalizedExpenses,
       savings: savings,
       lang: TRANSLATIONS[data.lang] ? data.lang : currentLang,
-      theme: (data.theme === 'dark' || data.theme === 'light') ? data.theme : (isDark() ? 'dark' : 'light')
+      theme: (data.theme === 'dark' || data.theme === 'light') ? data.theme : (isDark() ? 'dark' : 'light'),
+      chartColorTheme: normalizeChartColorTheme(data.chartColorTheme)
     };
   }
   function fingerprint(data) {
     var n = normalizeSnapshot(data);
     if (!n) return '';
     return JSON.stringify({
-      i: n.income, d: n.incomeDate, b: n.budgets, c: n.categories, s: n.savings, l: n.lang, th: n.theme,
+      i: n.income, d: n.incomeDate, b: n.budgets, c: n.categories, s: n.savings, l: n.lang, th: n.theme, ct: n.chartColorTheme,
       inc: n.incomes.map(function (e) { return [e.id, e.amount, e.description, e.source, e.date, e.createdAt, e.kind, e.savingsGoalId, e.savingsTransactionId]; }),
       e: n.expenses.map(function (e) { return [e.id, e.amount, e.description, e.category, e.date, e.createdAt, e.kind, e.savingsGoalId, e.savingsTransactionId]; })
     });
   }
   function isMeaningfulRemote(data) {
-    return !!data && (data.budgets != null || (Array.isArray(data.categories) && data.categories.length > 0) || round2(data.income) > 0 || (Array.isArray(data.incomes) && data.incomes.length > 0) || (Array.isArray(data.expenses) && data.expenses.length > 0) || isValidISODate(data.incomeDate) || (data.savings && ((data.savings.goals || []).length || (data.savings.transactions || []).length || (data.savings.deletedGoals || []).length || (data.savings.deletedRecords || []).length || (data.savings.rollover && data.savings.rollover.enabled))));
+    return !!data && (normalizeChartColorTheme(data.chartColorTheme) !== DEFAULT_CHART_COLOR_THEME || data.budgets != null || (Array.isArray(data.categories) && data.categories.length > 0) || round2(data.income) > 0 || (Array.isArray(data.incomes) && data.incomes.length > 0) || (Array.isArray(data.expenses) && data.expenses.length > 0) || isValidISODate(data.incomeDate) || (data.savings && ((data.savings.goals || []).length || (data.savings.transactions || []).length || (data.savings.deletedGoals || []).length || (data.savings.deletedRecords || []).length || (data.savings.rollover && data.savings.rollover.enabled))));
   }
   function hasMeaningfulLocalData() {
     if (!state || state.demoSeed) return false;
     var budgets = state.budgets || {};
-    return !!(incomeEntries().length || state.expenses.length || (state.categories && state.categories.length) ||
+    return !!(chartColorTheme !== DEFAULT_CHART_COLOR_THEME || incomeEntries().length || state.expenses.length || (state.categories && state.categories.length) ||
       (state.savings && ((state.savings.goals || []).length || (state.savings.transactions || []).length || (state.savings.deletedGoals || []).length || (state.savings.deletedRecords || []).length || state.savings.rollover.enabled)) ||
       (budgets.weeklyConfigured && Number(budgets.weekly) >= 0) || (budgets.monthlyConfigured && Number(budgets.monthly) >= 0));
   }
@@ -4218,7 +4487,8 @@
       budgets: budgets,
       savings: savings,
       lang: local.lang || remote.lang,
-      theme: local.theme || remote.theme
+      theme: local.theme || remote.theme,
+      chartColorTheme: local.chartColorTheme !== DEFAULT_CHART_COLOR_THEME ? local.chartColorTheme : remote.chartColorTheme
     };
   }
 
@@ -4271,6 +4541,9 @@
     state = { income: remote.income, incomeDate: remote.incomeDate, incomes: remote.incomes, budgets: remote.budgets, categories: remote.categories, expenses: remote.expenses, savings: remote.savings, demoSeed: false };
     document.documentElement.classList.toggle('dark', remote.theme === 'dark');
     storage.set(THEME_KEY, remote.theme);
+    chartColorTheme = normalizeChartColorTheme(remote.chartColorTheme);
+    storage.set(CHART_COLOR_THEME_KEY, chartColorTheme);
+    syncChartColorThemeControls();
     syncThemeButton();
     syncIncomeInputs();
     save(); // writes the local cache; suppressCloud stops the echo push
@@ -4600,11 +4873,15 @@
       if (!map[source]) map[source] = { source: source, name: incomeSourceLabel(source), total: 0 };
       map[source].total += Number(entry.amount) || 0;
     });
-    var palette = ['#059669', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1'];
+    var palette = activeChartPaletteColors();
+    var knownSources = INCOME_SOURCES.concat(['Savings Withdrawal']);
     return Object.keys(map).map(function (source) { return map[source]; })
-      .map(function (item) { item.total = round2(item.total); return item; })
-      .sort(function (a, b) { return b.total - a.total; })
-      .map(function (item, index) { item.color = palette[index % palette.length]; return item; });
+      .map(function (item) {
+        item.total = round2(item.total);
+        item.color = getCategoryColor(item.source, palette, stableSeriesColorIndex(item.source, knownSources));
+        return item;
+      })
+      .sort(function (a, b) { return b.total - a.total; });
   }
   function aggregateByPaymentMethod(expenses) {
     var rows = Array.isArray(expenses) ? expenses : state.expenses;
@@ -4616,11 +4893,15 @@
       if (!map[key]) map[key] = { name: paymentMethodLabel(name), method: name, total: 0 };
       map[key].total += Number(entry.amount) || 0;
     });
-    var palette = ['#059669', '#0ea5e9', '#f59e0b', '#8b5cf6', '#ef4444', '#14b8a6', '#f97316', '#6366f1', '#84cc16', '#ec4899', '#64748b', '#a855f7'];
+    var palette = activeChartPaletteColors();
+    var methodNames = PAYMENT_METHOD_OPTIONS.map(function (option) { return option.value; });
     return Object.keys(map).map(function (key) { return map[key]; })
-      .map(function (item) { item.total = round2(item.total); return item; })
-      .sort(function (a, b) { return b.total - a.total; })
-      .map(function (item, index) { item.color = palette[index % palette.length]; return item; });
+      .map(function (item) {
+        item.total = round2(item.total);
+        item.color = getCategoryColor(item.method, palette, stableSeriesColorIndex(item.method, methodNames));
+        return item;
+      })
+      .sort(function (a, b) { return b.total - a.total; });
   }
   function cleanPaymentMethodName(value) {
     return String(value == null ? '' : value).replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 40);
@@ -4927,6 +5208,48 @@
 
   var selectedCategoryDetail = '';
   var selectedPaymentMethodDetail = '';
+  var categoryExpenseSortBy = 'date';
+  var categoryExpenseSortDirection = 'desc';
+  function compareCategoryExpenses(a, b) {
+    var result = 0;
+    if (categoryExpenseSortBy === 'amount') {
+      var amountA = Number(a.amount) || 0;
+      var amountB = Number(b.amount) || 0;
+      if (a.kind === 'savings-withdrawal' || a.kind === 'savings-withdrawal-offset') amountA = -amountA;
+      if (b.kind === 'savings-withdrawal' || b.kind === 'savings-withdrawal-offset') amountB = -amountB;
+      result = amountA - amountB;
+    } else {
+      var dateA = new Date(a.date || '').getTime();
+      var dateB = new Date(b.date || '').getTime();
+      dateA = isFinite(dateA) ? dateA : 0;
+      dateB = isFinite(dateB) ? dateB : 0;
+      result = dateA - dateB;
+      if (!result) result = (Number(a.createdAt) || 0) - (Number(b.createdAt) || 0);
+    }
+    if (result) return categoryExpenseSortDirection === 'desc' ? -result : result;
+    // Keep equal-value rows stable and recent-first without adding name sorting.
+    return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+  }
+  function syncCategorySortControls(nodes, count) {
+    if (!nodes || !nodes.sortControls) return;
+    var visible = count >= 3;
+    nodes.sortControls.classList.toggle('hidden', !visible);
+    if (!visible) return;
+    var dateActive = categoryExpenseSortBy === 'date';
+    var amountActive = categoryExpenseSortBy === 'amount';
+    if (nodes.sortDateLabel) nodes.sortDateLabel.textContent = t('chart.sortDate') + (dateActive ? (categoryExpenseSortDirection === 'desc' ? ' ↓' : ' ↑') : '');
+    if (nodes.sortAmountLabel) nodes.sortAmountLabel.textContent = t('chart.sortAmount') + (amountActive ? (categoryExpenseSortDirection === 'desc' ? ' ↓' : ' ↑') : '');
+    if (nodes.sortDate) {
+      nodes.sortDate.classList.toggle('active', dateActive);
+      nodes.sortDate.setAttribute('aria-pressed', String(dateActive));
+      nodes.sortDate.setAttribute('aria-label', t(dateActive && categoryExpenseSortDirection === 'asc' ? 'chart.sortDateAscAria' : 'chart.sortDateDescAria'));
+    }
+    if (nodes.sortAmount) {
+      nodes.sortAmount.classList.toggle('active', amountActive);
+      nodes.sortAmount.setAttribute('aria-pressed', String(amountActive));
+      nodes.sortAmount.setAttribute('aria-label', t(amountActive && categoryExpenseSortDirection === 'asc' ? 'chart.sortAmountAscAria' : 'chart.sortAmountDescAria'));
+    }
+  }
   function renderExpenseDetail(kind, selectedName, snapshot, nodes) {
     if (!nodes || !nodes.section) return;
     if (!selectedName) {
@@ -4944,10 +5267,16 @@
         return Object.assign({}, entry, { category: 'Savings Transfer', kind: 'savings-withdrawal-offset' });
       }));
     }
-    rows = rows.slice().sort(function (a, b) {
-      if (a.date !== b.date) return a.date < b.date ? 1 : -1;
-      return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
-    });
+    rows = rows.slice();
+    if (kind === 'category') {
+      rows.sort(compareCategoryExpenses);
+      syncCategorySortControls(nodes, rows.length);
+    } else {
+      rows.sort(function (a, b) {
+        if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+        return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+      });
+    }
     var label = isPayment ? paymentMethodLabel(selectedName) : catLabel(selectedName);
     nodes.title.textContent = isPayment
       ? t('chart.paymentDetailTitle', { method: label })
@@ -4969,7 +5298,7 @@
         var amountColor = isSavingsWithdrawal ? '#dc2626' : 'inherit';
         return '<article class="category-expense-row"><div class="category-expense-copy">' +
           '<strong class="category-expense-description">' + escapeHtml(description) + '</strong>' +
-          '<div class="category-expense-meta"><time datetime="' + escapeHtml(expense.date || '') + '">' + escapeHtml(displayDate(expense.date)) + '</time>' +
+          '<div class="category-expense-meta"><span class="dot" style="background:' + catColor(expense.category || 'Other') + '" aria-hidden="true"></span><time datetime="' + escapeHtml(expense.date || '') + '">' + escapeHtml(displayDate(expense.date)) + '</time>' +
           (secondary ? '<span class="payment-method-badge">' + escapeHtml(secondary) + '</span>' : '') +
           '</div></div><strong class="category-expense-amount" style="color:' + amountColor + '">' + amountPrefix + escapeHtml(fmt(Number(expense.amount) || 0)) + '</strong></article>';
       }).join('');
@@ -4978,7 +5307,9 @@
   }
   function renderCategoryDetail(snapshot) {
     renderExpenseDetail('category', selectedCategoryDetail, snapshot, {
-      section: els.categoryDetail, title: els.categoryDetailTitle, sub: els.categoryDetailSub, list: els.categoryExpenseList
+      section: els.categoryDetail, title: els.categoryDetailTitle, sub: els.categoryDetailSub, list: els.categoryExpenseList,
+      sortControls: els.categoryExpenseSortControls, sortDate: els.categorySortDate, sortAmount: els.categorySortAmount,
+      sortDateLabel: els.categorySortDateLabel, sortAmountLabel: els.categorySortAmountLabel
     });
   }
   function renderPaymentMethodDetail(snapshot) {
@@ -4988,8 +5319,20 @@
   }
   function openCategoryDetail(category, snapshot) {
     selectedCategoryDetail = String(category || '');
-    renderCategoryDetail(snapshot || selectedPeriodSnapshot());
+    categoryExpenseSortBy = 'date';
+    categoryExpenseSortDirection = 'desc';
+    renderCategoryDetail(snapshot || chartPeriodSnapshot());
     if (els.categoryDetail) els.categoryDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+  function setCategoryExpenseSort(sortBy) {
+    if (sortBy !== 'date' && sortBy !== 'amount') return;
+    if (categoryExpenseSortBy === sortBy) {
+      categoryExpenseSortDirection = categoryExpenseSortDirection === 'desc' ? 'asc' : 'desc';
+    } else {
+      categoryExpenseSortBy = sortBy;
+      categoryExpenseSortDirection = 'desc';
+    }
+    renderCategoryDetail(chartPeriodSnapshot());
   }
   function closeCategoryDetail() {
     selectedCategoryDetail = '';
@@ -4997,7 +5340,7 @@
   }
   function openPaymentMethodDetail(method, snapshot) {
     selectedPaymentMethodDetail = normalizePaymentMethod(method);
-    renderPaymentMethodDetail(snapshot || selectedPeriodSnapshot());
+    renderPaymentMethodDetail(snapshot || chartPeriodSnapshot());
     if (els.paymentMethodDetail) els.paymentMethodDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
   function closePaymentMethodDetail() {
@@ -5043,7 +5386,7 @@
     var canvas = els.chartCanvas, wrap = canvas.parentElement;
     canvas.style.cursor = 'default';
     bindFallbackDoughnutClick(canvas, data, spent, function (name) {
-      openCategoryDetail(name, selectedPeriodSnapshot());
+      openCategoryDetail(name, chartPeriodSnapshot());
     });
     var W = wrap.clientWidth || 300, H = wrap.clientHeight || 260, dpr = window.devicePixelRatio || 1;
     canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
@@ -5070,7 +5413,7 @@
   }
 
   function renderChart(snapshot) {
-    if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
+    if (!snapshot || typeof snapshot !== 'object') snapshot = chartPeriodSnapshot();
     var savingsWithdrawals = savingsWithdrawalsForRange(snapshot.range);
     var data = aggregateByCategory(snapshot.expenses, savingsWithdrawals);
     var spent = round2(data.reduce(function (sum, item) { return sum + item.total; }, 0));
@@ -5146,8 +5489,8 @@
     if (!canvas || !wrap) return;
     canvas.style.cursor = 'default';
     bindFallbackDoughnutClick(canvas, data, total, function (name) {
-      if (chartKind === 'income') openIncomeSourceDetail(name, selectedPeriodSnapshot());
-      else openPaymentMethodDetail(name, selectedPeriodSnapshot());
+      if (chartKind === 'income') openIncomeSourceDetail(name, chartPeriodSnapshot());
+      else openPaymentMethodDetail(name, chartPeriodSnapshot());
     });
     var W = wrap.clientWidth || 300, H = wrap.clientHeight || 260, dpr = window.devicePixelRatio || 1;
     canvas.width = W * dpr; canvas.height = H * dpr; canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
@@ -5168,7 +5511,7 @@
     ctx.fillText(fmt(total), cx, cy + 11);
   }
   function renderPaymentMethodChart(snapshot) {
-    if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
+    if (!snapshot || typeof snapshot !== 'object') snapshot = chartPeriodSnapshot();
     var data = aggregateByPaymentMethod(snapshot.expenses);
     var total = round2(data.reduce(function (sum, item) { return sum + item.total; }, 0));
     var empty = !data.length || total <= 0;
@@ -5239,7 +5582,7 @@
   }
   function openIncomeSourceDetail(source, snapshot) {
     selectedIncomeSourceDetail = (INCOME_SOURCE_I18N[source] || source === 'Savings Withdrawal') ? source : 'Other Income';
-    renderIncomeSourceDetail(snapshot || selectedPeriodSnapshot());
+    renderIncomeSourceDetail(snapshot || chartPeriodSnapshot());
     if (els.incomeSourceDetail) els.incomeSourceDetail.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
   function closeIncomeSourceDetail() {
@@ -5260,7 +5603,7 @@
     }).join('');
   }
   function renderIncomeChart(snapshot) {
-    if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
+    if (!snapshot || typeof snapshot !== 'object') snapshot = chartPeriodSnapshot();
     var periodIncomeRows = incomeEntriesForRange(snapshot.range);
     var savingsWithdrawals = periodIncomeRows.filter(function (entry) { return entry.kind === 'savings-withdrawal'; });
     var incomeRows = periodIncomeRows.filter(function (entry) { return entry.kind !== 'savings-withdrawal'; })
@@ -5314,24 +5657,27 @@
     });
   }
   function renderCharts(snapshot) {
-    if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
+    if (!snapshot || typeof snapshot !== 'object') snapshot = chartPeriodSnapshot();
+    syncChartPeriodControls(snapshot);
     renderChart(snapshot);
     renderPaymentMethodChart(snapshot);
     renderIncomeChart(snapshot);
   }
   if (els.chartLegend) els.chartLegend.addEventListener('click', function (event) {
     var button = event.target.closest('[data-category-name]');
-    if (button) openCategoryDetail(button.getAttribute('data-category-name'), selectedPeriodSnapshot());
+    if (button) openCategoryDetail(button.getAttribute('data-category-name'), chartPeriodSnapshot());
   });
   if (els.categoryDetailBack) els.categoryDetailBack.addEventListener('click', closeCategoryDetail);
+  if (els.categorySortDate) els.categorySortDate.addEventListener('click', function () { setCategoryExpenseSort('date'); });
+  if (els.categorySortAmount) els.categorySortAmount.addEventListener('click', function () { setCategoryExpenseSort('amount'); });
   if (els.paymentChartLegend) els.paymentChartLegend.addEventListener('click', function (event) {
     var button = event.target.closest('[data-payment-method]');
-    if (button) openPaymentMethodDetail(button.getAttribute('data-payment-method'), selectedPeriodSnapshot());
+    if (button) openPaymentMethodDetail(button.getAttribute('data-payment-method'), chartPeriodSnapshot());
   });
   if (els.paymentMethodDetailBack) els.paymentMethodDetailBack.addEventListener('click', closePaymentMethodDetail);
   if (els.incomeChartLegend) els.incomeChartLegend.addEventListener('click', function (event) {
     var button = event.target.closest('[data-income-source]');
-    if (button) openIncomeSourceDetail(button.getAttribute('data-income-source'), selectedPeriodSnapshot());
+    if (button) openIncomeSourceDetail(button.getAttribute('data-income-source'), chartPeriodSnapshot());
   });
   if (els.incomeSourceDetailBack) els.incomeSourceDetailBack.addEventListener('click', closeIncomeSourceDetail);
 
@@ -5616,7 +5962,7 @@
   }
 
   function renderInsights(snapshot) {
-    if (!snapshot || typeof snapshot !== 'object') snapshot = selectedPeriodSnapshot();
+    if (!snapshot || typeof snapshot !== 'object') snapshot = chartPeriodSnapshot();
     var rows = snapshot.expenses;
     var spent = snapshot.spent;
     var data = aggregateByCategory(rows, savingsWithdrawalsForRange(snapshot.range));
@@ -5636,11 +5982,12 @@
 
   function render() {
     var snapshot = selectedPeriodSnapshot();
+    var chartsSnapshot = chartPeriodSnapshot();
     syncPeriodControls(snapshot);
     renderSummary(snapshot);
     renderLog();
-    renderCharts(snapshot);
-    renderInsights(snapshot);
+    renderCharts(chartsSnapshot);
+    renderInsights(chartsSnapshot);
     renderCalendar();
     renderDayDetail();
     renderSavings();
@@ -6468,6 +6815,11 @@
   });
 
   if (els.settingsThemeBtn) els.settingsThemeBtn.addEventListener('click', function () { els.themeToggle.click(); });
+  if (els.chartColorThemeOptions) els.chartColorThemeOptions.addEventListener('click', function (event) {
+    var button = event.target.closest('[data-chart-theme]');
+    if (button) setChartColorTheme(button.getAttribute('data-chart-theme'));
+  });
+  syncChartColorThemeControls();
   if (els.settingsExportBtn) els.settingsExportBtn.addEventListener('click', function () { els.exportBtn.click(); });
   if (els.settingsSampleBtn) els.settingsSampleBtn.addEventListener('click', function () { els.sampleBtn.click(); });
   if (els.settingsClearBtn) els.settingsClearBtn.addEventListener('click', function () {
@@ -6581,7 +6933,7 @@
   window.addEventListener('resize', function () {
     if (typeof window.Chart !== 'undefined') return;
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(function () { renderCharts(selectedPeriodSnapshot()); }, 150);
+    resizeTimer = setTimeout(function () { renderCharts(chartPeriodSnapshot()); }, 150);
   });
 
   /* ============================================================
@@ -6785,5 +7137,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a5b82359483206b9',t:'MTc5NDg0OTMzMA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a5b82359483206b9',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a601f0cd0fe190d1',t:'MTc5NTYyMzIwNQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a601f0cd0fe190d1',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
