@@ -1354,14 +1354,14 @@
 
         <div class="empty-state hidden" id="emptyState">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z"/><path d="M8 7h8"/><path d="M8 11h8"/><path d="M8 15h5"/></svg>
-          <p style="margin:0 0 .8rem; font-weight:600;" data-i18n="log.emptyTitle">No expenses yet</p>
-          <p style="margin:0 0 1rem; font-size:.85rem;" data-i18n="dashboard.empty">Add your first expense, or load sample data to explore.</p>
+          <p style="margin:0 0 .8rem; font-weight:600;" id="periodLogEmptyTitle">No expenses this week</p>
+          <p style="margin:0 0 1rem; font-size:.85rem;" id="periodLogEmptyText">Add an expense to see it here.</p>
           <button type="button" class="chip" id="sampleBtn" data-i18n="log.sampleBtn">Load sample data</button>
         </div>
 
         <hr class="divider" />
         <div class="row between" style="font-size:.92rem;">
-          <span style="color:var(--muted); font-weight:600;" data-i18n="dashboard.allTime">Total spent · all time</span>
+          <span style="color:var(--muted); font-weight:600;" id="periodLogTotalLabel">Expense total · this week</span>
           <span style="font-weight:800; font-variant-numeric:tabular-nums;" id="logTotal">$0.00</span>
         </div>
         <button type="button" class="btn-secondary log-more hidden" id="logMoreBtn" aria-expanded="false" data-i18n="dashboard.seeAll">See all expenses</button>
@@ -3048,6 +3048,9 @@
     'chart.savingsPartialNote': 'Part of a savings transaction; actions affect the full transaction.',
     'dashboard.addExpense': '+ Add Expense', 'dashboard.more': 'Budget details',
     'dashboard.recent': 'Recent expenses', 'dashboard.allTime': 'Total spent · all time',
+    'dashboard.periodTotalWeek': 'Expense total · this week', 'dashboard.periodTotalMonth': 'Expense total · this month',
+    'dashboard.periodEmptyWeek': 'No expenses this week', 'dashboard.periodEmptyMonth': 'No expenses this month',
+    'dashboard.periodEmptyHelp': 'Add an expense to see it here.',
     'dashboard.seeAll': 'See all expenses', 'dashboard.showLess': 'Show recent expenses',
     'dashboard.empty': 'Add your first expense, or load sample data to explore.',
     'dashboard.deleteConfirm': 'Delete this transaction? This cannot be undone.',
@@ -3061,6 +3064,8 @@
     'chart.savingsDeleteInsufficient': '無法刪除此存款，因為部分儲蓄已經提取。請先調整或刪除提款。',
     'chart.savingsPartialNote': '此為儲蓄交易的部分金額；操作會影響整筆交易。',
     'dashboard.addExpense': '＋新增支出', 'dashboard.more': '預算詳情', 'dashboard.recent': '最近支出',
+    'dashboard.periodTotalWeek': '支出總額 · 本週', 'dashboard.periodTotalMonth': '支出總額 · 本月',
+    'dashboard.periodEmptyWeek': '本週沒有支出', 'dashboard.periodEmptyMonth': '本月沒有支出', 'dashboard.periodEmptyHelp': '新增支出後便會在此顯示。',
     'dashboard.allTime': '支出總額 · 所有時間', 'dashboard.seeAll': '查看所有支出', 'dashboard.showLess': '只顯示最近支出',
     'dashboard.empty': '新增第一筆支出，或載入示範資料。', 'dashboard.deleteConfirm': '刪除此交易？此操作無法復原。',
     'dashboard.resetConfirm': '重置預算並清除支出？此操作無法復原。', 'dashboard.clearConfirm': '清除所有支出？此操作無法復原。',
@@ -3072,6 +3077,8 @@
     'chart.savingsDeleteInsufficient': '无法删除此存款，因为部分储蓄已经提取。请先调整或删除提款。',
     'chart.savingsPartialNote': '此为储蓄交易的部分金额；操作会影响整笔交易。',
     'dashboard.addExpense': '＋新增支出', 'dashboard.more': '预算详情', 'dashboard.recent': '最近支出',
+    'dashboard.periodTotalWeek': '支出总额 · 本周', 'dashboard.periodTotalMonth': '支出总额 · 本月',
+    'dashboard.periodEmptyWeek': '本周没有支出', 'dashboard.periodEmptyMonth': '本月没有支出', 'dashboard.periodEmptyHelp': '新增支出后便会在此显示。',
     'dashboard.allTime': '支出总额 · 所有时间', 'dashboard.seeAll': '查看所有支出', 'dashboard.showLess': '只显示最近支出',
     'dashboard.empty': '新增第一笔支出，或载入示范数据。', 'dashboard.deleteConfirm': '删除此交易？此操作无法撤销。',
     'dashboard.resetConfirm': '重置预算并清除支出？此操作无法撤销。', 'dashboard.clearConfirm': '清除所有支出？此操作无法撤销。',
@@ -4329,6 +4336,7 @@
   function setPeriodMode(mode) {
     if (mode !== 'weekly' && mode !== 'monthly') return;
     chartPeriodOffset = 0;
+    if (periodMode !== mode) showAllExpenses = false;
     periodMode = mode;
     storage.set(PERIOD_KEY, mode);
     render();
@@ -5106,14 +5114,19 @@
 
   var showAllExpenses = false;
   function renderLog() {
-    var sorted = state.expenses.slice().sort(function (a, b) {
+    var sorted = expensesForRange(currentPeriodRange(periodMode)).slice().sort(function (a, b) {
       if (a.date !== b.date) return a.date < b.date ? 1 : -1;
       return (b.createdAt || 0) - (a.createdAt || 0);
     });
 
     els.logCount.textContent = t(sorted.length === 1 ? 'log.itemsOne' : 'log.itemsMany', { n: sorted.length });
-    els.logTotal.textContent = fmt(totalSpent()); // the log remains the complete record list
+    els.logTotal.textContent = fmt(sumExpenses(sorted));
+    document.getElementById('periodLogTotalLabel').textContent = t(periodMode === 'monthly' ? 'dashboard.periodTotalMonth' : 'dashboard.periodTotalWeek');
+    document.getElementById('periodLogEmptyTitle').textContent = t(periodMode === 'monthly' ? 'dashboard.periodEmptyMonth' : 'dashboard.periodEmptyWeek');
+    document.getElementById('periodLogEmptyText').textContent = t('dashboard.periodEmptyHelp');
     els.emptyState.classList.toggle('hidden', sorted.length > 0);
+    // Loading sample data replaces expenses; only suggest it when no history exists.
+    els.sampleBtn.classList.toggle('hidden', state.expenses.length > 0);
 
     var logMoreBtn = document.getElementById('logMoreBtn');
     if (logMoreBtn) {
@@ -7324,5 +7337,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a602a9cb08e7f1c6',t:'MTc5NTYzMDc4Mw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a602a9cb08e7f1c6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a602b24bded7f1c6',t:'MTc5NTYzMTEzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a602b24bded7f1c6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
