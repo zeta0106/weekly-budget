@@ -988,6 +988,59 @@
     [data-active-view="dashboard"] .wb-grid { grid-template-columns:minmax(300px, .85fr) minmax(0,1.15fr); }
   }
 
+  /* Consistent calendar picker for the transaction date, across iOS and desktop. */
+  .custom-date-trigger { display:flex; align-items:center; justify-content:space-between; gap:12px; cursor:pointer; text-align:left; font-weight:600; }
+  .custom-date-trigger svg { width:20px; height:20px; flex:none; color:var(--brand-green-strong); }
+  .custom-date-trigger:hover { border-color:#10b981; }
+  .custom-date-trigger:focus-visible,.custom-picker-card button:focus-visible { outline:3px solid #10b981; outline-offset:2px; }
+  .custom-picker-overlay { position:fixed; inset:0; z-index:120; display:flex; align-items:center; justify-content:center; padding:16px; background:rgba(3,25,19,.58); }
+  .custom-picker-card { width:min(100%,370px); max-height:calc(100dvh - 32px); overflow:auto; border:1px solid var(--border); border-radius:22px; background:var(--card); color:var(--text); box-shadow:0 18px 48px rgba(2,18,13,.22); padding:20px; }
+  .custom-picker-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .custom-picker-kicker { color:var(--brand-green-strong); font-size:12px; font-weight:700; }
+  .custom-picker-top h2 { margin:4px 0 0; color:var(--text); font-size:20px; font-weight:800; line-height:1.25; }
+  .custom-picker-close,.custom-picker-arrow { display:inline-flex; align-items:center; justify-content:center; cursor:pointer; flex:none; width:40px; height:40px; border:1px solid var(--border); border-radius:12px; background:var(--card); color:var(--text); }
+  .custom-picker-close svg,.custom-picker-arrow svg { width:18px; height:18px; }
+  .custom-picker-close:hover,.custom-picker-arrow:hover { background:var(--row-hover); }
+  .custom-picker-month-nav { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:20px 0 12px; }
+  .custom-picker-month-button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-width:0; min-height:44px; padding:0 8px; border:0; border-radius:10px; background:transparent; color:var(--text); font:700 16px/1.2 inherit; font-family:inherit; font-size:16px; font-weight:700; text-align:center; cursor:pointer; }
+  .custom-picker-month-button:not(:disabled)::after { content:""; width:7px; height:7px; border-right:2px solid var(--brand-green-strong); border-bottom:2px solid var(--brand-green-strong); transform:rotate(45deg) translateY(-2px); }
+  .custom-picker-month-button:not(:disabled):hover { background:var(--row-hover); }
+  .custom-picker-month-button:disabled { opacity:1; cursor:default; }
+  .custom-picker-arrow:disabled { opacity:.35; cursor:not-allowed; }
+  .custom-picker-options-row { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .custom-picker-option { min-height:52px; padding:8px 4px; border:1px solid var(--border); border-radius:12px; background:var(--card); color:var(--text); font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; }
+  .custom-picker-option:hover { background:var(--row-hover); }
+  .custom-picker-option.is-selected { background:#047857; border-color:#047857; color:#fff; }
+  .custom-picker-back { margin-top:16px; padding:8px 0; min-height:40px; background:transparent; border:0; color:var(--brand-green-strong); font-family:inherit; font-weight:700; cursor:pointer; }
+  #dayTxAmount { font-size:16px; }
+  .expense-calc { margin-top:.65rem; padding:.7rem; border:1px solid var(--border); border-radius:16px; background:var(--card); }
+  .expense-calc-preview { margin:.35rem .1rem 0; text-align:right; color:var(--brand-green-strong); font-size:.85rem; font-weight:700; overflow-wrap:anywhere; }
+  .expense-calc-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
+  .expense-calc-key { min-width:0; height:44px; padding:0; border:1px solid var(--border); border-radius:18px; background:var(--card); color:var(--text); font-family:inherit; font-size:1.05rem; font-weight:700; cursor:pointer; touch-action:manipulation; }
+  .expense-calc-key[data-calc="ops"] { white-space:nowrap; font-size:clamp(.65rem, 3vw, .85rem); }
+  .expense-calc-backspace-icon { display:inline-block; width:22px; height:22px; vertical-align:middle; }
+  .expense-calc-key:hover { background:var(--row-hover); }
+  .expense-calc-key:focus-visible, .expense-calc-op:focus-visible { outline:3px solid #10b981; outline-offset:2px; }
+  .expense-calc-done { background:#047857; border-color:#047857; color:#fff; font-size:.88rem; }
+  .expense-calc-done:hover { background:#065f46; }
+  .expense-calc-ops { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; margin-bottom:8px; }
+  .expense-calc-op { height:44px; border:1px solid var(--border); border-radius:14px; background:var(--field); color:var(--text); font:700 1.1rem/1 inherit; cursor:pointer; }
+  .expense-calc-hint { margin:.45rem 0 0; font-size:.75rem; color:var(--muted); }
+  .custom-picker-grid { display:grid; gap:4px; }
+  .custom-picker-row { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
+  .custom-picker-weekday { display:flex; align-items:center; justify-content:center; min-width:0; height:32px; color:var(--muted); font-size:12px; font-weight:700; }
+  .custom-picker-day { position:relative; display:flex; align-items:center; justify-content:center; min-width:0; height:44px; padding:0; border:1px solid transparent; border-radius:12px; background:transparent; color:var(--text); font-family:inherit; font-size:14px; font-weight:600; line-height:1; cursor:pointer; }
+  .custom-picker-day:hover { background:var(--row-hover); }
+  .custom-picker-day.is-outside { color:var(--muted); opacity:.62; }
+  .custom-picker-day.is-today:not(.is-selected) { border-color:#10b981; color:var(--brand-green-strong); }
+  .custom-picker-day.is-selected { background:#047857; color:#fff; border-color:#047857; opacity:1; }
+  .custom-picker-day.is-selected:hover { background:#065f46; }
+  .custom-picker-footer { display:flex; justify-content:space-between; gap:12px; padding-top:16px; margin-top:12px; border-top:1px solid var(--border); }
+  .custom-picker-cancel,.custom-picker-today { min-height:44px; padding:0 18px; border-radius:12px; font-family:inherit; font-weight:700; font-size:14px; cursor:pointer; }
+  .custom-picker-cancel { border:1px solid var(--border); color:var(--text); background:var(--card); }
+  .custom-picker-today { border:1px solid rgba(5,150,105,.22); color:#047857; background:rgba(16,185,129,.12); }
+  html.dark .custom-picker-today { color:#6ee7b7; }
+  @media(max-width:380px) { .custom-picker-card { padding:16px; } .custom-picker-row { gap:2px; } }
 </style>
 </head>
 
@@ -1727,8 +1780,12 @@
     </div>
 
     <div class="day-tx-date-picker">
-      <label class="label" for="dayTxDateInput" data-i18n="common.date">Date</label>
-      <input class="field" type="date" id="dayTxDateInput" />
+      <label class="label" for="dayPickerOpen" id="dayPickerFieldLabel" data-i18n="common.date">Date</label>
+      <input type="hidden" id="dayTxDateInput" />
+      <button type="button" class="field custom-date-trigger" id="dayPickerOpen" aria-haspopup="dialog" aria-expanded="false" aria-controls="datePickerOverlay" aria-labelledby="dayPickerFieldLabel dayPickerValue">
+        <span id="dayPickerValue">—</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4M17 3v4M3 10h18"/></svg>
+      </button>
     </div>
     <div class="day-tx-summary" aria-live="polite">
       <div class="mini-stat"><span data-i18n="day.income">Income</span><strong id="dayTxIncomeTotal">$0.00</strong></div>
@@ -1755,7 +1812,17 @@
       <label class="label" for="dayTxAmount" data-i18n="common.amountReq">Amount *</label>
       <div class="money-wrap">
         <span class="money-sign">$</span>
-        <input class="field" id="dayTxAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" autocomplete="off" />
+        <input class="field" id="dayTxAmount" type="text" inputmode="decimal" min="0" step="0.01" placeholder="0.00" autocomplete="off" maxlength="80" aria-controls="expenseCalculator" aria-describedby="expenseCalcPreview" />
+      </div>
+      <div id="expenseCalcPreview" class="expense-calc-preview hidden" aria-live="polite"></div>
+      <div id="expenseCalculator" class="expense-calc hidden" aria-label="Expense calculator" data-i18n-aria="calc.label">
+        <div class="expense-calc-ops" aria-label="Operations" data-i18n-aria="calc.operations"><button type="button" class="expense-calc-op" data-operation="+" aria-label="Add" data-i18n-aria="calc.add">+</button><button type="button" class="expense-calc-op" data-operation="-" aria-label="Subtract" data-i18n-aria="calc.subtract">−</button><button type="button" class="expense-calc-op" data-operation="*" aria-label="Multiply" data-i18n-aria="calc.multiply">×</button><button type="button" class="expense-calc-op" data-operation="/" aria-label="Divide" data-i18n-aria="calc.divide">÷</button></div>
+        <div class="expense-calc-grid">
+          <button type="button" class="expense-calc-key" data-calc="7">7</button><button type="button" class="expense-calc-key" data-calc="8">8</button><button type="button" class="expense-calc-key" data-calc="9">9</button><button type="button" class="expense-calc-key" data-calc="back" aria-label="Backspace" data-i18n-aria="calc.backspace"><svg class="expense-calc-backspace-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4h12a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H9L2 12 9 4Z"/><path d="m12 9 6 6m0-6-6 6"/></svg></button>
+          <button type="button" class="expense-calc-key" data-calc="4">4</button><button type="button" class="expense-calc-key" data-calc="5">5</button><button type="button" class="expense-calc-key" data-calc="6">6</button><button type="button" class="expense-calc-key" data-calc="clear" aria-label="Clear" data-i18n-aria="calc.clear">AC</button>
+          <button type="button" class="expense-calc-key" data-calc="1">1</button><button type="button" class="expense-calc-key" data-calc="2">2</button><button type="button" class="expense-calc-key" data-calc="3">3</button><button type="button" class="expense-calc-key" data-calc="equals" aria-label="Calculate" data-i18n-aria="calc.calculate">=</button>
+          <button type="button" class="expense-calc-key" data-calc=".">.</button><button type="button" class="expense-calc-key" data-calc="0">0</button><button type="button" class="expense-calc-key" data-calc="00">00</button><button type="button" class="expense-calc-key expense-calc-done" data-calc="done" data-i18n="calc.done">Done</button>
+        </div>
       </div>
 
       <div style="margin-top:.85rem;">
@@ -1804,6 +1871,27 @@
         <button type="submit" class="btn-primary" id="dayTxSubmit"><span id="dayTxSubmitLabel">Add Expense</span></button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- A shared custom date picker for the calendar transaction form -->
+<div id="datePickerOverlay" class="custom-picker-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="datePickerTitle">
+  <div class="custom-picker-card">
+    <div class="custom-picker-top">
+      <div><span class="custom-picker-kicker" data-i18n="picker.kicker">Calendar</span><h2 id="datePickerTitle" data-i18n="picker.title">Choose a date</h2></div>
+      <button class="custom-picker-close" type="button" id="datePickerClose" data-i18n-aria="auth.close" aria-label="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+    </div>
+    <div class="custom-picker-month-nav">
+      <button type="button" class="custom-picker-arrow" id="datePickerPrev" data-i18n-aria="cal.prev" aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg></button>
+      <button type="button" class="custom-picker-month-button" id="datePickerMonth" aria-label="Choose month and year" aria-expanded="false"></button>
+      <button type="button" class="custom-picker-arrow" id="datePickerNext" data-i18n-aria="cal.next" aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>
+    </div>
+    <div class="custom-picker-grid" id="datePickerGrid" role="grid" aria-labelledby="datePickerMonth"></div>
+    <button type="button" class="custom-picker-back hidden" id="datePickerBack" data-i18n="picker.back">← Back to calendar</button>
+    <div class="custom-picker-footer">
+      <button type="button" class="custom-picker-cancel" id="datePickerCancel" data-i18n="common.cancel">Cancel</button>
+      <button type="button" class="custom-picker-today" id="datePickerToday" data-i18n="date.today">Today</button>
+    </div>
   </div>
 </div>
 
@@ -3049,6 +3137,10 @@
     return s;
   }
   Object.assign(TRANSLATIONS.en, {
+    'picker.kicker': 'Calendar', 'picker.title': 'Choose a date', 'picker.chooseYear': 'Choose a year', 'picker.chooseMonth': 'Choose a month',
+    'picker.chooseMonthYear': 'Choose month and year', 'picker.back': '← Back to calendar',
+    'calc.calculate':'Calculate', 'calc.label':'Expense calculator', 'calc.done':'Done', 'calc.backspace':'Backspace', 'calc.operations':'Choose an operation', 'calc.clear':'Clear', 'calc.add':'Add', 'calc.subtract':'Subtract', 'calc.multiply':'Multiply', 'calc.divide':'Divide', 'calc.hint':'Choose an operation to calculate; Done applies the result.', 'calc.invalid':'Enter a valid non-negative amount and complete the calculation.', 'calc.zeroError':'Please enter an amount of 0 or more.',
+    'picker.previousYears': 'Previous 12 years', 'picker.nextYears': 'Next 12 years', 'picker.previousYear': 'Previous year', 'picker.nextYear': 'Next year',
     'chart.editSavingsNote': 'This edits the full savings transaction, including any portion shown in another chart.',
     'chart.savingsDeleteConfirm': 'Delete this entire savings transaction? This also changes your savings balance and updates all views. This cannot be undone.',
     'chart.savingsDeleteInsufficient': 'Cannot delete this deposit because its savings have already been withdrawn. Adjust or remove the withdrawal first.',
@@ -3067,6 +3159,10 @@
     'dashboard.confirm': 'Confirm', 'dashboard.syncProblem': 'Google sign-in is unavailable on this site. Try email sign-in or contact the site owner.'
   });
   Object.assign(TRANSLATIONS['zh-Hant'], {
+    'picker.kicker': '日曆', 'picker.title': '選擇日期', 'picker.chooseYear': '選擇年份', 'picker.chooseMonth': '選擇月份',
+    'picker.chooseMonthYear': '選擇月份及年份', 'picker.back': '← 返回日曆',
+    'calc.calculate':'計算結果', 'calc.label':'支出計算機', 'calc.done':'完成', 'calc.backspace':'刪除一位', 'calc.operations':'選擇運算', 'calc.clear':'清除', 'calc.add':'加', 'calc.subtract':'減', 'calc.multiply':'乘', 'calc.divide':'除', 'calc.hint':'選擇運算方式；撳完成套用結果。', 'calc.invalid':'請完成計算並輸入有效的非負金額。', 'calc.zeroError':'請輸入 0 或以上的金額。',
+    'picker.previousYears': '前 12 年', 'picker.nextYears': '後 12 年', 'picker.previousYear': '上一年', 'picker.nextYear': '下一年',
     'chart.editSavingsNote': '此操作會編輯整筆儲蓄交易，包括在其他圖表顯示的部分。',
     'chart.savingsDeleteConfirm': '刪除整筆儲蓄交易？儲蓄餘額及所有頁面都會更新，此操作無法復原。',
     'chart.savingsDeleteInsufficient': '無法刪除此存款，因為部分儲蓄已經提取。請先調整或刪除提款。',
@@ -3081,6 +3177,10 @@
     'dashboard.confirm': '確認', 'dashboard.syncProblem': '此網站暫時無法使用 Google 登入。請嘗試電郵登入或聯絡網站管理員。'
   });
   Object.assign(TRANSLATIONS['zh-Hans'], {
+    'picker.kicker': '日历', 'picker.title': '选择日期', 'picker.chooseYear': '选择年份', 'picker.chooseMonth': '选择月份',
+    'picker.chooseMonthYear': '选择月份及年份', 'picker.back': '← 返回日历',
+    'calc.calculate':'计算结果', 'calc.label':'支出计算器', 'calc.done':'完成', 'calc.backspace':'删除一位', 'calc.operations':'选择运算', 'calc.clear':'清除', 'calc.add':'加', 'calc.subtract':'减', 'calc.multiply':'乘', 'calc.divide':'除', 'calc.hint':'选择运算方式；点击完成应用结果。', 'calc.invalid':'请完成计算并输入有效的非负金额。', 'calc.zeroError':'请输入 0 或以上的金额。',
+    'picker.previousYears': '前 12 年', 'picker.nextYears': '后 12 年', 'picker.previousYear': '上一年', 'picker.nextYear': '下一年',
     'chart.editSavingsNote': '此操作会编辑整笔储蓄交易，包括在其他图表显示的部分。',
     'chart.savingsDeleteConfirm': '删除整笔储蓄交易？储蓄余额及所有页面都会更新，此操作无法撤销。',
     'chart.savingsDeleteInsufficient': '无法删除此存款，因为部分储蓄已经提取。请先调整或删除提款。',
@@ -5196,7 +5296,7 @@
       : (isIncome ? incomeSourceLabel(entry.source) : catLabel(entry.category));
     if (els.transactionEditTitle) els.transactionEditTitle.textContent = t(isIncome ? 'txedit.titleIncome' : 'txedit.titleExpense');
     if (els.transactionEditTypeLabel) els.transactionEditTypeLabel.textContent = t(isIncome ? 'daytx.income' : 'daytx.expense');
-    if (els.transactionEditAmount) els.transactionEditAmount.value = String(entry.amount);
+    if (els.transactionEditAmount) { els.transactionEditAmount.value = String(entry.amount); els.transactionEditAmount.min = (!isIncome && entry.kind !== 'savings-transfer') ? '0' : '0.01'; }
     if (els.transactionEditDescription) els.transactionEditDescription.value = entry.description || '';
     if (els.transactionEditCategoryLabel) els.transactionEditCategoryLabel.textContent = t(isIncome ? 'daytx.source' : 'common.category');
     if (els.transactionEditCategory) {
@@ -5259,8 +5359,9 @@
     if (!entry) { closeTransactionEdit(false); render(); return; }
     var amountValue = parseFloat(els.transactionEditAmount.value);
     var amount = round2(amountValue);
-    if (!isFinite(amountValue) || amount <= 0) {
-      showError(els.transactionEditError, t('exp.error'));
+    var allowZeroEdit = editingTransaction.type === 'expense' && entry.kind !== 'savings-transfer';
+    if (!isFinite(amountValue) || amountValue < 0 || (!allowZeroEdit && amount <= 0)) {
+      showError(els.transactionEditError, t(allowZeroEdit ? 'calc.zeroError' : 'exp.error'));
       els.transactionEditAmount.focus(); return;
     }
     var description = String(els.transactionEditDescription.value || '').trim().slice(0, 80);
@@ -6035,6 +6136,8 @@
     if (els.dayTxDateLabel) els.dayTxDateLabel.textContent = display + ' · ' + dayTxDateISO;
     var dateInput = document.getElementById('dayTxDateInput');
     if (dateInput) dateInput.value = dayTxDateISO;
+    var pickerValue = document.getElementById('dayPickerValue');
+    if (pickerValue) pickerValue.textContent = d.toLocaleDateString(LOCALE(), { year:'numeric', month:'long', day:'numeric' });
     var dayData = dayTransactionData(dayTxDateISO);
     var incomeTotal = dayData.incomeTotal;
     var expenseTotal = dayData.expenseTotal;
@@ -6058,6 +6161,8 @@
   }
   function setDayTxType(type) {
     dayTxType = type === 'income' ? 'income' : 'expense';
+    resetExpenseCalculator();
+    if (els.dayTxAmount) { els.dayTxAmount.type = dayTxType === 'income' ? 'number' : 'text'; els.dayTxAmount.inputMode = 'decimal'; els.dayTxAmount.readOnly = false; els.dayTxAmount.setAttribute('aria-expanded','false'); }
     populateDayTxCategories();
     if (els.dayTxError) clearError(els.dayTxError);
   }
@@ -6092,6 +6197,7 @@
   function closeDayTxModal() {
     if (!els.dayTxModal || els.dayTxModal.classList.contains('hidden')) return;
     els.dayTxModal.classList.add('hidden');
+    resetExpenseCalculator();
     document.body.style.overflow = '';
     var target = dayTxReturnFocus;
     if (!target || !target.isConnected) target = document.querySelector('[data-cal-date="' + dayTxDateISO + '"]');
@@ -6959,6 +7065,184 @@
     selectDate(dayTxDateISO);
     syncDayTxModal();
   });
+  /* A custom, keyboard-friendly calendar changes the existing form's date;
+     all save, chart, calendar and sync logic stays in the original path. */
+  var pickerOverlay = document.getElementById('datePickerOverlay');
+  var pickerOpen = document.getElementById('dayPickerOpen');
+  var pickerGrid = document.getElementById('datePickerGrid');
+  var pickerCursor = null, pickerFocusISO = '';
+  var pickerView = 'days', pickerYear = 0, pickerYearStart = 0, pickerFocusOption = 0;
+  function renderDatePicker(focusDay) {
+    pickerView = 'days';
+    document.getElementById('datePickerTitle').textContent = t('picker.title');
+    var monthButton = document.getElementById('datePickerMonth');
+    monthButton.disabled = false;
+    monthButton.setAttribute('aria-label', t('picker.chooseMonthYear'));
+    monthButton.setAttribute('aria-expanded', 'false');
+    document.getElementById('datePickerBack').classList.add('hidden');
+    document.getElementById('datePickerPrev').disabled = false;
+    document.getElementById('datePickerNext').disabled = false;
+    document.getElementById('datePickerPrev').setAttribute('aria-label', t('cal.prev'));
+    document.getElementById('datePickerNext').setAttribute('aria-label', t('cal.next'));
+    var currentMonth = pickerCursor.getMonth(), year = pickerCursor.getFullYear();
+    document.getElementById('datePickerMonth').textContent = pickerCursor.toLocaleDateString(LOCALE(), {year:'numeric', month:'long'});
+    var keys = ['wd.sun','wd.mon','wd.tue','wd.wed','wd.thu','wd.fri','wd.sat'];
+    var html = '<div class="custom-picker-row" role="row">' + keys.map(function(key) { return '<span class="custom-picker-weekday" role="columnheader">' + escapeHtml(t(key)) + '</span>'; }).join('') + '</div>';
+    var first = new Date(year, currentMonth, 1);
+    var start = new Date(year, currentMonth, 1 - first.getDay());
+    var today = toLocalISO(new Date());
+    for (var row = 0; row < 6; row++) {
+      html += '<div class="custom-picker-row" role="row">';
+      for (var col = 0; col < 7; col++) {
+        var cellDate = new Date(start.getFullYear(), start.getMonth(), start.getDate() + row * 7 + col);
+        var iso = toLocalISO(cellDate), selected = iso === dayTxDateISO;
+        var className = 'custom-picker-day' + (cellDate.getMonth() !== currentMonth ? ' is-outside' : '') + (iso === today ? ' is-today' : '') + (selected ? ' is-selected' : '');
+        var label = cellDate.toLocaleDateString(LOCALE(), {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+        html += '<button type="button" role="gridcell" class="' + className + '" data-picker-date="' + iso + '" aria-label="' + escapeHtml(label) + '" aria-selected="' + String(selected) + '"' + (iso === today ? ' aria-current="date"' : '') + ' tabindex="' + (iso === pickerFocusISO ? '0' : '-1') + '">' + cellDate.getDate() + '</button>';
+      }
+      html += '</div>';
+    }
+    pickerGrid.innerHTML = html;
+    if (focusDay) { var focus = pickerGrid.querySelector('[data-picker-date="' + pickerFocusISO + '"]'); if (focus) focus.focus(); }
+  }
+  function showDatePicker() {
+    var selected = isValidISODate(dayTxDateISO) ? dayTxDateISO : toLocalISO(new Date());
+    var d = parseISO(selected);
+    pickerCursor = new Date(d.getFullYear(), d.getMonth(), 1);
+    pickerFocusISO = selected;
+    pickerOverlay.classList.remove('hidden');
+    pickerOpen.setAttribute('aria-expanded','true');
+    renderDatePicker(true);
+  }
+  function closeDatePicker() {
+    pickerOverlay.classList.add('hidden');
+    pickerOpen.setAttribute('aria-expanded','false');
+    pickerOpen.focus();
+  }
+  function choosePickerDate(iso) {
+    if (!isValidISODate(iso)) return;
+    var dateInput = document.getElementById('dayTxDateInput');
+    dateInput.value = iso;
+    dateInput.dispatchEvent(new Event('change', {bubbles:true}));
+    closeDatePicker();
+  }
+  function shiftPickerMonth(delta, focusDay) {
+    var old = parseISO(pickerFocusISO);
+    var month = new Date(pickerCursor.getFullYear(), pickerCursor.getMonth() + delta, 1);
+    var lastDay = new Date(month.getFullYear(), month.getMonth()+1, 0).getDate();
+    pickerCursor = month;
+    pickerFocusISO = toLocalISO(new Date(month.getFullYear(), month.getMonth(), Math.min(old.getDate(), lastDay)));
+    renderDatePicker(focusDay);
+  }
+  function renderPickerOptions(focusOption) {
+    var years = pickerView === 'years';
+    var monthButton = document.getElementById('datePickerMonth');
+    document.getElementById('datePickerTitle').textContent = t(years ? 'picker.chooseYear' : 'picker.chooseMonth');
+    monthButton.textContent = years ? (pickerYearStart + ' – ' + (pickerYearStart + 11)) : String(pickerYear);
+    monthButton.disabled = true;
+    monthButton.setAttribute('aria-expanded', 'true');
+    document.getElementById('datePickerBack').classList.remove('hidden');
+    var prev = document.getElementById('datePickerPrev'), next = document.getElementById('datePickerNext');
+    prev.setAttribute('aria-label', t(years ? 'picker.previousYears' : 'picker.previousYear'));
+    next.setAttribute('aria-label', t(years ? 'picker.nextYears' : 'picker.nextYear'));
+    prev.disabled = years ? pickerYearStart <= 100 : pickerYear <= 100;
+    next.disabled = years ? pickerYearStart + 11 >= 9999 : pickerYear >= 9999;
+    var html = '';
+    for (var row = 0; row < 4; row++) {
+      html += '<div class="custom-picker-options-row" role="row">';
+      for (var col = 0; col < 3; col++) {
+        var index = row * 3 + col;
+        var value = years ? pickerYearStart + index : index;
+        var label = years ? String(value) : new Date(2020, index, 1).toLocaleDateString(LOCALE(), {month:'short'});
+        var isSelected = years ? value === pickerCursor.getFullYear() : (pickerYear === pickerCursor.getFullYear() && value === pickerCursor.getMonth());
+        html += '<button type="button" role="gridcell" class="custom-picker-option' + (isSelected ? ' is-selected' : '') + '" ' + (years ? 'data-picker-year' : 'data-picker-month') + '="' + value + '" aria-selected="' + String(isSelected) + '" tabindex="' + (value === pickerFocusOption ? '0' : '-1') + '">' + escapeHtml(label) + '</button>';
+      }
+      html += '</div>';
+    }
+    pickerGrid.innerHTML = html;
+    if (focusOption) {
+      var selector = years ? '[data-picker-year="' + pickerFocusOption + '"]' : '[data-picker-month="' + pickerFocusOption + '"]';
+      var target = pickerGrid.querySelector(selector); if (target) target.focus();
+    }
+  }
+  function beginPickerYearSelection() {
+    pickerView = 'years';
+    pickerYear = pickerCursor.getFullYear();
+    pickerYearStart = Math.max(100, Math.min(9988, Math.floor(pickerYear / 12) * 12));
+    pickerFocusOption = pickerYear;
+    renderPickerOptions(true);
+  }
+  function changePickerStep(delta) {
+    if (pickerView === 'days') { shiftPickerMonth(delta, false); return; }
+    if (pickerView === 'years') {
+      pickerYearStart = Math.max(100, Math.min(9988, pickerYearStart + delta * 12));
+      pickerFocusOption = Math.max(pickerYearStart, Math.min(pickerYearStart + 11, pickerFocusOption + delta * 12));
+    } else pickerYear = Math.max(100, Math.min(9999, pickerYear + delta));
+    renderPickerOptions(false);
+  }
+  function choosePickerYear(year) {
+    pickerYear = year; pickerView = 'months'; pickerFocusOption = pickerCursor.getMonth();
+    renderPickerOptions(true);
+  }
+  function choosePickerMonth(month) {
+    var old = parseISO(pickerFocusISO);
+    var last = new Date(pickerYear, month + 1, 0).getDate();
+    pickerCursor = new Date(pickerYear, month, 1);
+    pickerFocusISO = toLocalISO(new Date(pickerYear, month, Math.min(old.getDate(), last)));
+    renderDatePicker(true);
+  }
+  pickerOpen.addEventListener('click', showDatePicker);
+  document.getElementById('datePickerMonth').addEventListener('click', beginPickerYearSelection);
+  document.getElementById('datePickerBack').addEventListener('click', function () { renderDatePicker(true); });
+  document.getElementById('datePickerPrev').addEventListener('click', function() { changePickerStep(-1); });
+  document.getElementById('datePickerNext').addEventListener('click', function() { changePickerStep(1); });
+  document.getElementById('datePickerToday').addEventListener('click', function() { choosePickerDate(toLocalISO(new Date())); });
+  document.getElementById('datePickerClose').addEventListener('click', closeDatePicker);
+  document.getElementById('datePickerCancel').addEventListener('click', closeDatePicker);
+  pickerOverlay.addEventListener('click', function(event) { if (event.target === pickerOverlay) closeDatePicker(); });
+  pickerGrid.addEventListener('click', function(event) {
+    var day = event.target.closest('[data-picker-date]');
+    var year = event.target.closest('[data-picker-year]');
+    var month = event.target.closest('[data-picker-month]');
+    if (day) choosePickerDate(day.dataset.pickerDate);
+    else if (year) choosePickerYear(Number(year.dataset.pickerYear));
+    else if (month) choosePickerMonth(Number(month.dataset.pickerMonth));
+  });
+  pickerOverlay.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); closeDatePicker(); return; }
+    if (event.key === 'Tab') {
+      var focusable = Array.prototype.slice.call(pickerOverlay.querySelectorAll('button:not([tabindex="-1"]):not([disabled])'));
+      if (!focusable.length) return;
+      if (event.shiftKey && document.activeElement === focusable[0]) { event.preventDefault(); focusable[focusable.length-1].focus(); }
+      else if (!event.shiftKey && document.activeElement === focusable[focusable.length-1]) { event.preventDefault(); focusable[0].focus(); }
+      return;
+    }
+    var option = event.target.closest('[data-picker-year], [data-picker-month]');
+    if (option) {
+      var adjustment = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : event.key === 'ArrowUp' ? -3 : event.key === 'ArrowDown' ? 3 : 0;
+      if (!adjustment) return;
+      event.preventDefault();
+      if (pickerView === 'years') {
+        var nextYear = Math.max(100, Math.min(9999, Number(option.dataset.pickerYear) + adjustment));
+        if (nextYear < pickerYearStart || nextYear > pickerYearStart + 11) pickerYearStart = Math.max(100, Math.min(9988, Math.floor(nextYear / 12) * 12));
+        pickerFocusOption = nextYear;
+      } else pickerFocusOption = Math.max(0, Math.min(11, Number(option.dataset.pickerMonth) + adjustment));
+      renderPickerOptions(true); return;
+    }
+    var day = event.target.closest('[data-picker-date]');
+    if (!day) return;
+    var date = parseISO(day.dataset.pickerDate), delta = 0;
+    if (event.key === 'ArrowLeft') delta = -1;
+    else if (event.key === 'ArrowRight') delta = 1;
+    else if (event.key === 'ArrowUp') delta = -7;
+    else if (event.key === 'ArrowDown') delta = 7;
+    else if (event.key === 'Home') delta = -date.getDay();
+    else if (event.key === 'End') delta = 6-date.getDay();
+    else if (event.key === 'PageUp' || event.key === 'PageDown') { event.preventDefault(); shiftPickerMonth((event.key === 'PageUp' ? -1 : 1) * (event.shiftKey ? 12 : 1), true); return; }
+    else return;
+    event.preventDefault(); date.setDate(date.getDate() + delta); pickerFocusISO = toLocalISO(date);
+    pickerCursor = new Date(date.getFullYear(), date.getMonth(), 1); renderDatePicker(true);
+  });
   if (els.openDayTxBtn) els.openDayTxBtn.addEventListener('click', function () {
     openDayTxModal(selectedDateISO, els.openDayTxBtn);
   });
@@ -6970,6 +7254,7 @@
   document.addEventListener('keydown', function (ev) {
     if (ev.key !== 'Escape') return;
     if (!document.getElementById('confirmActionModal').classList.contains('hidden')) return;
+    if (!document.getElementById('datePickerOverlay').classList.contains('hidden')) return;
     if (els.transactionEditModal && !els.transactionEditModal.classList.contains('hidden')) { closeTransactionEdit(true); return; }
     if (els.dayTxModal && !els.dayTxModal.classList.contains('hidden')) closeDayTxModal();
   });
@@ -6985,19 +7270,111 @@
   if (els.transactionEditPaymentMethod) els.transactionEditPaymentMethod.addEventListener('change', function () {
     syncPaymentCustomUI(els.transactionEditPaymentMethod, els.transactionEditPaymentCustomWrap, els.transactionEditPaymentCustom, true);
   });
+  /* Amount expressions are parsed, never evaluated as JavaScript. */
+  var calcPanel = document.getElementById('expenseCalculator');
+  var calcPreview = document.getElementById('expenseCalcPreview');
+  var calcActive = false;
+  function resetExpenseCalculator() {
+    if (!calcPanel) return;
+    calcActive = false; calcPanel.classList.add('hidden');
+    calcPreview.textContent = ''; calcPreview.classList.add('hidden');
+    if (els.dayTxAmount) els.dayTxAmount.setAttribute('aria-expanded', 'false');
+  }
+  function showExpenseCalculator() {
+    if (dayTxType !== 'expense') return;
+    calcActive = true; calcPanel.classList.remove('hidden');
+    els.dayTxAmount.setAttribute('aria-expanded', 'true');
+    updateExpensePreview();
+  }
+  function expenseCalcResult(text) {
+    text = String(text || '').replace(/\s+/g,'').replace(/,/g,'.').replace(/×/g,'*').replace(/[÷]/g,'/').replace(/−/g,'-');
+    if (!text || text.length > 80 || !/^(?:\d+(?:\.\d*)?|\.\d+)(?:[+*\/-](?:\d+(?:\.\d*)?|\.\d+))*$/.test(text)) return null;
+    var tokens = text.match(/(?:\d+(?:\.\d*)?|\.\d+)|[+*\/-]/g);
+    var total = 0, term = Number(tokens[0]), op = '+';
+    if (!isFinite(term)) return null;
+    for (var i = 1; i < tokens.length; i += 2) {
+      var sign = tokens[i], n = Number(tokens[i+1]);
+      if (!isFinite(n) || (sign === '/' && n === 0)) return null;
+      if (sign === '*') term *= n;
+      else if (sign === '/') term /= n;
+      else { total += op === '+' ? term : -term; term = n; op = sign; }
+      if (!isFinite(term) || !isFinite(total)) return null;
+    }
+    var result = total + (op === '+' ? term : -term);
+    if (!isFinite(result) || result < 0 || result > 999999999999) return null;
+    return Math.round((result + Number.EPSILON * Math.max(1, Math.abs(result)) * 2) * 100) / 100;
+  }
+  function updateExpensePreview() {
+    if (dayTxType !== 'expense') { calcPreview.classList.add('hidden'); return; }
+    var text = els.dayTxAmount.value, result = expenseCalcResult(text);
+    var show = result !== null && /[+*\/−×÷-]/.test(text);
+    calcPreview.textContent = show ? '= ' + fmt(result) : '';
+    calcPreview.classList.toggle('hidden', !show);
+  }
+  function finishExpenseCalculation(moveFocus, allowEmpty) {
+    var text = els.dayTxAmount.value.trim();
+    if (!text && allowEmpty) { resetExpenseCalculator(); return true; }
+    var result = expenseCalcResult(text);
+    if (result === null) { showError(els.dayTxError, t('calc.invalid')); return false; }
+    els.dayTxAmount.value = String(result);
+    clearError(els.dayTxError);
+    resetExpenseCalculator();
+    if (moveFocus && els.dayTxDesc) els.dayTxDesc.focus();
+    return true;
+  }
+  function insertExpenseCalcText(text) {
+    var input = els.dayTxAmount, start = input.selectionStart, end = input.selectionEnd;
+    if (start == null) start = end = input.value.length;
+    if (input.value.length - (end-start) + text.length > 80) return;
+    input.setRangeText(text, start, end, 'end');
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+  }
+  if (els.dayTxAmount) {
+    els.dayTxAmount.readOnly = false; els.dayTxAmount.setAttribute('aria-expanded','false');
+    els.dayTxAmount.addEventListener('focus', showExpenseCalculator);
+    els.dayTxAmount.addEventListener('click', showExpenseCalculator);
+    els.dayTxAmount.addEventListener('input', updateExpensePreview);
+    els.dayTxAmount.addEventListener('keydown', function(e) {
+      if (dayTxType === 'expense' && (e.key === 'Enter' || e.key === '=')) { e.preventDefault(); finishExpenseCalculation(true, false); }
+    });
+  }
+  function calculatorFocusOut(e) {
+    var next = e.relatedTarget;
+    if (next === els.dayTxAmount || (next && calcPanel.contains(next))) return;
+    if (dayTxType === 'expense' && calcActive) finishExpenseCalculation(false, true);
+  }
+  els.dayTxAmount.addEventListener('focusout', calculatorFocusOut);
+  calcPanel.addEventListener('focusout', calculatorFocusOut);
+  // Pointer use keeps the insertion cursor and avoids blurring between calculator keys.
+  calcPanel.addEventListener('pointerdown', function(e) { if (e.target.closest('button')) e.preventDefault(); });
+  calcPanel.addEventListener('click', function(e) {
+    var operation = e.target.closest('[data-operation]');
+    if (operation) { insertExpenseCalcText(operation.dataset.operation); return; }
+    var key = e.target.closest('[data-calc]'); if (!key) return;
+    var k = key.dataset.calc, input = els.dayTxAmount;
+    if (/^(?:[0-9]|00|\.)$/.test(k)) insertExpenseCalcText(k);
+    else if (k === 'back') {
+      var start = input.selectionStart, end = input.selectionEnd;
+      if (start === end && start > 0) start--;
+      input.setRangeText('', start, end, 'end'); input.dispatchEvent(new Event('input', {bubbles:true}));
+    } else if (k === 'clear') { input.value = ''; input.setSelectionRange(0,0); input.dispatchEvent(new Event('input', {bubbles:true})); }
+    else if (k === 'equals') { if (finishExpenseCalculation(false, false)) { showExpenseCalculator(); input.focus(); input.setSelectionRange(input.value.length,input.value.length); } }
+    else if (k === 'done') finishExpenseCalculation(true, false);
+  });
   if (els.transactionEditAmount) els.transactionEditAmount.addEventListener('input', function () { if (els.transactionEditError) clearError(els.transactionEditError); });
   if (els.transactionEditForm) els.transactionEditForm.addEventListener('submit', function (ev) {
     ev.preventDefault(); submitTransactionEdit();
   });
   document.querySelectorAll('[data-day-tx-type]').forEach(function (btn) {
-    btn.addEventListener('click', function () { setDayTxType(btn.getAttribute('data-day-tx-type')); });
+    btn.addEventListener('click', function () { if (dayTxType === 'expense' && !finishExpenseCalculation(false, true)) return; setDayTxType(btn.getAttribute('data-day-tx-type')); });
   });
   if (els.dayTxAmount) els.dayTxAmount.addEventListener('input', function () { clearError(els.dayTxError); });
   if (els.dayTxForm) els.dayTxForm.addEventListener('submit', function (ev) {
     ev.preventDefault();
+    if (dayTxType === 'expense' && !finishExpenseCalculation(false, false)) return;
     var amount = parseFloat(els.dayTxAmount.value);
-    if (isNaN(amount) || amount <= 0) {
-      showError(els.dayTxError, t('exp.error'));
+    if (!isFinite(amount) || amount < 0 || (dayTxType === 'income' && amount <= 0)) {
+      showError(els.dayTxError, t(dayTxType === 'income' ? 'exp.error' : 'calc.zeroError'));
       els.dayTxAmount.focus();
       return;
     }
@@ -7354,5 +7731,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60eb7c9d961aec4',t:'MTc5NTc1NzE4NQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60eb7c9d961aec4',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
