@@ -529,18 +529,19 @@
   .savings-jar.is-animating.is-deposit .savings-pile-coin{ transition:opacity .03s linear; }
   .savings-jar.is-animating.is-withdraw .savings-pile-coin{ transition:opacity .8s ease-out; }
   .savings-jar-coin{ opacity:0; pointer-events:none; transform-box:fill-box; transform-origin:center; }
-  .savings-jar.is-animating.is-deposit .savings-jar-coin{ animation:pixelCoinDrop .43s both; }
+  /* Web Animations drives the usual path; CSS is a compatibility fallback. */
+  .savings-jar.is-animating.is-deposit.use-css-fallback .savings-jar-coin{ animation:pixelCoinDrop .43s both; }
   .savings-jar.is-pixel .pixel-coin-shape, .savings-jar.is-pixel .pixel-landing-glint{ shape-rendering:crispEdges; }
   @keyframes pixelCoinDrop{
-    0%{ transform:translate(0,-8px); opacity:0; animation-timing-function:cubic-bezier(.32,0,.67,0); }
-    12%{ opacity:1; animation-timing-function:cubic-bezier(.32,0,.67,0); }
+    0%{ transform:translate(0,-8px); opacity:0; animation-timing-function:cubic-bezier(.333333,0,.666667,.333333); }
+    12%{ opacity:1; animation-timing-function:cubic-bezier(.333333,0,.666667,.333333); }
     72%{ transform:translate(var(--drop-x,0px),var(--drop-y,80px)); opacity:1; animation-timing-function:cubic-bezier(.16,.7,.4,1); }
-    83%{ transform:translate(var(--drop-x,0px),calc(var(--drop-y,80px) - 3px)); opacity:1; animation-timing-function:cubic-bezier(.32,0,.67,0); }
+    83%{ transform:translate(var(--drop-x,0px),calc(var(--drop-y,80px) - 3px)); opacity:1; animation-timing-function:cubic-bezier(.333333,0,.666667,.333333); }
     94%{ transform:translate(var(--drop-x,0px),var(--drop-y,80px)); opacity:1; animation-timing-function:linear; }
     100%{ transform:translate(var(--drop-x,0px),var(--drop-y,80px)); opacity:0; }
   }
   .pixel-landing-glint{ opacity:0; pointer-events:none; }
-  .savings-jar.is-pixel.is-animating.is-deposit .pixel-landing-glint{ animation:pixelGlint .43s linear both; }
+  .savings-jar.is-pixel.is-animating.is-deposit.use-css-fallback .pixel-landing-glint{ animation:pixelGlint .43s linear both; }
   @keyframes pixelGlint{ 0%,68%{opacity:0} 76%,90%{opacity:1} 100%{opacity:0} }
   .savings-jar-details{ min-width:0; flex:1; }
   .savings-jar-details .savings-progress{ margin-top:.4rem; }
@@ -4058,7 +4059,7 @@
       var jar = card.querySelector('.savings-jar');
       if (!goal || !jar) return;
       var level = savingsJarLevel(goal.balance, goal.target);
-      jar.classList.remove('is-animating', 'is-deposit', 'is-withdraw');
+      jar.classList.remove('is-animating', 'is-deposit', 'is-withdraw', 'use-css-fallback');
       delete jar.dataset.animationScheduled;
       var layer = jar.querySelector('.savings-jar-falling-layer'); if (layer) layer.replaceChildren();
       setSavingsJarLevel(jar, level);
@@ -4113,7 +4114,16 @@
         flying.appendChild(sparkle);
       }
       if (targetCoin) targetCoin.setAttribute('data-drop-index', String(i));
-      drops.push({ flying:flying, target:targetCoin }); layer.appendChild(flying);
+      // A single gravity constant is used for every falling coin. Shorter drops
+      // take less time, rather than being artificially slowed to match long ones.
+      var distance = Math.max(1, y - 10); // start at y=10, land at destination y
+      var fallMs = Math.sqrt(2 * distance / 1800) * 1000;
+      var settleMs = 90;
+      flying.setAttribute('data-fall-distance', String(distance));
+      flying.setAttribute('data-fall-ms', fallMs.toFixed(3));
+      flying.setAttribute('data-settle-ms', String(settleMs));
+      drops.push({ flying:flying, target:targetCoin, sparkle:sparkle, x:x-50, y:Math.max(0,y-18), fallMs:fallMs, settleMs:settleMs, delayMs:parseFloat(flying.style.animationDelay) * 1000 });
+      layer.appendChild(flying);
     }
     var box = goalCard.getBoundingClientRect();
     var outside = box.bottom > window.innerHeight - 90 || box.top < 70;
@@ -4127,25 +4137,65 @@
         jar.classList.add('is-withdraw');
         setTimeout(function() { if (jar.isConnected && animationToken === savingsJarAnimationToken) setSavingsJarLevel(jar, finalLevel); }, 30);
       } else {
-        // Each target appears only at the landing of its own identical coin.
+        // All coins have the same gravity, independent of amount or count.
+        // The stagger alone gets tighter when there are more coins.
+        var canAnimate = drops.every(function(item) { return typeof item.flying.animate === 'function'; });
+        if (!canAnimate) jar.classList.add('use-css-fallback');
+        jar.classList.add('is-deposit');
         drops.forEach(function(item) {
-          if (!item.target) return;
-          var landed = false;
+          var landed = false, total = item.fallMs + item.settleMs;
           function land() {
-            if (landed || !jar.isConnected || animationToken !== savingsJarAnimationToken) return;
+            if (landed || !item.target || !jar.isConnected || animationToken !== savingsJarAnimationToken) return;
             landed = true; item.target.setAttribute('data-landed','true'); item.target.style.opacity = '1';
           }
-          item.flying.addEventListener('animationstart', function() { setTimeout(land, 404); }, {once:true});
-          item.flying.addEventListener('animationend', land, {once:true});
+          if (!canAnimate) {
+            // Compatibility path for browsers without Web Animations API.
+            var fallbackTotal = item.fallMs / .72;
+            item.flying.style.animationDuration = fallbackTotal + 'ms';
+            if (item.sparkle) item.sparkle.style.animationDuration = fallbackTotal + 'ms';
+            item.flying.addEventListener('animationstart', function() { setTimeout(land, fallbackTotal * .94); }, {once:true});
+            item.flying.addEventListener('animationend', land, {once:true});
+            return;
+          }
+          var atImpact = item.fallMs / total;
+          var atBounce = (item.fallMs + 36) / total;
+          var atRest = (item.fallMs + 72) / total;
+          var destination = 'translate(' + item.x + 'px,' + item.y + 'px)';
+          var frames = [
+            {offset:0, transform:'translate(0px,-8px)', opacity:0, easing:'cubic-bezier(.333333,0,.666667,.333333)'},
+            {offset:.04, opacity:1},
+            {offset:atImpact, transform:destination, opacity:1, easing:'cubic-bezier(.16,.7,.4,1)'},
+            {offset:atBounce, transform:'translate(' + item.x + 'px,' + (item.y - 3) + 'px)', opacity:1, easing:'cubic-bezier(.333333,0,.666667,.333333)'},
+            {offset:atRest, transform:destination, opacity:1, easing:'linear'},
+            {offset:1, transform:destination, opacity:0}
+          ];
+          var timing = {duration:total, delay:item.delayMs, fill:'both'};
+          var motion = item.flying.animate(frames, timing);
+          if (item.target) {
+            setTimeout(function waitForRest() {
+              if (!jar.isConnected || animationToken !== savingsJarAnimationToken) return;
+              if (motion.currentTime == null || motion.currentTime < item.delayMs + item.fallMs + 72) {
+                requestAnimationFrame(waitForRest);
+              } else land();
+            }, item.delayMs + item.fallMs + 72);
+            motion.finished.then(land).catch(function() {});
+          } else motion.finished.catch(function() {});
+          if (item.sparkle) {
+            var glint = item.sparkle.animate([
+              {offset:0,opacity:0}, {offset:Math.max(0,atImpact - .02),opacity:0},
+              {offset:Math.min(.99,atImpact + .02),opacity:1}, {offset:1,opacity:0}
+            ], timing);
+            glint.finished.catch(function() {});
+          }
         });
-        jar.classList.add('is-deposit');
       }
       setTimeout(function() {
         if (jar.isConnected && animationToken === savingsJarAnimationToken) {
-          jar.classList.remove('is-animating', 'is-deposit', 'is-withdraw');
+          jar.classList.remove('is-animating', 'is-deposit', 'is-withdraw', 'use-css-fallback');
           delete jar.dataset.animationScheduled;
-          if (type === 'withdraw') setSavingsJarLevel(jar, finalLevel);
-          else jar.style.setProperty('--jar-level', finalLevel);
+          // Keep the final state correct even if a slow or backgrounded browser
+          // did not render every scheduled animation frame before cleanup.
+          setSavingsJarLevel(jar, finalLevel);
           layer.replaceChildren();
         }
       }, type === 'withdraw' ? 1050 : 4000);
@@ -6399,7 +6449,7 @@
   function setDayTxType(type) {
     dayTxType = type === 'income' ? 'income' : 'expense';
     resetExpenseCalculator();
-    if (els.dayTxAmount) { els.dayTxAmount.type = 'text'; els.dayTxAmount.inputMode = 'decimal'; els.dayTxAmount.readOnly = false; els.dayTxAmount.setAttribute('aria-expanded','false'); }
+    if (els.dayTxAmount) { configureCalculatorInput(els.dayTxAmount); els.dayTxAmount.setAttribute('aria-expanded','false'); }
     populateDayTxCategories();
     if (els.dayTxError) clearError(els.dayTxError);
   }
@@ -7507,6 +7557,18 @@
   if (els.transactionEditPaymentMethod) els.transactionEditPaymentMethod.addEventListener('change', function () {
     syncPaymentCustomUI(els.transactionEditPaymentMethod, els.transactionEditPaymentCustomWrap, els.transactionEditPaymentCustom, true);
   });
+  /* Touch-first devices use only the custom keypad, preventing iOS's keyboard
+     from covering it. Fine-pointer desktop devices keep direct text typing. */
+  function calculatorUsesTouchKeypad() {
+    if (!window.matchMedia) return (navigator.maxTouchPoints || 0) > 0;
+    return window.matchMedia('(pointer: coarse)').matches ||
+      ((navigator.maxTouchPoints || 0) > 0 && window.matchMedia('(hover: none)').matches);
+  }
+  function configureCalculatorInput(input) {
+    if (!input) return;
+    var touch = calculatorUsesTouchKeypad();
+    input.type = 'text'; input.readOnly = touch; input.inputMode = touch ? 'none' : 'decimal';
+  }
   /* Amount expressions are parsed, never evaluated as JavaScript. */
   var calcPanel = document.getElementById('expenseCalculator');
   var calcPreview = document.getElementById('expenseCalcPreview');
@@ -7565,7 +7627,7 @@
     input.dispatchEvent(new Event('input', {bubbles:true}));
   }
   if (els.dayTxAmount) {
-    els.dayTxAmount.readOnly = false; els.dayTxAmount.setAttribute('aria-expanded','false');
+    configureCalculatorInput(els.dayTxAmount); els.dayTxAmount.setAttribute('aria-expanded','false');
     els.dayTxAmount.addEventListener('focus', showExpenseCalculator);
     els.dayTxAmount.addEventListener('click', showExpenseCalculator);
     els.dayTxAmount.addEventListener('input', updateExpensePreview);
@@ -7610,6 +7672,7 @@
     else if (k === 'done') finishExpenseCalculation(true, false);
   });
   function createSavingsCalculator(input, options) {
+    configureCalculatorInput(input);
     var preview = document.createElement('div'), error = document.createElement('p');
     var panel = calcPanel.cloneNode(true);
     preview.id = input.id + 'CalcPreview'; preview.className = 'expense-calc-preview hidden'; preview.setAttribute('aria-live','polite');
@@ -7665,6 +7728,16 @@
   }
   var savingsTargetCalc = createSavingsCalculator(els.savingsGoalTarget, {optional:true});
   var savingsAmountCalc = createSavingsCalculator(els.savingsAmount, {optional:false});
+  function refreshCalculatorInputMode() {
+    [els.dayTxAmount, els.savingsGoalTarget, els.savingsAmount].forEach(configureCalculatorInput);
+  }
+  if (window.matchMedia) {
+    ['(pointer: coarse)', '(hover: none)'].forEach(function(query) {
+      var m = window.matchMedia(query);
+      if (m.addEventListener) m.addEventListener('change', refreshCalculatorInputMode);
+      else if (m.addListener) m.addListener(refreshCalculatorInputMode);
+    });
+  }
   if (els.transactionEditAmount) els.transactionEditAmount.addEventListener('input', function () { if (els.transactionEditError) clearError(els.transactionEditError); });
   if (els.transactionEditForm) els.transactionEditForm.addEventListener('submit', function (ev) {
     ev.preventDefault(); submitTransactionEdit();
@@ -7779,7 +7852,7 @@
         var visible = Array.prototype.slice.call(jar.querySelectorAll('.savings-pile-coin')).filter(function(c) { return c.style.opacity === '1'; });
         startLevel = visible.reduce(function(max,c) { return Math.max(max, Number(c.dataset.level)); }, 0);
         savingsJarAnimationToken++;
-        jar.classList.remove('is-animating', 'is-deposit', 'is-withdraw');
+        jar.classList.remove('is-animating', 'is-deposit', 'is-withdraw', 'use-css-fallback');
         delete jar.dataset.animationScheduled;
         jar.querySelector('.savings-jar-falling-layer').replaceChildren();
       } else {
@@ -8067,5 +8140,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60f329a0825dd34',t:'MTc5NTc2MjIxNg=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60f329a0825dd34',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60f4eeaccec36f1',t:'MTc5NTc2MzM3NQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60f4eeaccec36f1',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
