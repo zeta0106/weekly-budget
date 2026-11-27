@@ -495,7 +495,7 @@
   .savings-total-card strong{ font-size:clamp(2rem,8vw,2.8rem); line-height:1.1; font-variant-numeric:tabular-nums; }
   .savings-goals-list{ display:grid; gap:.75rem; margin-top:.8rem; }
   .savings-goal-card{ padding:.9rem 1rem; border:1px solid var(--border); border-radius:.8rem; background:var(--field); }
-  .savings-goal-heading{ display:flex; align-items:flex-start; justify-content:space-between; gap:.8rem; }
+  .savings-goal-heading{ display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:space-between; gap:.8rem; }
   .savings-goal-heading h3{ margin:0; font-size:.98rem; overflow-wrap:anywhere; }
   .savings-goal-actions{ display:flex; align-items:center; gap:.55rem; flex:none; }
   .savings-order-actions{ display:flex; align-items:center; gap:.2rem; }
@@ -512,6 +512,36 @@
   .savings-goal-meta{ display:flex; justify-content:space-between; gap:.5rem; margin-top:.45rem; color:var(--muted); font-size:.78rem; }
   .savings-progress{ height:8px; margin-top:.7rem; border-radius:999px; background:var(--track); overflow:hidden; }
   .savings-progress > span{ display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#059669,#10b981,#0ea5e9); transition:all .5s ease-out; }
+  /* Reusable, decorative SVG jar: progress remains available as text and a progressbar. */
+  .savings-jar-row{ display:flex; align-items:center; gap:1rem; margin-top:.5rem; }
+  .savings-jar{ position:relative; flex:0 0 98px; width:98px; height:145px; }
+  .savings-jar svg{ display:block; width:100%; height:100%; overflow:visible; }
+  .savings-jar-glass{ fill:rgba(16,185,129,.055); stroke:#67aa98; stroke-width:2; }
+  html.dark .savings-jar-glass{ fill:rgba(52,211,153,.08); stroke:#6ebba4; }
+  .savings-jar-rim{ fill:#e4f5ec; stroke:#4a9b84; stroke-width:2; }
+  html.dark .savings-jar-rim{ fill:#174e46; stroke:#64b69e; }
+  .savings-jar-pile{ transform:translateY(var(--jar-offset, 83px)); }
+  .savings-jar.is-animating .savings-jar-pile{ transition:transform .85s cubic-bezier(.2,.7,.25,1); }
+  .savings-jar-coin{ opacity:0; pointer-events:none; transform-box:fill-box; transform-origin:center; }
+  .savings-jar.is-animating.is-deposit .savings-jar-coin{ animation:coinDrop .8s cubic-bezier(.45,0,.8,.5) both; }
+  .savings-jar.is-animating.is-deposit .coin-two{ animation-delay:.12s; }
+  .savings-jar.is-animating.is-deposit .coin-three{ animation-delay:.24s; }
+  @keyframes coinDrop{ 0%{ transform:translateY(-12px) rotate(-28deg); opacity:0; } 15%{opacity:1} 78%{opacity:1} 100%{ transform:translateY(var(--drop-y,80px)) rotate(65deg); opacity:0; } }
+  .savings-jar-glint{ position:absolute; left:46%; top:calc(17px + var(--drop-y,80px)); width:14px; height:14px; opacity:0; pointer-events:none; }
+  .savings-jar-glint:before,.savings-jar-glint:after{ content:""; position:absolute; inset:0; margin:auto; background:#fff9c6; border-radius:100%; box-shadow:0 0 5px #fef08a; }
+  .savings-jar-glint:before{ width:2px; height:14px; } .savings-jar-glint:after{ width:14px; height:2px; }
+  .savings-jar.is-animating.is-deposit .savings-jar-glint{ animation:jarGlint .48s .7s ease-out both; }
+  @keyframes jarGlint{ 0%,100%{ opacity:0; transform:scale(.3); } 35%{opacity:.9; transform:scale(1)} }
+  .savings-jar-details{ min-width:0; flex:1; }
+  .savings-jar-details .savings-progress{ margin-top:.4rem; }
+  .savings-jar-details .savings-goal-meta{ display:block; line-height:1.5; }
+  .savings-jar-details .savings-goal-meta span{ display:block; overflow-wrap:anywhere; }
+  .savings-jar-details .savings-goal-meta span + span{ margin-top:.25rem; color:var(--brand-green-strong); font-weight:700; }
+  .savings-jar-create{ display:flex; align-items:center; gap:1rem; margin:.6rem 0 0; padding:.2rem .8rem; background:var(--field); border:1px solid var(--border); border-radius:.8rem; }
+  .savings-jar-create .savings-jar{ flex-basis:74px; width:74px; height:109px; }
+  .savings-jar-create p{ color:var(--muted); font-size:.8rem; line-height:1.45; margin:0; }
+  .savings-history-toggle{ margin-top:.75rem; }
+  @media (prefers-reduced-motion: reduce){ .savings-jar.is-animating .savings-jar-pile{ transition:none; } .savings-jar.is-animating .savings-jar-coin, .savings-jar.is-animating .savings-jar-glint{ display:none; animation:none; } }
   .savings-history{ list-style:none; padding:0; margin:0; }
   .savings-history-item{ display:flex; justify-content:space-between; gap:.7rem; padding:.7rem 0; border-bottom:1px solid var(--border); font-size:.84rem; }
   .savings-history-item:last-child{ border-bottom:0; }
@@ -1632,12 +1662,14 @@
       <hr class="divider" />
       <h3 class="subhead" data-i18n="savings.history">Recent activity</h3>
       <ul class="savings-history" id="savingsHistory"></ul>
+      <button type="button" class="btn-secondary savings-history-toggle hidden" id="savingsHistoryToggle" aria-controls="savingsHistory" aria-expanded="false">View all records</button>
       <p class="helper hidden" id="savingsHistoryEmpty" data-i18n="savings.noHistory">Deposits and withdrawals will appear here.</p>
     </section>
 
     <div class="wb-col savings-actions-col">
       <section class="card" aria-labelledby="savingsCreateTitle">
         <h2 class="card-title" id="savingsCreateTitle" data-i18n="savings.createTitle">Create a savings goal</h2>
+        <div class="savings-jar-create"><div id="savingsCreateJar"></div><p data-i18n="savings.jarStart">Your jar starts empty and grows as you save toward a target.</p></div>
         <form id="savingsGoalForm" novalidate style="margin-top:1rem;">
           <label class="label" for="savingsGoalName" data-i18n="savings.goalName">Goal name</label>
           <input class="field" id="savingsGoalName" type="text" maxlength="48" required placeholder="e.g. Emergency fund" data-i18n-ph="savings.goalPlaceholder" />
@@ -1815,7 +1847,7 @@
         <input class="field" id="dayTxAmount" type="text" inputmode="decimal" min="0" step="0.01" placeholder="0.00" autocomplete="off" maxlength="80" aria-controls="expenseCalculator" aria-describedby="expenseCalcPreview" />
       </div>
       <div id="expenseCalcPreview" class="expense-calc-preview hidden" aria-live="polite"></div>
-      <div id="expenseCalculator" class="expense-calc hidden" aria-label="Expense calculator" data-i18n-aria="calc.label">
+      <div id="expenseCalculator" class="expense-calc hidden" aria-label="Amount calculator" data-i18n-aria="calc.label">
         <div class="expense-calc-ops" aria-label="Operations" data-i18n-aria="calc.operations"><button type="button" class="expense-calc-op" data-operation="+" aria-label="Add" data-i18n-aria="calc.add">+</button><button type="button" class="expense-calc-op" data-operation="-" aria-label="Subtract" data-i18n-aria="calc.subtract">−</button><button type="button" class="expense-calc-op" data-operation="*" aria-label="Multiply" data-i18n-aria="calc.multiply">×</button><button type="button" class="expense-calc-op" data-operation="/" aria-label="Divide" data-i18n-aria="calc.divide">÷</button></div>
         <div class="expense-calc-grid">
           <button type="button" class="expense-calc-key" data-calc="7">7</button><button type="button" class="expense-calc-key" data-calc="8">8</button><button type="button" class="expense-calc-key" data-calc="9">9</button><button type="button" class="expense-calc-key" data-calc="back" aria-label="Backspace" data-i18n-aria="calc.backspace"><svg class="expense-calc-backspace-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M9 4h12a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H9L2 12 9 4Z"/><path d="m12 9 6 6m0-6-6 6"/></svg></button>
@@ -2065,6 +2097,7 @@
       'savings.deposit': 'Deposit', 'savings.withdraw': 'Withdraw', 'savings.amount': 'Amount',
       'savings.saveTransaction': 'Save transaction', 'savings.history': 'Recent activity',
       'savings.noHistory': 'Deposits and withdrawals will appear here.',
+      'savings.viewRecords':'View all records', 'savings.hideRecords':'Show fewer records', 'savings.noTargetJar':'No target set', 'savings.jarStart':'Your jar starts empty and grows as you save toward a target.',
       'savings.goalCount': '{n} goals', 'savings.targetProgress': '{pct}% of target',
       'savings.createdToast': 'Savings goal created.', 'savings.goalLimit': 'You can have up to 100 savings goals.', 'savings.depositToast': '{amount} deposited.',
       'savings.withdrawToast': '{amount} withdrawn.',
@@ -2439,6 +2472,7 @@
       'savings.deposit': '存入', 'savings.withdraw': '提款', 'savings.amount': '金額',
       'savings.saveTransaction': '儲存交易', 'savings.history': '最近活動',
       'savings.noHistory': '存入及提款紀錄會顯示在這裡。',
+      'savings.viewRecords':'查看所有紀錄', 'savings.hideRecords':'收起紀錄', 'savings.noTargetJar':'未設定目標金額', 'savings.jarStart':'儲蓄罐會由空開始，隨著存款逐漸填滿。',
       'savings.goalCount': '{n} 個目標', 'savings.targetProgress': '已達目標 {pct}%',
       'savings.createdToast': '已建立儲蓄目標。', 'savings.goalLimit': '最多可建立 100 個儲蓄目標。', 'savings.depositToast': '已存入 {amount}。',
       'savings.withdrawToast': '已提款 {amount}。',
@@ -2813,6 +2847,7 @@
       'savings.deposit': '存入', 'savings.withdraw': '取款', 'savings.amount': '金额',
       'savings.saveTransaction': '保存交易', 'savings.history': '最近活动',
       'savings.noHistory': '存入和取款记录会显示在这里。',
+      'savings.viewRecords':'查看所有记录', 'savings.hideRecords':'收起记录', 'savings.noTargetJar':'未设置目标金额', 'savings.jarStart':'储蓄罐从空开始，随着存款逐渐填满。',
       'savings.goalCount': '{n} 个目标', 'savings.targetProgress': '已达目标 {pct}%',
       'savings.createdToast': '已创建储蓄目标。', 'savings.goalLimit': '最多可创建 100 个储蓄目标。', 'savings.depositToast': '已存入 {amount}。',
       'savings.withdrawToast': '已取款 {amount}。',
@@ -3139,7 +3174,7 @@
   Object.assign(TRANSLATIONS.en, {
     'picker.kicker': 'Calendar', 'picker.title': 'Choose a date', 'picker.chooseYear': 'Choose a year', 'picker.chooseMonth': 'Choose a month',
     'picker.chooseMonthYear': 'Choose month and year', 'picker.back': '← Back to calendar',
-    'calc.calculate':'Calculate', 'calc.label':'Expense calculator', 'calc.done':'Done', 'calc.backspace':'Backspace', 'calc.operations':'Choose an operation', 'calc.clear':'Clear', 'calc.add':'Add', 'calc.subtract':'Subtract', 'calc.multiply':'Multiply', 'calc.divide':'Divide', 'calc.hint':'Choose an operation to calculate; Done applies the result.', 'calc.invalid':'Enter a valid non-negative amount and complete the calculation.', 'calc.zeroError':'Please enter an amount of 0 or more.',
+    'calc.calculate':'Calculate', 'calc.label':'Amount calculator', 'calc.done':'Done', 'calc.backspace':'Backspace', 'calc.operations':'Choose an operation', 'calc.clear':'Clear', 'calc.add':'Add', 'calc.subtract':'Subtract', 'calc.multiply':'Multiply', 'calc.divide':'Divide', 'calc.hint':'Choose an operation to calculate; Done applies the result.', 'calc.invalid':'Enter a valid non-negative amount and complete the calculation.', 'calc.zeroError':'Please enter an amount of 0 or more.',
     'picker.previousYears': 'Previous 12 years', 'picker.nextYears': 'Next 12 years', 'picker.previousYear': 'Previous year', 'picker.nextYear': 'Next year',
     'chart.editSavingsNote': 'This edits the full savings transaction, including any portion shown in another chart.',
     'chart.savingsDeleteConfirm': 'Delete this entire savings transaction? This also changes your savings balance and updates all views. This cannot be undone.',
@@ -3161,7 +3196,7 @@
   Object.assign(TRANSLATIONS['zh-Hant'], {
     'picker.kicker': '日曆', 'picker.title': '選擇日期', 'picker.chooseYear': '選擇年份', 'picker.chooseMonth': '選擇月份',
     'picker.chooseMonthYear': '選擇月份及年份', 'picker.back': '← 返回日曆',
-    'calc.calculate':'計算結果', 'calc.label':'支出計算機', 'calc.done':'完成', 'calc.backspace':'刪除一位', 'calc.operations':'選擇運算', 'calc.clear':'清除', 'calc.add':'加', 'calc.subtract':'減', 'calc.multiply':'乘', 'calc.divide':'除', 'calc.hint':'選擇運算方式；撳完成套用結果。', 'calc.invalid':'請完成計算並輸入有效的非負金額。', 'calc.zeroError':'請輸入 0 或以上的金額。',
+    'calc.calculate':'計算結果', 'calc.label':'金額計算機', 'calc.done':'完成', 'calc.backspace':'刪除一位', 'calc.operations':'選擇運算', 'calc.clear':'清除', 'calc.add':'加', 'calc.subtract':'減', 'calc.multiply':'乘', 'calc.divide':'除', 'calc.hint':'選擇運算方式；撳完成套用結果。', 'calc.invalid':'請完成計算並輸入有效的非負金額。', 'calc.zeroError':'請輸入 0 或以上的金額。',
     'picker.previousYears': '前 12 年', 'picker.nextYears': '後 12 年', 'picker.previousYear': '上一年', 'picker.nextYear': '下一年',
     'chart.editSavingsNote': '此操作會編輯整筆儲蓄交易，包括在其他圖表顯示的部分。',
     'chart.savingsDeleteConfirm': '刪除整筆儲蓄交易？儲蓄餘額及所有頁面都會更新，此操作無法復原。',
@@ -3179,7 +3214,7 @@
   Object.assign(TRANSLATIONS['zh-Hans'], {
     'picker.kicker': '日历', 'picker.title': '选择日期', 'picker.chooseYear': '选择年份', 'picker.chooseMonth': '选择月份',
     'picker.chooseMonthYear': '选择月份及年份', 'picker.back': '← 返回日历',
-    'calc.calculate':'计算结果', 'calc.label':'支出计算器', 'calc.done':'完成', 'calc.backspace':'删除一位', 'calc.operations':'选择运算', 'calc.clear':'清除', 'calc.add':'加', 'calc.subtract':'减', 'calc.multiply':'乘', 'calc.divide':'除', 'calc.hint':'选择运算方式；点击完成应用结果。', 'calc.invalid':'请完成计算并输入有效的非负金额。', 'calc.zeroError':'请输入 0 或以上的金额。',
+    'calc.calculate':'计算结果', 'calc.label':'金额计算器', 'calc.done':'完成', 'calc.backspace':'删除一位', 'calc.operations':'选择运算', 'calc.clear':'清除', 'calc.add':'加', 'calc.subtract':'减', 'calc.multiply':'乘', 'calc.divide':'除', 'calc.hint':'选择运算方式；点击完成应用结果。', 'calc.invalid':'请完成计算并输入有效的非负金额。', 'calc.zeroError':'请输入 0 或以上的金额。',
     'picker.previousYears': '前 12 年', 'picker.nextYears': '后 12 年', 'picker.previousYear': '上一年', 'picker.nextYear': '下一年',
     'chart.editSavingsNote': '此操作会编辑整笔储蓄交易，包括在其他图表显示的部分。',
     'chart.savingsDeleteConfirm': '删除整笔储蓄交易？储蓄余额及所有页面都会更新，此操作无法撤销。',
@@ -3940,8 +3975,79 @@
     if (source === 'manual') state.demoSeed = false;
     return true;
   }
+  var showAllSavingsHistory = false;
+  var pendingSavingsJarAnimation = null;
+  function savingsJarLevel(balance, target) {
+    return target > 0 ? Math.max(0, Math.min(1, Number(balance) / Number(target))) : 0;
+  }
+  function savingsJarMarkup(key, level) {
+    var clip = 'jar-clip-' + key, metal = 'jar-metal-' + key, face = 'jar-face-' + key;
+    var glass = 'jar-glass-reflection-' + key, coinFace = 'jar-coin-face-' + key, coinSide = 'jar-coin-side-' + key;
+    // Fixed, overlapping coin shapes move together as one group; only the jar outline clips them.
+    // The irregular top row forms a mound rather than an artificial flat progress cut.
+    var pile = '';
+    var rows = [
+      [[25,120,-11,'s'],[45,119,7,'s'],[66,120,-7,'s']],
+      [[23,112,-15,'f'],[38,113,10,'f'],[54,112,-9,'f'],[70,113,13,'f']],
+      [[26,103,6,'s'],[46,103,-8,'s'],[67,103,5,'s']],
+      [[23,95,12,'f'],[38,94,-9,'f'],[54,95,14,'f'],[70,94,-12,'f']],
+      [[26,85,-8,'s'],[46,85,5,'s'],[67,85,-4,'s']],
+      [[23,77,-10,'f'],[38,76,12,'f'],[54,77,-13,'f'],[70,76,9,'f']],
+      [[26,67,5,'s'],[46,67,-6,'s'],[67,67,8,'s']],
+      [[24,59,11,'f'],[39,57,-10,'f'],[55,57,12,'f'],[70,60,-7,'f']],
+      [[31,52,-9,'f'],[48,50,8,'f'],[64,53,-12,'f']]
+    ];
+    rows.forEach(function(row) { row.forEach(function(c) {
+      pile += '<use href="#' + (c[3] === 's' ? coinSide : coinFace) + '" transform="translate(' + c[0] + ' ' + c[1] + ') rotate(' + c[2] + ')"/>';
+    }); });
+    var offset = (83 * (1 - level)).toFixed(3);
+    return '<div class="savings-jar" aria-hidden="true" style="--jar-level:' + level + ';--jar-offset:' + offset + 'px">' +
+      '<svg viewBox="0 0 100 148" focusable="false"><defs>' +
+      '<clipPath id="' + clip + '"><path d="M26 43 Q17 46 17 58 V112 Q17 126 30 126 H70 Q83 126 83 112 V58 Q83 46 74 43 Z"/></clipPath>' +
+      '<linearGradient id="' + metal + '" x1="0" y1="0" x2=".85" y2="1"><stop offset="0" stop-color="#FEF08A"/><stop offset=".24" stop-color="#FDE68A"/><stop offset=".5" stop-color="#F59E0B"/><stop offset=".72" stop-color="#FEF08A"/><stop offset="1" stop-color="#B45309"/></linearGradient>' +
+      '<radialGradient id="' + face + '" cx=".32" cy=".24" r=".8"><stop offset="0" stop-color="#FEF9C3"/><stop offset=".35" stop-color="#FEF08A"/><stop offset=".7" stop-color="#F59E0B"/><stop offset="1" stop-color="#B45309"/></radialGradient>' +
+      '<linearGradient id="' + glass + '" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".34"/><stop offset=".48" stop-color="#fff" stop-opacity=".09"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
+      '<g id="' + coinFace + '"><ellipse rx="7.4" ry="6.2" fill="url(#' + face + ')" stroke="#B45309" stroke-width=".85"/><ellipse rx="5.5" ry="4.4" fill="none" stroke="#D97706" stroke-width=".65" opacity=".9"/><path d="M-3 -3.7 Q0 -5 3 -3.7" fill="none" stroke="#fff9cb" stroke-width=".75" stroke-linecap="round"/><path d="M0 -2.6 v5.2 M1.8 -1.7 C.5 -3 -2 -2 -1.5 -.7 S2 0 1.5 1.2 S-1 2.3 -2 1.4" fill="none" stroke="#A95B08" stroke-width=".55" stroke-linecap="round"/></g>' +
+      '<g id="' + coinSide + '"><rect x="-9" y="-2.8" width="18" height="5.6" rx="2.5" fill="url(#' + metal + ')" stroke="#B45309" stroke-width=".75"/><path d="M-6 -1.2v2.5 M-3 -1.5v3 M0 -1.5v3 M3 -1.5v3 M6 -1.2v2.5" fill="none" stroke="#B45309" stroke-opacity=".58" stroke-width=".55"/><path d="M-6.5 -2h13" stroke="#FEF9C3" stroke-width=".6" stroke-linecap="round"/></g></defs>' +
+      '<path class="savings-jar-glass" d="M26 43 Q17 46 17 58 V112 Q17 126 30 126 H70 Q83 126 83 112 V58 Q83 46 74 43 Z"/>' +
+      '<g clip-path="url(#' + clip + ')"><g class="savings-jar-pile">' + pile + '</g>' +
+      '<path d="M18 43 H53 L26 126 H17 Z" fill="url(#' + glass + ')"/><path d="M72 43 H79 L52 126 H46 Z" fill="#fff" opacity=".10"/></g>' +
+      '<g class="savings-jar-coin coin-one"><use href="#' + coinFace + '" x="50" y="18"/></g>' +
+      '<g class="savings-jar-coin coin-two"><use href="#' + coinFace + '" x="55" y="18"/></g>' +
+      '<g class="savings-jar-coin coin-three"><use href="#' + coinFace + '" x="44" y="18"/></g>' +
+      '<path d="M25 57 V96" stroke="rgba(255,255,255,.65)" stroke-width="2.5" stroke-linecap="round"/>' +
+      '<rect class="savings-jar-rim" x="23" y="32" width="54" height="13" rx="4"/><path d="M34 36 H66" stroke="#2f806b" stroke-width="2" stroke-linecap="round"/>' +
+      '<path d="M41 23 H59" stroke="#af7f28" stroke-width="3" stroke-linecap="round"/>' +
+      '</svg><span class="savings-jar-glint"></span></div>';
+  }
+  function playSavingsJarAnimation(goalId, oldBalance, target, type) {
+    if (!els.appMain || els.appMain.dataset.activeView !== 'savings') return;
+    var goalCard = Array.prototype.find.call(els.savingsGoalsList.querySelectorAll('[data-savings-jar-goal]'), function(el) { return el.getAttribute('data-savings-jar-goal') === String(goalId); });
+    if (!goalCard) return;
+    var jar = goalCard.querySelector('.savings-jar');
+    if (!jar) return;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var goal = (state.savings.goals || []).find(function(g) { return g.id === goalId; });
+    if (!goal) return;
+    var finalLevel = savingsJarLevel(goal.balance, goal.target);
+    if (reduce) { jar.style.setProperty('--jar-level', finalLevel); jar.style.setProperty('--jar-offset', (83 * (1 - finalLevel)).toFixed(3) + 'px'); return; }
+    var box = goalCard.getBoundingClientRect();
+    var outside = box.bottom > window.innerHeight - 90 || box.top < 70;
+    if (outside) goalCard.scrollIntoView({behavior:'smooth', block:'center'});
+    var delay = outside ? 450 : 50;
+    jar.style.setProperty('--drop-y', (37 + (1 - savingsJarLevel(oldBalance, target)) * 70) + 'px');
+    setTimeout(function() {
+      if (!jar.isConnected) return;
+      jar.classList.add('is-animating');
+      if (type !== 'withdraw') jar.classList.add('is-deposit');
+      setTimeout(function() { if (jar.isConnected) { jar.style.setProperty('--jar-level', finalLevel); jar.style.setProperty('--jar-offset', (83 * (1 - finalLevel)).toFixed(3) + 'px'); } }, type === 'withdraw' ? 30 : 380);
+      setTimeout(function() { if (jar.isConnected) { jar.classList.remove('is-animating'); jar.classList.remove('is-deposit'); } }, 1600);
+    }, delay);
+  }
   function renderSavings() {
     if (!els.savingsTotal) return;
+    var createJar = document.getElementById('savingsCreateJar');
+    if (createJar && !createJar.firstElementChild) createJar.innerHTML = savingsJarMarkup('create', 0);
     var savings = state.savings || (state.savings = normalizeSavings({}));
     reconcileSweptPeriods(savings);
     var goals = savings.goals || [];
@@ -3973,11 +4079,14 @@
     if (els.savingsGoalsList) {
       els.savingsGoalsList.innerHTML = goals.map(function (goal, goalIndex) {
         var target = Number(goal.target) || 0;
-        var pct = target > 0 ? Math.min(100, Math.round((goal.balance / target) * 100)) : 0;
+        var pct = target > 0 ? Math.round((goal.balance / target) * 100) : 0;
+        var clampedPct = Math.max(0, Math.min(100, pct));
+        var level = pendingSavingsJarAnimation && pendingSavingsJarAnimation.id === goal.id ? savingsJarLevel(pendingSavingsJarAnimation.oldBalance, target) : savingsJarLevel(goal.balance, target);
         var detail = target > 0 ? fmt(goal.balance) + ' / ' + fmt(target) : fmt(goal.balance);
-        return '<article class="savings-goal-card"><div class="savings-goal-heading"><h3>' + escapeHtml(goal.name) + '</h3><div class="savings-goal-actions"><div class="savings-order-actions"><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="-1" aria-label="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '"' + (goalIndex === 0 ? ' disabled' : '') + '><span aria-hidden="true">↑</span></button><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="1" aria-label="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '"' + (goalIndex === goals.length - 1 ? ' disabled' : '') + '><span aria-hidden="true">↓</span></button></div><span class="savings-goal-balance">' + escapeHtml(fmt(goal.balance)) + '</span><button type="button" class="savings-delete-goal" data-delete-goal="' + escapeHtml(goal.id) + '" aria-label="' + escapeHtml(t('savings.deleteGoalAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.confirmDelete', { goal: goal.name, amount: fmt(goal.balance) })) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button></div></div>' +
-          (target > 0 ? '<div class="savings-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + pct + '"><span class="transition-all duration-500 ease-out" style="width:' + pct + '%"></span></div>' : '') +
-          '<div class="savings-goal-meta"><span>' + escapeHtml(detail) + '</span><span>' + (target > 0 ? escapeHtml(t('savings.targetProgress', { pct: pct })) : '') + '</span></div></article>';
+        return '<article class="savings-goal-card" data-savings-jar-goal="' + escapeHtml(goal.id) + '"><div class="savings-goal-heading"><h3>' + escapeHtml(goal.name) + '</h3><div class="savings-goal-actions"><div class="savings-order-actions"><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="-1" aria-label="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '"' + (goalIndex === 0 ? ' disabled' : '') + '><span aria-hidden="true">↑</span></button><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="1" aria-label="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '"' + (goalIndex === goals.length - 1 ? ' disabled' : '') + '><span aria-hidden="true">↓</span></button></div><span class="savings-goal-balance">' + escapeHtml(fmt(goal.balance)) + '</span><button type="button" class="savings-delete-goal" data-delete-goal="' + escapeHtml(goal.id) + '" aria-label="' + escapeHtml(t('savings.deleteGoalAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.confirmDelete', { goal: goal.name, amount: fmt(goal.balance) })) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button></div></div>' +
+          '<div class="savings-jar-row">' + savingsJarMarkup('goal-' + goalIndex, level) + '<div class="savings-jar-details">' +
+          (target > 0 ? '<div class="savings-progress" role="progressbar" aria-label="' + escapeHtml(goal.name) + '" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + clampedPct + '" aria-valuetext="' + escapeHtml(t('savings.targetProgress', { pct: pct })) + '"><span class="transition-all duration-500 ease-out" style="width:' + clampedPct + '%"></span></div>' : '') +
+          '<div class="savings-goal-meta"><span>' + escapeHtml(detail) + '</span><span>' + escapeHtml(target > 0 ? t('savings.targetProgress', { pct: pct }) : t('savings.noTargetJar')) + '</span></div></div></div></article>';
       }).join('');
     }
     if (els.savingsGoalSelect) {
@@ -3989,9 +4098,16 @@
     }
     var goalNames = Object.create(null);
     goals.forEach(function (goal) { goalNames[goal.id] = goal.name; });
-    var history = (savings.transactions || []).slice().sort(function (a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }).slice(0, 12);
+    var history = (savings.transactions || []).map(function(item, index) { return {item:item, index:index}; }).sort(function (a, b) { return (b.item.createdAt || 0) - (a.item.createdAt || 0) || b.index - a.index; }).map(function(entry) { return entry.item; });
+    if (history.length <= 3) showAllSavingsHistory = false;
+    var historyToggle = document.getElementById('savingsHistoryToggle');
+    if (historyToggle) {
+      historyToggle.classList.toggle('hidden', history.length <= 3);
+      historyToggle.setAttribute('aria-expanded', String(showAllSavingsHistory));
+      historyToggle.textContent = t(showAllSavingsHistory ? 'savings.hideRecords' : 'savings.viewRecords');
+    }
     if (els.savingsHistory) {
-      els.savingsHistory.innerHTML = history.map(function (item) {
+      els.savingsHistory.innerHTML = (showAllSavingsHistory ? history : history.slice(0,3)).map(function (item) {
         var isRollover = item.source === 'rollover';
         var label = isRollover ? t('savings.historyRollover') : t(item.type === 'deposit' ? 'savings.historyDeposit' : 'savings.historyWithdraw');
         var sign = item.type === 'deposit' ? '+' : '−';
@@ -4001,6 +4117,10 @@
     }
     if (els.savingsHistoryEmpty) els.savingsHistoryEmpty.classList.toggle('hidden', history.length > 0);
   }
+  document.getElementById('savingsHistoryToggle').addEventListener('click', function () {
+    showAllSavingsHistory = !showAllSavingsHistory;
+    renderSavings();
+  });
   function syncRolloverControls() {
     var savings = state.savings || (state.savings = normalizeSavings({}));
     var rollover = savings.rollover;
@@ -4129,9 +4249,13 @@
     if (rollover.sweptPeriods[mode].includes(previousKey)) { save(); return; }
     if (rollover.preference === 'automated') {
       var goal = ensureSavingsGoal(rollover.defaultGoalId);
+      var oldAutoBalance = goal.balance, autoTarget = goal.target;
+      if (els.appMain && els.appMain.dataset.activeView === 'savings') pendingSavingsJarAnimation = { id:goal.id, oldBalance:oldAutoBalance };
       recordSavingsMovement(goal.id, 'deposit', leftover, 'rollover', { mode: mode, periodKey: previousKey, date: previousRange.endISO });
       markPeriodSwept(mode, previousKey);
       save(); render();
+      pendingSavingsJarAnimation = null;
+      playSavingsJarAnimation(goal.id, oldAutoBalance, autoTarget, 'deposit');
       showToast(t('rollover.autoToast', { amount: fmt(leftover) }));
       return;
     }
@@ -4192,15 +4316,20 @@
         save(); render(); showToast(t('savings.nothingToSweep')); return;
       }
     }
+    var animationGoalId = '', animationOldBalance = 0, animationTarget = 0;
     if (accept) {
       var goal = ensureSavingsGoal(els.rolloverPromptGoal ? els.rolloverPromptGoal.value : rollover.defaultGoalId);
+      animationGoalId = goal.id; animationOldBalance = goal.balance; animationTarget = goal.target;
+      if (els.appMain && els.appMain.dataset.activeView === 'savings') pendingSavingsJarAnimation = { id:goal.id, oldBalance:goal.balance };
       recordSavingsMovement(goal.id, 'deposit', amount, pending.kind === 'current' ? 'manual' : 'rollover', pending.kind === 'current' ? null : { mode: pending.mode, periodKey: pending.fromKey, date: isValidISODate(rolloverTransactionDate) ? rolloverTransactionDate : previousPeriodBalance(pending.mode).range.endISO });
       if (pending.kind !== 'current') markPeriodSwept(pending.mode, pending.fromKey);
     }
     rollover.pending = null;
     rollover.updatedAt = Date.now();
     save(); render();
+    pendingSavingsJarAnimation = null;
     if (accept) {
+      playSavingsJarAnimation(animationGoalId, animationOldBalance, animationTarget);
       var successKey = pending.manual ? 'savings.depositToast' : 'rollover.autoToast';
       showToast(t(successKey, { amount: fmt(amount) }));
     }
@@ -6162,7 +6291,7 @@
   function setDayTxType(type) {
     dayTxType = type === 'income' ? 'income' : 'expense';
     resetExpenseCalculator();
-    if (els.dayTxAmount) { els.dayTxAmount.type = dayTxType === 'income' ? 'number' : 'text'; els.dayTxAmount.inputMode = 'decimal'; els.dayTxAmount.readOnly = false; els.dayTxAmount.setAttribute('aria-expanded','false'); }
+    if (els.dayTxAmount) { els.dayTxAmount.type = 'text'; els.dayTxAmount.inputMode = 'decimal'; els.dayTxAmount.readOnly = false; els.dayTxAmount.setAttribute('aria-expanded','false'); }
     populateDayTxCategories();
     if (els.dayTxError) clearError(els.dayTxError);
   }
@@ -6189,7 +6318,7 @@
     var modalCard = els.dayTxModal.querySelector('.day-tx-modal');
     if (modalCard) modalCard.scrollTop = 0;
     setTimeout(function () {
-      if (!els.dayTxTitle) return;
+      if (!els.dayTxTitle || els.dayTxModal.classList.contains('hidden') || els.dayTxModal.contains(document.activeElement)) return;
       try { els.dayTxTitle.focus({ preventScroll: true }); }
       catch (e) { els.dayTxTitle.focus(); }
     }, 30);
@@ -7281,7 +7410,6 @@
     if (els.dayTxAmount) els.dayTxAmount.setAttribute('aria-expanded', 'false');
   }
   function showExpenseCalculator() {
-    if (dayTxType !== 'expense') return;
     calcActive = true; calcPanel.classList.remove('hidden');
     els.dayTxAmount.setAttribute('aria-expanded', 'true');
     updateExpensePreview();
@@ -7305,7 +7433,6 @@
     return Math.round((result + Number.EPSILON * Math.max(1, Math.abs(result)) * 2) * 100) / 100;
   }
   function updateExpensePreview() {
-    if (dayTxType !== 'expense') { calcPreview.classList.add('hidden'); return; }
     var text = els.dayTxAmount.value, result = expenseCalcResult(text);
     var show = result !== null && /[+*\/−×÷-]/.test(text);
     calcPreview.textContent = show ? '= ' + fmt(result) : '';
@@ -7335,13 +7462,13 @@
     els.dayTxAmount.addEventListener('click', showExpenseCalculator);
     els.dayTxAmount.addEventListener('input', updateExpensePreview);
     els.dayTxAmount.addEventListener('keydown', function(e) {
-      if (dayTxType === 'expense' && (e.key === 'Enter' || e.key === '=')) { e.preventDefault(); finishExpenseCalculation(true, false); }
+      if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); finishExpenseCalculation(true, false); }
     });
   }
   function calculatorFocusOut(e) {
     var next = e.relatedTarget;
     if (next === els.dayTxAmount || (next && calcPanel.contains(next))) return;
-    if (dayTxType === 'expense' && calcActive) finishExpenseCalculation(false, true);
+    if (calcActive) finishExpenseCalculation(false, true);
   }
   els.dayTxAmount.addEventListener('focusout', calculatorFocusOut);
   calcPanel.addEventListener('focusout', calculatorFocusOut);
@@ -7366,12 +7493,12 @@
     ev.preventDefault(); submitTransactionEdit();
   });
   document.querySelectorAll('[data-day-tx-type]').forEach(function (btn) {
-    btn.addEventListener('click', function () { if (dayTxType === 'expense' && !finishExpenseCalculation(false, true)) return; setDayTxType(btn.getAttribute('data-day-tx-type')); });
+    btn.addEventListener('click', function () { if (!finishExpenseCalculation(false, true)) return; setDayTxType(btn.getAttribute('data-day-tx-type')); });
   });
   if (els.dayTxAmount) els.dayTxAmount.addEventListener('input', function () { clearError(els.dayTxError); });
   if (els.dayTxForm) els.dayTxForm.addEventListener('submit', function (ev) {
     ev.preventDefault();
-    if (dayTxType === 'expense' && !finishExpenseCalculation(false, false)) return;
+    if (!finishExpenseCalculation(false, false)) return;
     var amount = parseFloat(els.dayTxAmount.value);
     if (!isFinite(amount) || amount < 0 || (dayTxType === 'income' && amount <= 0)) {
       showError(els.dayTxError, t(dayTxType === 'income' ? 'exp.error' : 'calc.zeroError'));
@@ -7509,9 +7636,13 @@
     if (!isFinite(amount) || amount <= 0) { showToast(t('savings.invalid')); return; }
     var goal = state.savings.goals.filter(function (g) { return g.id === goalId; })[0];
     if (type === 'withdraw' && (!goal || amount > goal.balance)) { showToast(t('savings.insufficient')); return; }
+    var oldGoalBalance = goal ? goal.balance : 0, oldGoalTarget = goal ? goal.target : 0;
     if (!recordSavingsMovement(goalId, type, amount, 'manual')) { showToast(t('savings.noGoalSelected')); return; }
+    pendingSavingsJarAnimation = { id:goalId, oldBalance:oldGoalBalance };
     els.savingsAmount.value = '';
     save(); render();
+    pendingSavingsJarAnimation = null;
+    playSavingsJarAnimation(goalId, oldGoalBalance, oldGoalTarget, type);
     showToast(t(type === 'deposit' ? 'savings.depositToast' : 'savings.withdrawToast', { amount: fmt(amount) }));
   });
   if (els.rolloverDepositBtn) els.rolloverDepositBtn.addEventListener('click', function () { completePendingRollover(true); });
@@ -7731,5 +7862,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60eb7c9d961aec4',t:'MTc5NTc1NzE4NQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60eb7c9d961aec4',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60ee5631b406ceb',t:'MTc5NTc1OTA1Mw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60ee5631b406ceb',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
