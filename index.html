@@ -7561,7 +7561,12 @@
      from covering it. Fine-pointer desktop devices keep direct text typing. */
   function calculatorUsesTouchKeypad() {
     if (!window.matchMedia) return (navigator.maxTouchPoints || 0) > 0;
-    return window.matchMedia('(pointer: coarse)').matches ||
+    // iPadOS can identify itself as a Mac, especially with an attached keyboard.
+    // Always keep iOS/iPadOS on the controlled keypad to avoid WebKit opening
+    // a native keyboard beside it, even when a pointer capability is reported oddly.
+    var ios = /iPad|iPhone|iPod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+    return ios || window.matchMedia('(pointer: coarse)').matches ||
       ((navigator.maxTouchPoints || 0) > 0 && window.matchMedia('(hover: none)').matches);
   }
   function configureCalculatorInput(input) {
@@ -7569,6 +7574,55 @@
     var touch = calculatorUsesTouchKeypad();
     input.type = 'text'; input.readOnly = touch; input.inputMode = touch ? 'none' : 'decimal';
   }
+  // On touch, explicitly dismiss a keyboard left open by another editable field.
+  [els.dayTxAmount, els.savingsGoalTarget, els.savingsAmount].forEach(function(input) {
+    if (!input) return;
+    input.addEventListener('pointerdown', function() {
+      if (!calculatorUsesTouchKeypad()) return;
+      var active = document.activeElement;
+      if (active && active !== input && typeof active.blur === 'function') active.blur();
+    });
+  });
+  // The calculator is part of a scrollable modal or page, not a fixed overlay.
+  // Bring the amount and the whole keypad into view when it opens, keeping the
+  // existing five-button bottom navigation unchanged.
+  function fitTouchCalculator(input, panel) {
+    if (!calculatorUsesTouchKeypad() || !input || !panel || panel.classList.contains('hidden')) return;
+    var card = input.closest('.modal-card');
+    var viewport = window.visualViewport;
+    var top = viewport ? viewport.offsetTop : 0;
+    var bottom = top + (viewport ? viewport.height : window.innerHeight);
+    if (card) {
+      var cr = card.getBoundingClientRect();
+      top = Math.max(top, cr.top) + 10;
+      bottom = Math.min(bottom, cr.bottom) - 10;
+    } else {
+      var nav = document.querySelector('.bottom-nav');
+      if (nav) {
+        var nr = nav.getBoundingClientRect();
+        if (nr.height && nr.top > top && nr.top < bottom) bottom = nr.top - 8;
+      }
+      top += 10; bottom -= 10;
+    }
+    var ir = input.getBoundingClientRect(), pr = panel.getBoundingClientRect();
+    var delta = pr.bottom - bottom;
+    if (ir.top - Math.max(0, delta) < top) delta = ir.top - top;
+    if (Math.abs(delta) < 1) return;
+    if (card) card.scrollTop += delta;
+    else window.scrollBy(0, delta);
+  }
+  function scheduleTouchCalculatorFit(input, panel) {
+    if (!calculatorUsesTouchKeypad()) return;
+    requestAnimationFrame(function() { requestAnimationFrame(function() { fitTouchCalculator(input, panel); }); });
+    // iOS may update the visual viewport after dismissing a prior keyboard.
+    setTimeout(function() { fitTouchCalculator(input, panel); }, 250);
+  }
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', function() {
+    if (!calculatorUsesTouchKeypad()) return;
+    var active = document.activeElement;
+    if (active === els.dayTxAmount) scheduleTouchCalculatorFit(active, document.getElementById('expenseCalculator'));
+    else if (active === els.savingsGoalTarget || active === els.savingsAmount) scheduleTouchCalculatorFit(active, document.getElementById(active.id + 'Calculator'));
+  });
   /* Amount expressions are parsed, never evaluated as JavaScript. */
   var calcPanel = document.getElementById('expenseCalculator');
   var calcPreview = document.getElementById('expenseCalcPreview');
@@ -7580,9 +7634,11 @@
     if (els.dayTxAmount) els.dayTxAmount.setAttribute('aria-expanded', 'false');
   }
   function showExpenseCalculator() {
+    var opening = !calcActive;
     calcActive = true; calcPanel.classList.remove('hidden');
     els.dayTxAmount.setAttribute('aria-expanded', 'true');
     updateExpensePreview();
+    if (opening) scheduleTouchCalculatorFit(els.dayTxAmount, calcPanel);
   }
   function expenseCalcResult(text) {
     text = String(text || '').replace(/\s+/g,'').replace(/,/g,'.').replace(/×/g,'*').replace(/[÷]/g,'/').replace(/−/g,'-');
@@ -7605,8 +7661,10 @@
   function updateExpensePreview() {
     var text = els.dayTxAmount.value, result = expenseCalcResult(text);
     var show = result !== null && /[+*\/−×÷-]/.test(text);
+    var wasHidden = calcPreview.classList.contains('hidden');
     calcPreview.textContent = show ? '= ' + fmt(result) : '';
     calcPreview.classList.toggle('hidden', !show);
+    if (show && wasHidden && calcActive) scheduleTouchCalculatorFit(els.dayTxAmount, calcPanel);
   }
   function finishExpenseCalculation(moveFocus, allowEmpty) {
     var text = els.dayTxAmount.value.trim();
@@ -7681,11 +7739,13 @@
     input.insertAdjacentElement('afterend', preview); preview.insertAdjacentElement('afterend', panel); panel.insertAdjacentElement('afterend', error);
     input.setAttribute('aria-controls', panel.id); input.setAttribute('aria-describedby', preview.id + ' ' + error.id); input.setAttribute('aria-expanded','false');
     var active = false;
-    function show() { active = true; panel.classList.remove('hidden'); input.setAttribute('aria-expanded','true'); update(); }
+    function show() { var opening = !active; active = true; panel.classList.remove('hidden'); input.setAttribute('aria-expanded','true'); update(); if (opening) scheduleTouchCalculatorFit(input, panel); }
     function update() {
       var text = input.value, result = expenseCalcResult(text);
       var visible = result !== null && /[+*\/−×÷-]/.test(text);
+      var wasHidden = preview.classList.contains('hidden');
       preview.textContent = visible ? '= ' + fmt(result) : ''; preview.classList.toggle('hidden', !visible);
+      if (visible && wasHidden && active) scheduleTouchCalculatorFit(input, panel);
     }
     function reset() { active = false; panel.classList.add('hidden'); preview.classList.add('hidden'); preview.textContent = ''; input.setAttribute('aria-expanded','false'); }
     function finish(allowEmpty, moveFocus) {
@@ -8140,5 +8200,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60f4eeaccec36f1',t:'MTc5NTc2MzM3NQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60f4eeaccec36f1',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60f56dc2a0736f1',t:'MTc5NTc2MzcwMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60f56dc2a0736f1',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
