@@ -514,23 +514,34 @@
   .savings-progress > span{ display:block; height:100%; border-radius:inherit; background:linear-gradient(90deg,#059669,#10b981,#0ea5e9); transition:all .5s ease-out; }
   /* Reusable, decorative SVG jar: progress remains available as text and a progressbar. */
   .savings-jar-row{ display:flex; align-items:center; gap:1rem; margin-top:.5rem; }
+  .savings-jar-replay{ width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; flex:none; border:1px solid var(--border); border-radius:.55rem; background:transparent; color:var(--muted); cursor:pointer; }
+  .savings-jar-replay:hover{ color:var(--brand-green-strong); border-color:var(--brand-green-strong); }
+  .savings-jar-replay:focus-visible{ outline:2px solid #10b981; outline-offset:2px; }
+  .savings-jar-replay svg{ width:16px; height:16px; }
+  #savingsGoalTarget,#savingsAmount{ font-size:16px; }
   .savings-jar{ position:relative; flex:0 0 98px; width:98px; height:145px; }
   .savings-jar svg{ display:block; width:100%; height:100%; overflow:visible; }
-  .savings-jar-glass{ fill:rgba(16,185,129,.055); stroke:#67aa98; stroke-width:2; }
-  html.dark .savings-jar-glass{ fill:rgba(52,211,153,.08); stroke:#6ebba4; }
-  .savings-jar-rim{ fill:#e4f5ec; stroke:#4a9b84; stroke-width:2; }
-  html.dark .savings-jar-rim{ fill:#174e46; stroke:#64b69e; }
-  .savings-jar-pile{ transform:translateY(var(--jar-offset, 83px)); }
-  .savings-jar.is-animating .savings-jar-pile{ transition:transform .85s cubic-bezier(.2,.7,.25,1); }
+  .savings-jar-glass{ fill:rgba(209,250,229,.23); stroke:#6aa997; stroke-width:1.7; }
+  html.dark .savings-jar-glass{ fill:rgba(110,231,183,.09); stroke:#76bca6; }
+  .savings-jar-rim{ fill:#e8f7ef; stroke:#4a9983; stroke-width:1.7; }
+  html.dark .savings-jar-rim{ fill:#174e46; stroke:#70bda6; }
+  /* Every settled coin stays at a fixed position; the pile itself never moves. */
+  .savings-jar.is-animating.is-deposit .savings-pile-coin{ transition:opacity .03s linear; }
+  .savings-jar.is-animating.is-withdraw .savings-pile-coin{ transition:opacity .8s ease-out; }
   .savings-jar-coin{ opacity:0; pointer-events:none; transform-box:fill-box; transform-origin:center; }
-  .savings-jar.is-animating.is-deposit .savings-jar-coin{ animation:coinDrop .8s cubic-bezier(.45,0,.8,.5) both; }
-  .savings-jar.is-animating.is-deposit .coin-two{ animation-delay:.12s; }
-  .savings-jar.is-animating.is-deposit .coin-three{ animation-delay:.24s; }
-  @keyframes coinDrop{ 0%{ transform:translateY(-12px) rotate(-28deg); opacity:0; } 15%{opacity:1} 78%{opacity:1} 100%{ transform:translateY(var(--drop-y,80px)) rotate(65deg); opacity:0; } }
-  .savings-jar-glint{ position:absolute; left:46%; top:calc(17px + var(--drop-y,80px)); width:14px; height:14px; opacity:0; pointer-events:none; }
+  .savings-jar.is-animating.is-deposit .savings-jar-coin{ animation:coinDrop .43s both; }
+  @keyframes coinDrop{
+    0%{ transform:translate(0,-8px) rotate(-18deg); opacity:0; animation-timing-function:cubic-bezier(.32,0,.67,0); }
+    12%{ opacity:1; animation-timing-function:cubic-bezier(.32,0,.67,0); }
+    72%{ transform:translate(var(--drop-x,0px),var(--drop-y,80px)) rotate(var(--coin-angle,0deg)); opacity:1; animation-timing-function:cubic-bezier(.16,.7,.4,1); }
+    83%{ transform:translate(var(--drop-x,0px),calc(var(--drop-y,80px) - 3px)) rotate(calc(var(--coin-angle,0deg) - 4deg)); opacity:1; animation-timing-function:cubic-bezier(.32,0,.67,0); }
+    94%{ transform:translate(var(--drop-x,0px),var(--drop-y,80px)) rotate(var(--coin-angle,0deg)); opacity:1; animation-timing-function:linear; }
+    100%{ transform:translate(var(--drop-x,0px),var(--drop-y,80px)) rotate(var(--coin-angle,0deg)); opacity:0; }
+  }
+  .savings-jar-glint{ position:absolute; left:46%; top:calc(11px + var(--drop-y,80px)); width:14px; height:14px; opacity:0; pointer-events:none; }
   .savings-jar-glint:before,.savings-jar-glint:after{ content:""; position:absolute; inset:0; margin:auto; background:#fff9c6; border-radius:100%; box-shadow:0 0 5px #fef08a; }
   .savings-jar-glint:before{ width:2px; height:14px; } .savings-jar-glint:after{ width:14px; height:2px; }
-  .savings-jar.is-animating.is-deposit .savings-jar-glint{ animation:jarGlint .48s .7s ease-out both; }
+  .savings-jar.is-animating.is-deposit .savings-jar-glint{ animation:jarGlint .28s .31s ease-out both; }
   @keyframes jarGlint{ 0%,100%{ opacity:0; transform:scale(.3); } 35%{opacity:.9; transform:scale(1)} }
   .savings-jar-details{ min-width:0; flex:1; }
   .savings-jar-details .savings-progress{ margin-top:.4rem; }
@@ -541,7 +552,7 @@
   .savings-jar-create .savings-jar{ flex-basis:74px; width:74px; height:109px; }
   .savings-jar-create p{ color:var(--muted); font-size:.8rem; line-height:1.45; margin:0; }
   .savings-history-toggle{ margin-top:.75rem; }
-  @media (prefers-reduced-motion: reduce){ .savings-jar.is-animating .savings-jar-pile{ transition:none; } .savings-jar.is-animating .savings-jar-coin, .savings-jar.is-animating .savings-jar-glint{ display:none; animation:none; } }
+  @media (prefers-reduced-motion: reduce){ .savings-jar.is-animating .savings-pile-coin{ transition:none; } .savings-jar.is-animating .savings-jar-coin, .savings-jar.is-animating .savings-jar-glint{ display:none; animation:none; } }
   .savings-history{ list-style:none; padding:0; margin:0; }
   .savings-history-item{ display:flex; justify-content:space-between; gap:.7rem; padding:.7rem 0; border-bottom:1px solid var(--border); font-size:.84rem; }
   .savings-history-item:last-child{ border-bottom:0; }
@@ -1674,7 +1685,7 @@
           <label class="label" for="savingsGoalName" data-i18n="savings.goalName">Goal name</label>
           <input class="field" id="savingsGoalName" type="text" maxlength="48" required placeholder="e.g. Emergency fund" data-i18n-ph="savings.goalPlaceholder" />
           <label class="label" for="savingsGoalTarget" style="margin-top:.85rem;" data-i18n="savings.goalTarget">Target amount (optional)</label>
-          <input class="field" id="savingsGoalTarget" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" />
+          <input class="field" id="savingsGoalTarget" type="text" inputmode="decimal" maxlength="80" autocomplete="off" min="0" step="0.01" placeholder="0.00" />
           <button class="btn-primary" type="submit" style="margin-top:1rem;" data-i18n="savings.create">Create goal</button>
         </form>
       </section>
@@ -1689,7 +1700,7 @@
             <option value="withdraw" data-i18n="savings.withdraw">Withdraw</option>
           </select>
           <label class="label" for="savingsAmount" style="margin-top:.85rem;" data-i18n="savings.amount">Amount</label>
-          <input class="field" id="savingsAmount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" />
+          <input class="field" id="savingsAmount" type="text" inputmode="decimal" maxlength="80" autocomplete="off" min="0.01" step="0.01" placeholder="0.00" />
           <button class="btn-primary" type="submit" style="margin-top:1rem;" data-i18n="savings.saveTransaction">Save transaction</button>
         </form>
       </section>
@@ -2097,6 +2108,7 @@
       'savings.deposit': 'Deposit', 'savings.withdraw': 'Withdraw', 'savings.amount': 'Amount',
       'savings.saveTransaction': 'Save transaction', 'savings.history': 'Recent activity',
       'savings.noHistory': 'Deposits and withdrawals will appear here.',
+      'savings.replayJar':'Replay coin animation for {goal}', 'savings.reducedMotion':'Animation is off because reduced motion is enabled.',
       'savings.viewRecords':'View all records', 'savings.hideRecords':'Show fewer records', 'savings.noTargetJar':'No target set', 'savings.jarStart':'Your jar starts empty and grows as you save toward a target.',
       'savings.goalCount': '{n} goals', 'savings.targetProgress': '{pct}% of target',
       'savings.createdToast': 'Savings goal created.', 'savings.goalLimit': 'You can have up to 100 savings goals.', 'savings.depositToast': '{amount} deposited.',
@@ -2472,6 +2484,7 @@
       'savings.deposit': '存入', 'savings.withdraw': '提款', 'savings.amount': '金額',
       'savings.saveTransaction': '儲存交易', 'savings.history': '最近活動',
       'savings.noHistory': '存入及提款紀錄會顯示在這裡。',
+      'savings.replayJar':'重播「{goal}」的存錢動畫', 'savings.reducedMotion':'因已啟用減少動態效果，動畫已停用。',
       'savings.viewRecords':'查看所有紀錄', 'savings.hideRecords':'收起紀錄', 'savings.noTargetJar':'未設定目標金額', 'savings.jarStart':'儲蓄罐會由空開始，隨著存款逐漸填滿。',
       'savings.goalCount': '{n} 個目標', 'savings.targetProgress': '已達目標 {pct}%',
       'savings.createdToast': '已建立儲蓄目標。', 'savings.goalLimit': '最多可建立 100 個儲蓄目標。', 'savings.depositToast': '已存入 {amount}。',
@@ -2847,6 +2860,7 @@
       'savings.deposit': '存入', 'savings.withdraw': '取款', 'savings.amount': '金额',
       'savings.saveTransaction': '保存交易', 'savings.history': '最近活动',
       'savings.noHistory': '存入和取款记录会显示在这里。',
+      'savings.replayJar':'重播“{goal}”的存钱动画', 'savings.reducedMotion':'因已启用减少动态效果，动画已停用。',
       'savings.viewRecords':'查看所有记录', 'savings.hideRecords':'收起记录', 'savings.noTargetJar':'未设置目标金额', 'savings.jarStart':'储蓄罐从空开始，随着存款逐渐填满。',
       'savings.goalCount': '{n} 个目标', 'savings.targetProgress': '已达目标 {pct}%',
       'savings.createdToast': '已创建储蓄目标。', 'savings.goalLimit': '最多可创建 100 个储蓄目标。', 'savings.depositToast': '已存入 {amount}。',
@@ -3983,8 +3997,8 @@
   function savingsJarMarkup(key, level) {
     var clip = 'jar-clip-' + key, metal = 'jar-metal-' + key, face = 'jar-face-' + key;
     var glass = 'jar-glass-reflection-' + key, coinFace = 'jar-coin-face-' + key, coinSide = 'jar-coin-side-' + key;
-    // Fixed, overlapping coin shapes move together as one group; only the jar outline clips them.
-    // The irregular top row forms a mound rather than an artificial flat progress cut.
+    // Coin positions are fixed. Additional settled coins appear only as drops land;
+    // no existing coin or entire pile is translated upward.
     var pile = '';
     var rows = [
       [[25,120,-11,'s'],[45,119,7,'s'],[66,120,-7,'s']],
@@ -3997,11 +4011,11 @@
       [[24,59,11,'f'],[39,57,-10,'f'],[55,57,12,'f'],[70,60,-7,'f']],
       [[31,52,-9,'f'],[48,50,8,'f'],[64,53,-12,'f']]
     ];
-    rows.forEach(function(row) { row.forEach(function(c) {
-      pile += '<use href="#' + (c[3] === 's' ? coinSide : coinFace) + '" transform="translate(' + c[0] + ' ' + c[1] + ') rotate(' + c[2] + ')"/>';
+    rows.forEach(function(row) { row.forEach(function(c, i) {
+      var threshold = Math.min(1, Math.max(.001, (120 - c[1]) / 70 * .96 + i * .002));
+      pile += '<g class="savings-pile-coin" data-level="' + threshold.toFixed(4) + '" data-x="' + c[0] + '" data-y="' + c[1] + '" data-angle="' + c[2] + '" style="opacity:' + (level >= threshold ? '1' : '0') + '"><use href="#' + (c[3] === 's' ? coinSide : coinFace) + '" transform="translate(' + c[0] + ' ' + c[1] + ') rotate(' + c[2] + ')"/></g>';
     }); });
-    var offset = (83 * (1 - level)).toFixed(3);
-    return '<div class="savings-jar" aria-hidden="true" style="--jar-level:' + level + ';--jar-offset:' + offset + 'px">' +
+    return '<div class="savings-jar" aria-hidden="true" style="--jar-level:' + level + '">' +
       '<svg viewBox="0 0 100 148" focusable="false"><defs>' +
       '<clipPath id="' + clip + '"><path d="M26 43 Q17 46 17 58 V112 Q17 126 30 126 H70 Q83 126 83 112 V58 Q83 46 74 43 Z"/></clipPath>' +
       '<linearGradient id="' + metal + '" x1="0" y1="0" x2=".85" y2="1"><stop offset="0" stop-color="#FEF08A"/><stop offset=".24" stop-color="#FDE68A"/><stop offset=".5" stop-color="#F59E0B"/><stop offset=".72" stop-color="#FEF08A"/><stop offset="1" stop-color="#B45309"/></linearGradient>' +
@@ -4010,38 +4024,118 @@
       '<g id="' + coinFace + '"><ellipse rx="7.4" ry="6.2" fill="url(#' + face + ')" stroke="#B45309" stroke-width=".85"/><ellipse rx="5.5" ry="4.4" fill="none" stroke="#D97706" stroke-width=".65" opacity=".9"/><path d="M-3 -3.7 Q0 -5 3 -3.7" fill="none" stroke="#fff9cb" stroke-width=".75" stroke-linecap="round"/><path d="M0 -2.6 v5.2 M1.8 -1.7 C.5 -3 -2 -2 -1.5 -.7 S2 0 1.5 1.2 S-1 2.3 -2 1.4" fill="none" stroke="#A95B08" stroke-width=".55" stroke-linecap="round"/></g>' +
       '<g id="' + coinSide + '"><rect x="-9" y="-2.8" width="18" height="5.6" rx="2.5" fill="url(#' + metal + ')" stroke="#B45309" stroke-width=".75"/><path d="M-6 -1.2v2.5 M-3 -1.5v3 M0 -1.5v3 M3 -1.5v3 M6 -1.2v2.5" fill="none" stroke="#B45309" stroke-opacity=".58" stroke-width=".55"/><path d="M-6.5 -2h13" stroke="#FEF9C3" stroke-width=".6" stroke-linecap="round"/></g></defs>' +
       '<path class="savings-jar-glass" d="M26 43 Q17 46 17 58 V112 Q17 126 30 126 H70 Q83 126 83 112 V58 Q83 46 74 43 Z"/>' +
-      '<g clip-path="url(#' + clip + ')"><g class="savings-jar-pile">' + pile + '</g>' +
-      '<path d="M18 43 H53 L26 126 H17 Z" fill="url(#' + glass + ')"/><path d="M72 43 H79 L52 126 H46 Z" fill="#fff" opacity=".10"/></g>' +
-      '<g class="savings-jar-coin coin-one"><use href="#' + coinFace + '" x="50" y="18"/></g>' +
-      '<g class="savings-jar-coin coin-two"><use href="#' + coinFace + '" x="55" y="18"/></g>' +
-      '<g class="savings-jar-coin coin-three"><use href="#' + coinFace + '" x="44" y="18"/></g>' +
-      '<path d="M25 57 V96" stroke="rgba(255,255,255,.65)" stroke-width="2.5" stroke-linecap="round"/>' +
-      '<rect class="savings-jar-rim" x="23" y="32" width="54" height="13" rx="4"/><path d="M34 36 H66" stroke="#2f806b" stroke-width="2" stroke-linecap="round"/>' +
-      '<path d="M41 23 H59" stroke="#af7f28" stroke-width="3" stroke-linecap="round"/>' +
+      '<g clip-path="url(#' + clip + ')"><g class="savings-jar-pile">' + pile + '</g></g>' +
+      '<g class="savings-jar-falling-layer"></g>' +
+      '<g clip-path="url(#' + clip + ')"><path d="M18 43 H48 L24 126 H17 Z" fill="url(#' + glass + ')"/>' +
+      '<path d="M72 43 H77 L53 126 H49 Z" fill="#fff" opacity=".09"/>' +
+      '<path d="M21 61 V106 Q21 121 31 123 H67" fill="none" stroke="#fff" opacity=".3" stroke-width="1.4" stroke-linecap="round"/></g>' +
+      '<path d="M25 57 V88" stroke="rgba(255,255,255,.55)" stroke-width="2" stroke-linecap="round"/>' +
+      '<rect class="savings-jar-rim" x="23" y="32" width="54" height="13" rx="4"/>' +
+      '<path d="M27 35 H73 M27 42 H73" stroke="#fff" opacity=".42" stroke-width="1" stroke-linecap="round"/>' +
+      '<path d="M36 38 H64" stroke="#2f806b" stroke-width="1.8" stroke-linecap="round"/>' +
       '</svg><span class="savings-jar-glint"></span></div>';
+  }
+  var savingsJarAnimationToken = 0;
+  function setSavingsJarLevel(jar, level) {
+    jar.style.setProperty('--jar-level', level);
+    jar.querySelectorAll('.savings-pile-coin').forEach(function(coin) {
+      coin.style.opacity = level >= Number(coin.dataset.level) ? '1' : '0';
+    });
+  }
+  function settleSavingsJarAnimations() {
+    savingsJarAnimationToken++;
+    if (!els.savingsGoalsList || !state.savings) return;
+    var goals = state.savings.goals || [];
+    els.savingsGoalsList.querySelectorAll('[data-savings-jar-goal]').forEach(function(card) {
+      var goal = goals.find(function(g) { return String(g.id) === card.getAttribute('data-savings-jar-goal'); });
+      var jar = card.querySelector('.savings-jar');
+      if (!goal || !jar) return;
+      var level = savingsJarLevel(goal.balance, goal.target);
+      jar.classList.remove('is-animating', 'is-deposit', 'is-withdraw');
+      delete jar.dataset.animationScheduled;
+      var layer = jar.querySelector('.savings-jar-falling-layer'); if (layer) layer.replaceChildren();
+      setSavingsJarLevel(jar, level);
+    });
   }
   function playSavingsJarAnimation(goalId, oldBalance, target, type) {
     if (!els.appMain || els.appMain.dataset.activeView !== 'savings') return;
     var goalCard = Array.prototype.find.call(els.savingsGoalsList.querySelectorAll('[data-savings-jar-goal]'), function(el) { return el.getAttribute('data-savings-jar-goal') === String(goalId); });
     if (!goalCard) return;
     var jar = goalCard.querySelector('.savings-jar');
-    if (!jar) return;
-    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var goal = (state.savings.goals || []).find(function(g) { return g.id === goalId; });
-    if (!goal) return;
+    if (!jar || !goal) return;
     var finalLevel = savingsJarLevel(goal.balance, goal.target);
-    if (reduce) { jar.style.setProperty('--jar-level', finalLevel); jar.style.setProperty('--jar-offset', (83 * (1 - finalLevel)).toFixed(3) + 'px'); return; }
+    var animationToken = ++savingsJarAnimationToken;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) { setSavingsJarLevel(jar, finalLevel); return; }
+    var startLevel = savingsJarLevel(oldBalance, target);
+    var all = Array.prototype.slice.call(jar.querySelectorAll('.savings-pile-coin'));
+    var incoming = all.filter(function(c) { return c.style.opacity !== '1' && Number(c.dataset.level) <= finalLevel; }).sort(function(a,b) { return Number(a.dataset.level) - Number(b.dataset.level); });
+    var alreadyVisible = all.filter(function(c) { return c.style.opacity === '1'; }).sort(function(a,b) { return Number(a.dataset.level) - Number(b.dataset.level); });
+    var layer = jar.querySelector('.savings-jar-falling-layer');
+    layer.replaceChildren();
+    // Every new, previously hidden pile coin gets exactly one matching falling coin.
+    // If the level changes by less than one coin (or is already full), add a few
+    // decorative drops which merge into existing coins without revealing new ones.
+    var dropCount = Math.max(6, incoming.length), drops = [];
+    var lastDestination = alreadyVisible.length ? alreadyVisible[alreadyVisible.length - 1] : null;
+    for (var i = 0; i < dropCount; i++) {
+      var from = Math.floor(i * incoming.length / dropCount), to = Math.floor((i + 1) * incoming.length / dropCount);
+      var targetCoin = to > from ? incoming[to - 1] : null;
+      if (targetCoin) lastDestination = targetCoin;
+      var destination = targetCoin || lastDestination;
+      var flying = document.createElementNS('http://www.w3.org/2000/svg','g');
+      flying.setAttribute('class','savings-jar-coin');
+      flying.setAttribute('data-drop-index',String(i));
+      var use = destination ? destination.querySelector('use').cloneNode(true) : document.createElementNS('http://www.w3.org/2000/svg','use');
+      if (!destination) use.setAttribute('href','#' + jar.querySelector('[id^="jar-coin-face-"]').id);
+      use.removeAttribute('transform'); use.setAttribute('x','50'); use.setAttribute('y','18');
+      flying.appendChild(use);
+      var x = destination ? Number(destination.dataset.x) : 50;
+      var y = destination ? Number(destination.dataset.y) : Math.min(120, 50 + (1 - startLevel) * 70);
+      var angle = destination ? Number(destination.dataset.angle) : 0;
+      flying.style.setProperty('--drop-x', (x - 50) + 'px');
+      flying.style.setProperty('--drop-y', Math.max(0, y - 18) + 'px');
+      flying.style.setProperty('--coin-angle', angle + 'deg');
+      flying.style.animationDelay = (dropCount > 1 ? i * 3.32 / (dropCount - 1) : 0).toFixed(3) + 's';
+      if (targetCoin) targetCoin.setAttribute('data-drop-index', String(i));
+      drops.push({ flying:flying, target:targetCoin }); layer.appendChild(flying);
+    }
+    if (drops[0]) jar.style.setProperty('--drop-y', drops[0].flying.style.getPropertyValue('--drop-y'));
     var box = goalCard.getBoundingClientRect();
     var outside = box.bottom > window.innerHeight - 90 || box.top < 70;
     if (outside) goalCard.scrollIntoView({behavior:'smooth', block:'center'});
     var delay = outside ? 450 : 50;
-    jar.style.setProperty('--drop-y', (37 + (1 - savingsJarLevel(oldBalance, target)) * 70) + 'px');
+    jar.dataset.animationScheduled = 'true';
     setTimeout(function() {
-      if (!jar.isConnected) return;
+      if (!jar.isConnected || animationToken !== savingsJarAnimationToken || els.appMain.dataset.activeView !== 'savings' || document.hidden) return;
       jar.classList.add('is-animating');
-      if (type !== 'withdraw') jar.classList.add('is-deposit');
-      setTimeout(function() { if (jar.isConnected) { jar.style.setProperty('--jar-level', finalLevel); jar.style.setProperty('--jar-offset', (83 * (1 - finalLevel)).toFixed(3) + 'px'); } }, type === 'withdraw' ? 30 : 380);
-      setTimeout(function() { if (jar.isConnected) { jar.classList.remove('is-animating'); jar.classList.remove('is-deposit'); } }, 1600);
+      if (type === 'withdraw') {
+        jar.classList.add('is-withdraw');
+        setTimeout(function() { if (jar.isConnected && animationToken === savingsJarAnimationToken) setSavingsJarLevel(jar, finalLevel); }, 30);
+      } else {
+        // Each target appears only at the landing of its own identical coin.
+        drops.forEach(function(item) {
+          if (!item.target) return;
+          var landed = false;
+          function land() {
+            if (landed || !jar.isConnected || animationToken !== savingsJarAnimationToken) return;
+            landed = true; item.target.setAttribute('data-landed','true'); item.target.style.opacity = '1';
+          }
+          item.flying.addEventListener('animationstart', function() { setTimeout(land, 404); }, {once:true});
+          item.flying.addEventListener('animationend', land, {once:true});
+        });
+        jar.classList.add('is-deposit');
+      }
+      setTimeout(function() {
+        if (jar.isConnected && animationToken === savingsJarAnimationToken) {
+          jar.classList.remove('is-animating', 'is-deposit', 'is-withdraw');
+          delete jar.dataset.animationScheduled;
+          if (type === 'withdraw') setSavingsJarLevel(jar, finalLevel);
+          else jar.style.setProperty('--jar-level', finalLevel);
+          layer.replaceChildren();
+        }
+      }, type === 'withdraw' ? 1050 : 4000);
     }, delay);
   }
   function renderSavings() {
@@ -4083,7 +4177,7 @@
         var clampedPct = Math.max(0, Math.min(100, pct));
         var level = pendingSavingsJarAnimation && pendingSavingsJarAnimation.id === goal.id ? savingsJarLevel(pendingSavingsJarAnimation.oldBalance, target) : savingsJarLevel(goal.balance, target);
         var detail = target > 0 ? fmt(goal.balance) + ' / ' + fmt(target) : fmt(goal.balance);
-        return '<article class="savings-goal-card" data-savings-jar-goal="' + escapeHtml(goal.id) + '"><div class="savings-goal-heading"><h3>' + escapeHtml(goal.name) + '</h3><div class="savings-goal-actions"><div class="savings-order-actions"><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="-1" aria-label="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '"' + (goalIndex === 0 ? ' disabled' : '') + '><span aria-hidden="true">↑</span></button><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="1" aria-label="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '"' + (goalIndex === goals.length - 1 ? ' disabled' : '') + '><span aria-hidden="true">↓</span></button></div><span class="savings-goal-balance">' + escapeHtml(fmt(goal.balance)) + '</span><button type="button" class="savings-delete-goal" data-delete-goal="' + escapeHtml(goal.id) + '" aria-label="' + escapeHtml(t('savings.deleteGoalAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.confirmDelete', { goal: goal.name, amount: fmt(goal.balance) })) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button></div></div>' +
+        return '<article class="savings-goal-card" data-savings-jar-goal="' + escapeHtml(goal.id) + '"><div class="savings-goal-heading"><h3>' + escapeHtml(goal.name) + '</h3><div class="savings-goal-actions"><button type="button" class="savings-jar-replay" data-replay-jar="' + escapeHtml(goal.id) + '" aria-label="' + escapeHtml(t('savings.replayJar', {goal:goal.name})) + '" title="' + escapeHtml(t('savings.replayJar', {goal:goal.name})) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg></button><div class="savings-order-actions"><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="-1" aria-label="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalUpAria', { goal: goal.name })) + '"' + (goalIndex === 0 ? ' disabled' : '') + '><span aria-hidden="true">↑</span></button><button type="button" class="savings-order-btn" data-move-goal="' + escapeHtml(goal.id) + '" data-direction="1" aria-label="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.moveGoalDownAria', { goal: goal.name })) + '"' + (goalIndex === goals.length - 1 ? ' disabled' : '') + '><span aria-hidden="true">↓</span></button></div><span class="savings-goal-balance">' + escapeHtml(fmt(goal.balance)) + '</span><button type="button" class="savings-delete-goal" data-delete-goal="' + escapeHtml(goal.id) + '" aria-label="' + escapeHtml(t('savings.deleteGoalAria', { goal: goal.name })) + '" title="' + escapeHtml(t('savings.confirmDelete', { goal: goal.name, amount: fmt(goal.balance) })) + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg></button></div></div>' +
           '<div class="savings-jar-row">' + savingsJarMarkup('goal-' + goalIndex, level) + '<div class="savings-jar-details">' +
           (target > 0 ? '<div class="savings-progress" role="progressbar" aria-label="' + escapeHtml(goal.name) + '" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + clampedPct + '" aria-valuetext="' + escapeHtml(t('savings.targetProgress', { pct: pct })) + '"><span class="transition-all duration-500 ease-out" style="width:' + clampedPct + '%"></span></div>' : '') +
           '<div class="savings-goal-meta"><span>' + escapeHtml(detail) + '</span><span>' + escapeHtml(target > 0 ? t('savings.targetProgress', { pct: pct }) : t('savings.noTargetJar')) + '</span></div></div></div></article>';
@@ -4603,6 +4697,7 @@
   }
   function switchView(name, initial) {
     if (!VIEW_META[name]) name = 'dashboard';
+    if (name !== 'savings' && els.appMain.dataset.activeView === 'savings') settleSavingsJarAnimations();
     els.appMain.dataset.activeView = name;
     if (!initial) animateMainViewEntry();
     els.viewTitle.textContent = t(VIEW_META[name].titleKey);
@@ -7465,10 +7560,23 @@
       if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); finishExpenseCalculation(true, false); }
     });
   }
+  var calculatorPointerLeaving = false;
+  document.addEventListener('pointerdown', function(e) {
+    if (calcActive && e.target !== els.dayTxAmount && !calcPanel.contains(e.target)) calculatorPointerLeaving = true;
+  }, true);
+  function finishCalculatorPointer() {
+    if (!calculatorPointerLeaving) return;
+    calculatorPointerLeaving = false;
+    setTimeout(function() { if (calcActive && document.activeElement !== els.dayTxAmount && !calcPanel.contains(document.activeElement)) finishExpenseCalculation(false, true); }, 0);
+  }
+  document.addEventListener('pointerup', finishCalculatorPointer, true);
+  document.addEventListener('pointercancel', finishCalculatorPointer, true);
   function calculatorFocusOut(e) {
     var next = e.relatedTarget;
     if (next === els.dayTxAmount || (next && calcPanel.contains(next))) return;
-    if (calcActive) finishExpenseCalculation(false, true);
+    // Don't remove the keypad between pointerdown and pointerup: that moves
+    // the clicked button and can swallow the user's click.
+    if (calcActive && !calculatorPointerLeaving) finishExpenseCalculation(false, true);
   }
   els.dayTxAmount.addEventListener('focusout', calculatorFocusOut);
   calcPanel.addEventListener('focusout', calculatorFocusOut);
@@ -7488,6 +7596,62 @@
     else if (k === 'equals') { if (finishExpenseCalculation(false, false)) { showExpenseCalculator(); input.focus(); input.setSelectionRange(input.value.length,input.value.length); } }
     else if (k === 'done') finishExpenseCalculation(true, false);
   });
+  function createSavingsCalculator(input, options) {
+    var preview = document.createElement('div'), error = document.createElement('p');
+    var panel = calcPanel.cloneNode(true);
+    preview.id = input.id + 'CalcPreview'; preview.className = 'expense-calc-preview hidden'; preview.setAttribute('aria-live','polite');
+    panel.id = input.id + 'Calculator'; panel.classList.add('hidden');
+    error.id = input.id + 'CalcError'; error.className = 'form-error hidden'; error.setAttribute('role','alert');
+    input.insertAdjacentElement('afterend', preview); preview.insertAdjacentElement('afterend', panel); panel.insertAdjacentElement('afterend', error);
+    input.setAttribute('aria-controls', panel.id); input.setAttribute('aria-describedby', preview.id + ' ' + error.id); input.setAttribute('aria-expanded','false');
+    var active = false;
+    function show() { active = true; panel.classList.remove('hidden'); input.setAttribute('aria-expanded','true'); update(); }
+    function update() {
+      var text = input.value, result = expenseCalcResult(text);
+      var visible = result !== null && /[+*\/−×÷-]/.test(text);
+      preview.textContent = visible ? '= ' + fmt(result) : ''; preview.classList.toggle('hidden', !visible);
+    }
+    function reset() { active = false; panel.classList.add('hidden'); preview.classList.add('hidden'); preview.textContent = ''; input.setAttribute('aria-expanded','false'); }
+    function finish(allowEmpty, moveFocus) {
+      var text = input.value.trim();
+      if (!text && allowEmpty) { clearError(error); reset(); if (moveFocus) input.blur(); return true; }
+      var result = expenseCalcResult(text);
+      if (result === null) { showError(error, t('calc.invalid')); return false; }
+      input.value = String(result); clearError(error); reset(); if (moveFocus) input.blur(); return true;
+    }
+    function insert(text) {
+      var start = input.selectionStart, end = input.selectionEnd;
+      if (start == null) start = end = input.value.length;
+      if (input.value.length - (end - start) + text.length > 80) return;
+      input.setRangeText(text, start, end, 'end'); input.dispatchEvent(new Event('input', {bubbles:true}));
+    }
+    input.addEventListener('focus', show); input.addEventListener('click', show);
+    input.addEventListener('input', function() { clearError(error); update(); });
+    input.addEventListener('keydown', function(e) { if (e.key === 'Enter' || e.key === '=') { e.preventDefault(); finish(options.optional, true); } });
+    var pointerLeaving = false;
+    document.addEventListener('pointerdown', function(e) { if (active && e.target !== input && !panel.contains(e.target)) pointerLeaving = true; }, true);
+    function finishPointer() {
+      if (!pointerLeaving) return;
+      pointerLeaving = false;
+      setTimeout(function() { if (active && document.activeElement !== input && !panel.contains(document.activeElement)) finish(true, false); }, 0);
+    }
+    document.addEventListener('pointerup', finishPointer, true); document.addEventListener('pointercancel', finishPointer, true);
+    function focusOut(e) { var next=e.relatedTarget; if (next === input || (next && panel.contains(next))) return; if (active && !pointerLeaving) finish(true, false); }
+    input.addEventListener('focusout', focusOut); panel.addEventListener('focusout', focusOut);
+    panel.addEventListener('pointerdown', function(e) { if (e.target.closest('button')) e.preventDefault(); });
+    panel.addEventListener('click', function(e) {
+      var op=e.target.closest('[data-operation]'); if (op) { insert(op.dataset.operation); return; }
+      var key=e.target.closest('[data-calc]'); if (!key) return; var k=key.dataset.calc;
+      if (/^(?:[0-9]|00|\.)$/.test(k)) insert(k);
+      else if (k === 'back') { var a=input.selectionStart, b=input.selectionEnd; if (a === b && a > 0) a--; input.setRangeText('',a,b,'end'); input.dispatchEvent(new Event('input',{bubbles:true})); }
+      else if (k === 'clear') { input.value=''; input.setSelectionRange(0,0); input.dispatchEvent(new Event('input',{bubbles:true})); }
+      else if (k === 'equals') { if (finish(options.optional, false)) { show(); input.focus(); input.setSelectionRange(input.value.length,input.value.length); } }
+      else if (k === 'done') finish(options.optional, true);
+    });
+    return { finish: function() { return finish(options.optional, false); }, reset:reset };
+  }
+  var savingsTargetCalc = createSavingsCalculator(els.savingsGoalTarget, {optional:true});
+  var savingsAmountCalc = createSavingsCalculator(els.savingsAmount, {optional:false});
   if (els.transactionEditAmount) els.transactionEditAmount.addEventListener('input', function () { if (els.transactionEditError) clearError(els.transactionEditError); });
   if (els.transactionEditForm) els.transactionEditForm.addEventListener('submit', function (ev) {
     ev.preventDefault(); submitTransactionEdit();
@@ -7588,6 +7752,30 @@
     save(); render();
   }
   if (els.savingsGoalsList) els.savingsGoalsList.addEventListener('click', function (ev) {
+    var replayButton = ev.target.closest('[data-replay-jar]');
+    if (replayButton) {
+      if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) { showToast(t('savings.reducedMotion')); return; }
+      var replayGoal = (state.savings.goals || []).find(function(goal) { return String(goal.id) === replayButton.getAttribute('data-replay-jar'); });
+      if (!replayGoal) return;
+      var card = replayButton.closest('[data-savings-jar-goal]'), jar = card && card.querySelector('.savings-jar');
+      if (!jar) return;
+      var wasAnimating = jar.classList.contains('is-animating') || jar.dataset.animationScheduled === 'true';
+      var currentLevel = savingsJarLevel(replayGoal.balance, replayGoal.target);
+      var startLevel = Math.max(0, currentLevel - .25);
+      if (wasAnimating) {
+        var visible = Array.prototype.slice.call(jar.querySelectorAll('.savings-pile-coin')).filter(function(c) { return c.style.opacity === '1'; });
+        startLevel = visible.reduce(function(max,c) { return Math.max(max, Number(c.dataset.level)); }, 0);
+        savingsJarAnimationToken++;
+        jar.classList.remove('is-animating', 'is-deposit', 'is-withdraw');
+        delete jar.dataset.animationScheduled;
+        jar.querySelector('.savings-jar-falling-layer').replaceChildren();
+      } else {
+        settleSavingsJarAnimations();
+        setSavingsJarLevel(jar, startLevel);
+      }
+      playSavingsJarAnimation(replayGoal.id, startLevel * replayGoal.target, replayGoal.target, 'deposit');
+      return;
+    }
     var moveButton = ev.target.closest('[data-move-goal]');
     if (moveButton) {
       moveSavingsGoal(moveButton.getAttribute('data-move-goal'), Number(moveButton.getAttribute('data-direction')) || 1);
@@ -7615,6 +7803,7 @@
   });
   if (els.savingsGoalForm) els.savingsGoalForm.addEventListener('submit', function (ev) {
     ev.preventDefault();
+    if (!savingsTargetCalc.finish()) return;
     var name = String(els.savingsGoalName.value || '').trim().slice(0, 48);
     var target = round2(Number(els.savingsGoalTarget.value) || 0);
     if (!name || target < 0) { showToast(t('savings.invalid')); return; }
@@ -7629,6 +7818,7 @@
   });
   if (els.savingsTransactionForm) els.savingsTransactionForm.addEventListener('submit', function (ev) {
     ev.preventDefault();
+    if (!savingsAmountCalc.finish()) return;
     var amount = round2(Number(els.savingsAmount.value));
     var goalId = els.savingsGoalSelect.value;
     var type = els.savingsAction.value === 'withdraw' ? 'withdraw' : 'deposit';
@@ -7649,7 +7839,9 @@
   if (els.rolloverSkipBtn) els.rolloverSkipBtn.addEventListener('click', function () { completePendingRollover(false); });
   if (els.saveCurrentFundsBtn) els.saveCurrentFundsBtn.addEventListener('click', saveCurrentRemainingFunds);
   if (els.manualRolloverBtn) els.manualRolloverBtn.addEventListener('click', sweepPreviousPeriodManually);
-  document.addEventListener('visibilitychange', function () { if (!document.hidden) checkRolloverTransition(periodMode); });
+  document.addEventListener('visibilitychange', function () { if (document.hidden) settleSavingsJarAnimations(); else checkRolloverTransition(periodMode); });
+  var savingsMotionPreference = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (savingsMotionPreference && savingsMotionPreference.addEventListener) savingsMotionPreference.addEventListener('change', function(e) { if (e.matches) settleSavingsJarAnimations(); });
   window.addEventListener('focus', function () { checkRolloverTransition(periodMode); });
   window.setInterval(function () { if (!document.hidden) checkRolloverTransition(periodMode); }, 60000);
 
@@ -7862,5 +8054,5 @@
     emit('wb:cloud-error', { code: 'wb/init-failed', message: String(err && err.message || err) });
   }
 </script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60ee5631b406ceb',t:'MTc5NTc1OTA1Mw=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60ee5631b406ceb',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a58f1fc8f90b050e',t:'MTc5NDQxOTI2OA=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a58f1fc8f90b050e',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60200108a7fe2f6',t:'MTc5NTYyMzgzMQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60200108a7fe2f6',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script><script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a60f1c20ad18dd34',t:'MTc5NTc2MTI5NQ=='};var l=window.parent.location,o;try{o=new URL(l.origin).origin}catch(e){try{o=new URL(new URL(l.href).origin).origin}catch(e){o=''}}var u='/cdn-cgi/challenge-platform/scripts/jsd/main.js?ray=a60f1c20ad18dd34',a=document.createElement('script');a.src=o?new URL(u,o).href:u;document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
